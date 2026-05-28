@@ -1,5 +1,6 @@
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { BudgetsList } from "../../components/BudgetsList";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth";
@@ -7,6 +8,7 @@ import { useProfile } from "../../lib/hooks/use-profile";
 import { colors } from "../../lib/colors";
 
 export default function MoreScreen() {
+  const router = useRouter();
   const { session } = useAuth();
   const { data: profile } = useProfile();
 
@@ -23,6 +25,16 @@ export default function MoreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Presupuestos del mes</Text>
           <BudgetsList />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Datos</Text>
+          <Pressable
+            style={({ pressed }) => [styles.linkBtn, pressed && { opacity: 0.85 }]}
+            onPress={() => router.push("/modals/import-broker-csv")}
+          >
+            <Text style={styles.linkBtnText}>Importar movimientos (CSV de broker)</Text>
+          </Pressable>
         </View>
 
         <View style={styles.section}>
@@ -79,4 +91,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   btnText: { color: colors.textPrimary, fontWeight: "600" },
+  linkBtn: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  linkBtnText: { color: colors.primary, fontWeight: "600" },
 });

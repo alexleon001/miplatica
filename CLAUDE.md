@@ -77,6 +77,8 @@ Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo
 - [x] **Sprint 3/E** — Modal `add-investment.tsx` con switch de campos por tipo de instrumento (`instrument.fields`), lookup de precio live por ticker, conversión con la tasa del `usdType` activo, create optimistic.
 - [x] **Sprint 3/F** — Edge Function `update-asset-prices` (best-effort, cron 15min): consume data912.com (acciones/CEDEARs/bonos/ON) + dolarapi (MEP) → upsert en `asset_prices`. **Desplegada (v1, ACTIVE, `verify_jwt=false`) y probada: 1734 cotizaciones reales.**
 - [x] **Sprint 3/G** — Migración `0003_refresh_positions.sql` **aplicada**: función `public.refresh_positions()` (espejo SQL de `deriveInvestmentValues`; recalcula valor + P&L de mercado/dólar/plazo-fijo con la última tasa MEP). `security definer`, solo `service_role`. La Edge Function `update-asset-prices` la llama por RPC al final (best-effort). Tipos regenerados (`Functions.refresh_positions`).
+- [x] **Sprint 3/H** — pg_cron (migración `0004_schedule_crons.sql`, **aplicada**): jobs `update-asset-prices` (`*/15 14-20 * * 1-5`) y `fetch-exchange-rates` (`*/30 * * * *`), invocan las Edge Functions vía `net.http_post` keyless. Probado end-to-end.
+- [x] **Sprint 4/A (parte desbloqueada)** — Import CSV de brokers: `lib/csv.ts` (parser RFC4180-ish sin deps, auto-detecta `,`/`;`), `lib/broker-import.ts` (detección de columnas por alias es-AR, parse fecha/monto AR-US, clasificación de tipo, **dedup por `external_id`** — regla #4), `lib/hooks/use-import-transactions.ts` (upsert `onConflict owner_id,source,external_id` + ignoreDuplicates), modal `app/modals/import-broker-csv.tsx` (pegar CSV → analizar → preview por tipo → importar), botón en `more.tsx`. Parser unit-testeado con `bun`. **MVP por pegado de texto** (sin `expo-document-picker` para no sumar módulo nativo; file-picker queda como mejora).
 
 ## Próxima tarea
 
@@ -290,8 +292,7 @@ Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo
 - [ ] **EAS Update `updates.url`** completar con `bunx eas update:configure` (después de `eas-cli init`).
 - [ ] Mercado Pago OAuth — Sprint 4
 - [~] BYMA — vía data912.com en `update-asset-prices` (escrita, sin desplegar). CAFCI (FCI) aún sin fuente.
-- [ ] CSV Cocos Capital — Sprint 4
-- [ ] CSV Portfolio Personal — Sprint 4
+- [x] **Import CSV de movimientos** (Cocos / PPI / IOL / banco) — `more.tsx → Importar movimientos`. Parser genérico por alias de columnas + dedup por `external_id`. Mapea a `transactions` (compra/venta→investment, dividendo→income, comisión→expense). Mejora futura: import de posiciones a `investments` (necesita dedup por ticker) + file-picker.
 - [ ] Open Banking BCRA — eval Sprint 5+
 
 ---
@@ -349,7 +350,7 @@ Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo
 | 1.5 | Onboarding al primer login + sincronización con profile | ✅ done (2026-05-28) |
 | 2 | Transacciones + categorización IA + presupuestos | ✅ done (2026-05-28) |
 | 3 | Portafolio de inversiones con cotizaciones live | ✅ código done (2026-05-28); falta deploy `update-asset-prices` + verificar en device |
-| 4 | Integración Mercado Pago + import CSV brokers | ⏳ |
+| 4 | Integración Mercado Pago + import CSV brokers | 🚧 import CSV ✅ (movimientos, dedup); MP OAuth bloqueado por credenciales del user |
 | 5 | Asesor financiero IA (chat con contexto completo) | ⏳ |
 | 6 | Deudas, metas y presupuestos avanzados | ⏳ |
 
