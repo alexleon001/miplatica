@@ -28,9 +28,18 @@
 
 ## Sprint actual
 
-**Sprint 3 (portafolio de inversiones) — código + backend + crons 100% live; falta validar UI en device** (2026-05-28).
+**Sesión 2 cerrada (2026-05-28) — Sprints 3, 4 (parcial), 6 (parcial) + calidad/shipping. Falta validar en device + asesor IA.**
 
-Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo Go Android SDK 54). Sprint 3 escrito siguiendo los patrones establecidos (hooks + optimistic + componentes + modal + Edge Function). Backend live y verificado: Edge Function `update-asset-prices` **desplegada** (1734 cotizaciones reales en `asset_prices`), migración `refresh_positions` **aplicada** (revaloriza posiciones; la llama por RPC), **pg_cron configurado** (jobs `update-asset-prices` cada 15 min lun-vie + `fetch-exchange-rates` cada 30 min, ambos vía `net.http_post` keyless, probados end-to-end). `type-check:app` limpio en los archivos nuevos (los 4 errores restantes son ruido pre-existente de KATA en `api/`, `cli/`, `app/_layout.tsx`). **Único pendiente:** validar el flujo de inversiones en Expo Go.
+Sprints 0 → 2 verificados en device. **Sesión 2 agregó** (todo en `main`):
+- **Sprint 3** (portafolio): frontend completo + backend live (Edge `update-asset-prices` desplegada, `refresh_positions` aplicada, pg_cron 15/30 min, probado end-to-end con 1734 cotizaciones reales).
+- **Sprint 4/A**: import CSV de brokers (parser + dedup por `external_id`). *(MP OAuth sigue bloqueado por credenciales del user.)*
+- **Sprint 6 (adelantado)**: tab Deudas (alta/edición/borrado) + **presupuestos vivos** (triggers `budgets.spent_ars`, migración `0005` aplicada).
+- **CRUD**: borrar las 4 entidades (long-press); editar cuentas y deudas.
+- **Calidad/shipping**: 13 tests de lógica financiera (`bun test`, verde), deps alineadas a SDK 54 + `react-native-worklets`, `eas.json` perfil `preview` → APK, `expo-doctor` 17/18.
+
+`type-check:app` limpio (los 4 errores restantes son ruido KATA en `api/`/`cli/`/`app/_layout.tsx`).
+
+**Pendiente para mañana (sesión 3):** ver "Próxima tarea" + nota de cierre al final.
 
 ---
 
@@ -87,24 +96,48 @@ Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo
 - [x] **Deps alineadas a SDK 54** (`expo install --fix`): expo-router 5→**6.0.24**, expo-status-bar 2→3, RN 0.81.5, reanimated 4.1.7, gesture-handler 2.28, safe-area 5.6.2; agregado **`react-native-worklets` 0.5.1** (peer de reanimated 4 — sin esto la app crashea fuera de Expo Go). `expo-doctor` pasa 17/18 (el único fail es el override intencional `unstable_enableSymlinks` de `metro.config.cjs` para pnpm). `type-check:app` limpio. **Verificar navegación en Expo Go por el salto a expo-router 6.**
 - [x] **Sprint 4/A (parte desbloqueada)** — Import CSV de brokers: `lib/csv.ts` (parser RFC4180-ish sin deps, auto-detecta `,`/`;`), `lib/broker-import.ts` (detección de columnas por alias es-AR, parse fecha/monto AR-US, clasificación de tipo, **dedup por `external_id`** — regla #4), `lib/hooks/use-import-transactions.ts` (upsert `onConflict owner_id,source,external_id` + ignoreDuplicates), modal `app/modals/import-broker-csv.tsx` (pegar CSV → analizar → preview por tipo → importar), botón en `more.tsx`. Parser unit-testeado con `bun`. **MVP por pegado de texto** (sin `expo-document-picker` para no sumar módulo nativo; file-picker queda como mejora).
 
-## Próxima tarea
+## Próxima tarea (sesión 3 — mañana)
 
-**Operativo Sprint 3 (lo único que falta para cerrar el sprint):**
-- ⏳ **Validar Sprint 3 en Expo Go**: crear una posición de cada tipo, ver distribución + P&L, confirmar que el patrimonio neto (Dashboard) sube con la nueva inversión.
-- ✅ pg_cron ya configurado (jobs `update-asset-prices` 15 min + `fetch-exchange-rates` 30 min). El portafolio se revaloriza solo en horario bursátil.
+**1. Asesor financiero IA (Sprint 5)** — *arrancado pero NO implementado* (se difirió al cierre de la sesión 2). Plan:
+- Edge Function `financial-advisor` (`verify_jwt=true`): crea un cliente Supabase con el `Authorization` del request (RLS), arma el contexto financiero del usuario (`v_net_worth`, accounts, últimas transactions, investments, debts, budgets del mes, `exchange_rates`), y llama a Claude con **prompt caching** sobre el system persona (asesor argentino, es-AR/vos, inflación, sin inventar datos). Devuelve `{ reply }`.
+- `lib/hooks/use-advisor.ts` (mutation que invoca la función con el historial de mensajes).
+- Pantalla de chat `app/advisor.tsx` (ruta a nivel root, fuera de tabs; el root `_layout` ya es un Stack — agregar `<Stack.Screen name="advisor" />`). Entry desde `more.tsx`.
+- Requiere `ANTHROPIC_API_KEY` en secrets (mismo pendiente que `categorize-transaction`).
 
-**Sprint 4 — Integración Mercado Pago + import CSV brokers** (próximo bloque de features).
+**2. Editar movimientos e inversiones** — completar el CRUD (hoy solo borrar+recrear). `add-transaction`/`add-investment` en modo edición (param `id`); investments necesita re-derivar valores con `deriveInvestmentValues` al guardar.
 
-**Operativo heredado (sigue pendiente del usuario):**
-- ⚠️ **Setear `ANTHROPIC_API_KEY` en Supabase secrets** (sin esto, modal add-transaction "Sugerir con IA" devuelve 500):
+**3. Validación en device (Expo Go)** — pendiente de toda la sesión 2: navegación post expo-router 6, alta/edición/borrado de cada entidad, import CSV, presupuestos vivos, portafolio.
+
+**Sprint 4 (resto) — Mercado Pago OAuth**: bloqueado hasta que el user genere `MP_CLIENT_ID`/`MP_CLIENT_SECRET`/`MP_REDIRECT_URI`.
+
+**Operativo heredado (pendiente del usuario):**
+- ⚠️ **Setear `ANTHROPIC_API_KEY` en Supabase secrets** (sin esto, "Sugerir con IA" en add-transaction y el futuro asesor IA devuelven 500):
   ```
   bunx supabase login
   bunx supabase link --project-ref jgszdxqhrbpfjqtqqlpw
   bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
   ```
-- `bun install` (deps de Sprint 2: ninguna nueva).
-- Configurar pg_cron para `fetch-exchange-rates` cada 30 min.
-- (Sprint 3) configurar pg_cron para `update-asset-prices` cada 15 min en horario bursátil.
+
+---
+
+## 🛠️ Build del APK (EAS) — pasos para el usuario
+
+La app está lista para un APK funcional (deps SDK 54 alineadas + worklets, `app.json` con `android.package`, `eas.json` perfil `preview` → `buildType: apk`). Comandos (requieren login interactivo, por eso los corre el usuario):
+
+```bash
+# 1. login + vincular proyecto EAS (escribe projectId en app.json)
+pnpm dlx eas-cli login
+pnpm dlx eas-cli init
+
+# 2. variables de entorno para el build (la anon key es publishable)
+pnpm dlx eas-cli env:create --environment preview \
+  --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value sb_publishable_TU_KEY --visibility plaintext
+# (URL y APP_ENV ya están en el bloque env de eas.json/preview)
+
+# 3. build del APK (al terminar da una URL para descargar el .apk)
+pnpm dlx eas-cli build -p android --profile preview
+```
+Notas: ícono/splash por default (cosméticos); el APK pega a Supabase productivo; sin OTA (`expo-updates` removido). "Sugerir IA" necesita `ANTHROPIC_API_KEY` en secrets.
 
 ---
 
@@ -298,7 +331,7 @@ Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo
 - [ ] **`ANTHROPIC_API_KEY`** seteada en Supabase secrets — bloquea "Sugerir IA" en `add-transaction`.
 - [ ] **EAS Update `updates.url`** completar con `bunx eas update:configure` (después de `eas-cli init`).
 - [ ] Mercado Pago OAuth — Sprint 4
-- [~] BYMA — vía data912.com en `update-asset-prices` (escrita, sin desplegar). CAFCI (FCI) aún sin fuente.
+- [x] BYMA — vía data912.com en `update-asset-prices` (desplegada + cron). CAFCI (FCI) aún sin fuente.
 - [x] **Import CSV de movimientos** (Cocos / PPI / IOL / banco) — `more.tsx → Importar movimientos`. Parser genérico por alias de columnas + dedup por `external_id`. Mapea a `transactions` (compra/venta→investment, dividendo→income, comisión→expense). Mejora futura: import de posiciones a `investments` (necesita dedup por ticker) + file-picker.
 - [ ] Open Banking BCRA — eval Sprint 5+
 
@@ -318,7 +351,7 @@ Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo
     - Instalar Android Studio (opcional, solo si el user quiere emulador local).
 - **`assets/icon.png`, `splash.png`, `adaptive-icon.png`** sin archivos reales (Expo usa defaults). Agregar antes del primer EAS Build de production y reactivar refs en `app.json`.
 - **`claude-sonnet-4-5-20250929` en `categorize-transaction`** — migrar a `claude-sonnet-4-6` cuando esté GA. Solo cambia el `MODEL` const en `supabase/functions/categorize-transaction/index.ts` y redeploy.
-- **`budgets.spent_ars` no se mantiene solo.** Falta trigger SQL que recalcule al insert/update/delete de `transactions` que tienen `category` matcheada. Hoy `BudgetsList` muestra `spent_ars=0` siempre. Sprint 6 (o 2.5 si se quiere antes).
+- **`budgets.spent_ars` — RESUELTO (migración `0005`).** Triggers `sync_budget_spent` (transactions) + `init_budget_spent` (budgets) lo mantienen por owner/categoría/mes. Modal `add-budget` para crear desde la UI.
 - **pg_cron — RESUELTO (migración `0004`).** Jobs `update-asset-prices` (15 min, lun-vie, horario bursátil) y `fetch-exchange-rates` (30 min). Llaman las Edge Functions vía `net.http_post` keyless (ambas `verify_jwt=false`). Verificar corridas en `cron.job_run_details` / `net._http_response` si algo falla.
 - **Revalorización de posiciones (Sprint 3, paso 7) — RESUELTO vía `refresh_positions()` + cron.** La función SQL (migración `0003`) recalcula `current_value_*`/`profit_loss_*`; la llama `update-asset-prices` por RPC tras cada carga de precios, y ahora el cron la dispara cada 15 min. ⚠️ Sutileza: el plazo fijo (interés devengado) solo se actualiza cuando corre ese cron, no al abrir la app — fuera de horario bursátil el devengado puede verse con hasta ~1 día de atraso. Si molesta, recalcular plazo fijo client-side al render o agregar un cron diario.
 - **`update-asset-prices` depende de data912.com** (fuente gratuita no oficial, sin SLA). Si cambia el shape de la respuesta, ajustar `SOURCES`/`normalize` en la función. FCI (CAFCI) y cripto todavía no tienen fuente conectada.
@@ -356,10 +389,10 @@ Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo
 | 1 | Dashboard patrimonial multi-moneda | ✅ done (2026-05-28) |
 | 1.5 | Onboarding al primer login + sincronización con profile | ✅ done (2026-05-28) |
 | 2 | Transacciones + categorización IA + presupuestos | ✅ done (2026-05-28) |
-| 3 | Portafolio de inversiones con cotizaciones live | ✅ código done (2026-05-28); falta deploy `update-asset-prices` + verificar en device |
+| 3 | Portafolio de inversiones con cotizaciones live | ✅ done (2026-05-28) — backend + crons live; falta verificar UI en device |
 | 4 | Integración Mercado Pago + import CSV brokers | 🚧 import CSV ✅ (movimientos, dedup); MP OAuth bloqueado por credenciales del user |
-| 5 | Asesor financiero IA (chat con contexto completo) | ⏳ |
-| 6 | Deudas, metas y presupuestos avanzados | ⏳ |
+| 5 | Asesor financiero IA (chat con contexto completo) | 🔜 sesión 3 (planificado, ver Próxima tarea) |
+| 6 | Deudas, metas y presupuestos avanzados | 🚧 deudas ✅ + presupuestos vivos ✅; metas (savings_goals) pendiente |
 
 ---
 
@@ -390,4 +423,21 @@ Acumulamos Sprints 0 → 2 en una sola sesión, **sin probar la app**. Antes de 
 - [ ] Tab Más → muestra Perfil + Sesión + Cerrar sesión
 - [ ] Cerrar sesión → vuelve a login
 
-*Última actualización: 2026-05-28.*
+---
+
+## Sesión 2 (2026-05-28) — cierre
+
+Sesión larga: Sprint 3 (portafolio + backend live), Sprint 4/A (import CSV), Sprint 6 parcial (deudas + presupuestos vivos), CRUD borrar(×4)/editar(cuentas,deudas), 13 tests, deps SDK 54 + worklets, prep APK. Todo pusheado a `main`.
+
+**Migraciones aplicadas esta sesión:** `0003_refresh_positions`, `0004_schedule_crons`, `0005_budget_spent_triggers`. **Edge Functions desplegadas:** `update-asset-prices`. **Crons activos:** `update-asset-prices` (15m), `fetch-exchange-rates` (30m).
+
+**Empezar mañana (sesión 3) por:**
+1. **Asesor IA (Sprint 5)** — ver "Próxima tarea" (plan detallado: Edge `financial-advisor` + `use-advisor` + `app/advisor.tsx` + entry en `more.tsx`). Requiere `ANTHROPIC_API_KEY`.
+2. **Editar movimientos e inversiones** (completar CRUD).
+3. **Validar en Expo Go** todo lo de la sesión 2 (nada se probó en device aún; ojo navegación post expo-router 6).
+
+**APK:** comandos en la sección "🛠️ Build del APK (EAS)" — los corre el usuario (login interactivo).
+
+**Recordatorio de proceso:** los commits van con `git commit --no-verify` (el hook lint-staged/@antfu es de KATA y no aplica al app Expo; ver memoria `feedback-eslint-hook-bypass`).
+
+*Última actualización: 2026-05-28 (sesión 2).*
