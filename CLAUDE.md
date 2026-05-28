@@ -36,14 +36,32 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 - [x] `autoskills` instalado (`bun`, `playwright-best-practices`, `typescript-advanced-types`).
 - [x] `CLAUDE.md` del boilerplate archivado como `CLAUDE.boilerplate.md`.
 - [x] Organización Supabase identificada: `alexleon001` (`lfzwokjsazkhznvyvzbk`).
+- [x] `.env.example` extendido con bloque Mi Platica.
+- [x] `package.json` renombrado a `mi-platica` y deps Expo/Supabase agregadas.
+- [x] `app.json` Expo config (`scheme: miplatica`, new arch, typed routes).
+- [x] Estructura Expo Router: `app/_layout.tsx` (AuthGate), `app/(auth)/login.tsx`, `app/(tabs)/_layout.tsx` + 5 pantallas placeholder (`index`, `transactions`, `investments`, `debts`, `more`).
+- [x] `lib/`: `supabase.ts` (cliente con AsyncStorage), `auth.tsx` (AuthProvider + useAuth), `env.ts`, `colors.ts`.
+- [x] `supabase/migrations/0001_init_schema.sql` listo (9 tablas, RLS, trigger auto-profile) — **NO aplicado** (esperando project mi-platica).
+- [x] `supabase/functions/fetch-exchange-rates/index.ts` listo — **NO desplegado**.
+- [x] `.gitignore` extendido con artefactos Expo y supabase local.
+- [x] `git init` + remote a `alexleon001/miplatica.git` + commit `b10fd28` (sin push).
 
 ## Próxima tarea
 
-1. **Desbloquear Supabase**: usuario debe borrar `EchoShift` (tope free tier 2/org). Luego crear `mi-platica` en `sa-east-1`.
-2. Aplicar migraciones SQL (preparadas en `supabase/migrations/0001_init.sql`, **pendiente de OK del usuario antes de `apply_migration`**).
-3. Configurar `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY` reales en `.env`.
-4. Inicializar Expo Router + scaffolding de `app/(auth)`, `app/(tabs)`, `app/modals/`.
-5. Desplegar Edge Function `fetch-exchange-rates`.
+**Sprint 0.5 — Type-safety + OTA + currency store + offline cache**
+
+Las 4 mejoras aceptadas en el cierre de Sprint 0 (ver sección 💡 abajo):
+
+1. Generar `lib/database.types.ts` (script `bun run db:types`).
+2. EAS Update (`bunx eas-cli init`, `app.json` updates, runtime version policy).
+3. Currency store (Zustand + AsyncStorage persistor).
+4. TanStack Query + persistor offline (`@tanstack/react-query` + `@tanstack/query-async-storage-persister`).
+
+**Operativo (usuario):**
+- `bun install` para resolver deps de Expo + Supabase.
+- `bunx expo install --check` para alinear versiones SDK.
+- `bun start` y escanear QR con Expo Go para probar el login.
+- Configurar pg_cron en Supabase Dashboard para invocar `fetch-exchange-rates` cada 30 min.
 
 ---
 
@@ -77,15 +95,51 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 
 ## 💡 Ideas propuestas por Claude Code
 
-### Sprint 0
-*(pendiente — se completa al cierre del sprint, antes de pasar a Sprint 1)*
+### Sprint 0 — cierre (2026-05-28)
+
+> Propuestas derivadas de lo construido en Sprint 0. El usuario decide cuáles incluir antes de pasar a Sprint 1.
+
+1. **Tipos de Supabase autogenerados (`db.types.ts`)**
+   - Qué resuelve: el cliente Supabase actual está sin tipar → perdés autocompletado y type-safety en queries (`supabase.from('accounts').select(...)` devuelve `any`). El esquema ya tiene 9 tablas y va a crecer.
+   - Cómo: script `bun run db:types` que invoca `mcp__Supabase__generate_typescript_types` y escribe `lib/database.types.ts`. Opcional: GitHub Action que regenera al merge a `main` y abre PR si cambió.
+   - Complejidad: **baja**
+   - Sprint sugerido: 0.5 (junto con la creación real del proyecto Supabase) — habilita Sprint 1 con type-safety desde el día 1.
+
+2. **Estado global del selector ARS/USD/Ambos + tipo de cambio (Zustand + AsyncStorage)**
+   - Qué resuelve: la regla #1 del super prompt dice "nunca mostrar solo ARS, siempre ofrecer USD". Eso implica que cada pantalla necesita saber: ¿en qué moneda mostrar? ¿qué tipo de cambio usar (MEP/Blue/Oficial)? Si lo paso por prop drilling se vuelve un caos. Si vive en `profiles` se necesita un fetch por arranque.
+   - Cómo: `lib/store/currency.ts` con Zustand + middleware `persist` sobre AsyncStorage. Hidrata al boot, escribe al cambiar el toggle.
+   - Complejidad: **baja**
+   - Sprint sugerido: 1 (Dashboard) — bloquea el `CurrencyToggle` componente.
+
+3. **EAS Update (OTA) configurado desde Sprint 0**
+   - Qué resuelve: el flujo de iteración va a ser intenso (6 sprints). Sin OTA, cada bug fix obliga a recompilar y republicar. EAS Update permite pushear cambios JS/TS sin pasar por App/Play Store. Costo: gratis hasta 1k MAU.
+   - Cómo: `bunx eas-cli init`, `app.json` add `updates.url`, `runtimeVersion.policy: "appVersion"`. Configurar canal `preview` y `production`.
+   - Complejidad: **baja** (config) / **media** (estrategia de versionado de runtime vs JS)
+   - Sprint sugerido: 0.5 (antes de Sprint 1) o Sprint 2.
+
+4. **Cache + revalidación con TanStack Query (con persistor en AsyncStorage)**
+   - Qué resuelve: Argentina tiene conectividad inconsistente (subte, ascensores, lugares con mala señal). Si abrís la app y se queda en un spinner mientras espera Supabase, mala UX. TanStack Query con persistor te da: lectura instantánea desde cache, revalidación en background, retries automáticos, dedupe de requests, paginación, etc.
+   - Cómo: `@tanstack/react-query` + `@tanstack/query-async-storage-persister`. Provider en `_layout.tsx`. Migrar la primera query (patrimonio) en Sprint 1 como pattern de referencia.
+   - Complejidad: **media** (setup baja, migración progresiva media)
+   - Sprint sugerido: 1 (Dashboard, donde más se nota la latencia).
+
+---
+
+### 🔌 Otras integraciones que podrían sumar (no urgentes)
+
+- **Apple Sign-In / Google Sign-In** desde Sprint 1: reduce fricción de signup. Apple Sign-In es **obligatorio** para iOS App Store si hay otros social logins (puede esperar a primera publicación).
+- **Sentry** para errores y Edge Function logs: 5k errors/mes gratis. Vale la pena antes del primer beta de usuario real.
+- **Crash analytics + perf monitoring** vía Expo native modules (Firebase Crashlytics o Sentry).
 
 ---
 
 ## Integraciones activas
 
-- [ ] Supabase Auth (email + password)
-- [ ] dolarapi.com (Edge Function `fetch-exchange-rates`)
+- [x] **Proyecto Supabase `mi-platica`** creado en `sa-east-1` (id `jgszdxqhrbpfjqtqqlpw`, URL `https://jgszdxqhrbpfjqtqqlpw.supabase.co`).
+- [x] **Migración `init_schema`** aplicada — 9 tablas + RLS + triggers (auto-profile, set_updated_at).
+- [x] **Auth Supabase** (email + password) cableada vía `lib/supabase.ts` + `lib/auth.tsx`.
+- [x] **Edge Function `fetch-exchange-rates`** desplegada (v1, ACTIVE, `verify_jwt=false` para cron).
+- [ ] **pg_cron** que invoque la edge function cada 30 min — pendiente config en Dashboard.
 - [ ] Mercado Pago OAuth — Sprint 4
 - [ ] BYMA / CAFCI — Sprint 3
 - [ ] CSV Cocos Capital — Sprint 4
@@ -122,7 +176,8 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 
 | Sprint | Foco | Estado |
 |---|---|---|
-| 0 | Setup, navegación, Supabase, auth, edge function rates | 🚧 en curso |
+| 0 | Setup, navegación, Supabase, auth, edge function rates | ✅ done (2026-05-28) |
+| 0.5 | Type-safety (db.types), EAS Update, Currency store, TanStack Query | 🚧 próximo |
 | 1 | Dashboard patrimonial multi-moneda | ⏳ |
 | 2 | Transacciones + categorización IA + presupuestos | ⏳ |
 | 3 | Portafolio de inversiones con cotizaciones live | ⏳ |
