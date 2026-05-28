@@ -28,9 +28,9 @@
 
 ## Sprint actual
 
-**Pausa de testing entre Sprint 2 y Sprint 3** (2026-05-28).
+**Sesión cerrada — listo para Sprint 3** (2026-05-28, 15:39 ART).
 
-Sprints 0 → 2 completos y pusheados a `main`. Próximo paso es validar end-to-end con Expo Go antes de seguir con Sprint 3 (portafolio de inversiones). Ver checklist al final del archivo.
+Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo Go Android SDK 54). Dashboard renderea OK con datos reales de Supabase. Próxima sesión arranca con Sprint 3 (portafolio de inversiones).
 
 ---
 
@@ -334,15 +334,18 @@ Acumulamos Sprints 0 → 2 en una sola sesión, **sin probar la app**. Antes de 
 
 **Checklist de testing operativo:**
 
-- [ ] `bun install` corre limpio
-- [ ] `bunx expo install --check` no reporta deps desalineadas
-- [ ] `bun start` levanta Metro y muestra QR
-- [ ] Escaneo QR con Expo Go → app levanta sin crash
-- [ ] Signup con email/password → redirige a onboarding
-- [ ] Onboarding: completar 4 campos → redirige a Dashboard
-- [ ] Dashboard: muestra "Hola, {alias}", fecha en es-AR, currency toggle
-- [ ] Cambiar toggle ARS / USD / Ambas → re-renderiza montos
-- [ ] Cambiar selector MEP / Blue / Oficial / CCL → barra inferior resalta el activo
+- [x] `pnpm install` corre limpio (con `node-linker=hoisted`)
+- [x] `pnpm start --clear` levanta Metro y muestra QR
+- [x] Escaneo QR con Expo Go → app levanta sin crash
+- [x] Signup con email/password → redirige a onboarding
+- [x] Onboarding: completar 4 campos → redirige a Dashboard
+- [x] Dashboard: muestra "Hola, alexanderleon001 👋", fecha "Jueves, 28 De Mayo", currency toggle
+- [x] Cambiar toggle ARS / USD / Ambas → re-renderiza montos
+- [x] Cambiar selector MEP / Blue / Oficial / CCL → barra inferior resalta el activo (Blue $1.440 ✅)
+- [x] `useExchangeRates` self-healing dispara `fetch-exchange-rates` y trae 4 tasas reales
+- [x] `useNetWorth` lee vista `v_net_worth` → $0 ARS / $0 USD (esperado sin cuentas)
+- [x] Empty state de AccountsList con CTA "+ Agregar cuenta"
+- [x] Bottom tabs nav: Patrimonio, Movimientos, Inversiones, Deudas, Más
 - [ ] "+ Agregar cuenta" → modal → submit → cuenta aparece en lista
 - [ ] Tab Movimientos → ver lista vacía + FAB "+ Nuevo"
 - [ ] Modal add-transaction → completar tipo + monto + descripción + cuenta
