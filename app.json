@@ -14,17 +14,6 @@
     "android": {
       "package": "com.alexleon001.miplatica"
     },
-    "plugins": ["expo-router"],
-    "experiments": {
-      "typedRoutes": true
-    },
-    "extra": {
-      "router": {
-        "origin": false
-      },
-      "eas": {
-        "projectId": null
-      }
-    }
+    "plugins": ["expo-router"]
   }
 }

@@ -1,25 +1,9 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./*"],
-      "@lib/*": ["./lib/*"],
-      "@components/*": ["./components/*"]
-    }
+    "strict": true
   },
-  "include": [
-    "app/**/*.ts",
-    "app/**/*.tsx",
-    "lib/**/*.ts",
-    "lib/**/*.tsx",
-    "components/**/*.ts",
-    "components/**/*.tsx",
-    "scripts/**/*.ts",
-    "expo-env.d.ts",
-    ".expo/types/**/*.ts"
-  ],
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
   "exclude": [
     "node_modules",
     "tests",
@@ -28,6 +12,7 @@
     "allure-results",
     "allure-report",
     "reports",
-    ".expo"
+    ".expo",
+    "supabase"
   ]
 }
