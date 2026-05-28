@@ -5,10 +5,11 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useNetWorth } from "../lib/hooks/use-net-worth";
 import { MoneyAmount } from "./MoneyAmount";
+import { StateMessage } from "./StateMessage";
 import { colors } from "../lib/colors";
 
 export function NetWorthCard() {
-  const { data, isLoading } = useNetWorth();
+  const { data, isLoading, isError, refetch } = useNetWorth();
 
   const netArs = data?.net_ars ?? 0;
   const netUsd = data?.net_usd ?? 0;
@@ -16,7 +17,9 @@ export function NetWorthCard() {
   return (
     <View style={styles.card}>
       <Text style={styles.label}>Patrimonio neto</Text>
-      {isLoading ? (
+      {isError ? (
+        <StateMessage kind="error" message="No pude cargar el patrimonio." onRetry={() => refetch()} />
+      ) : isLoading ? (
         <Text style={styles.loading}>Cargando…</Text>
       ) : (
         <MoneyAmount ars={netArs} usd={netUsd} size="lg" />

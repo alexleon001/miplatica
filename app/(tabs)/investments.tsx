@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { CurrencyToggle } from "../../components/CurrencyToggle";
@@ -7,12 +7,15 @@ import { InvestmentRow } from "../../components/InvestmentRow";
 import { MoneyAmount } from "../../components/MoneyAmount";
 import { PnLBadge } from "../../components/PnLBadge";
 import { PortfolioDistribution } from "../../components/PortfolioDistribution";
+import { StateMessage } from "../../components/StateMessage";
 import { useInvestments } from "../../lib/hooks/use-investments";
+import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
 import { colors } from "../../lib/colors";
 
 export default function InvestmentsScreen() {
   const router = useRouter();
-  const { data: investments, isLoading } = useInvestments();
+  const { data: investments, isLoading, isError, refetch } = useInvestments();
+  const { refreshing, onRefresh } = usePullRefresh();
 
   const summary = useMemo(() => {
     const list = investments ?? [];
@@ -38,6 +41,9 @@ export default function InvestmentsScreen() {
         renderItem={({ item }) => <InvestmentRow inv={item} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+        }
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.title}>Inversiones</Text>
@@ -58,15 +64,20 @@ export default function InvestmentsScreen() {
           </View>
         }
         ListEmptyComponent={
-          <Text style={styles.empty}>
-            {isLoading
-              ? "Cargando…"
-              : "Todavía no cargaste inversiones. Sumá tu primera posición."}
-          </Text>
+          isError ? (
+            <StateMessage kind="error" message="No pude cargar las inversiones." onRetry={() => refetch()} />
+          ) : (
+            <StateMessage
+              kind={isLoading ? "loading" : "empty"}
+              message={isLoading ? "Cargando…" : "Todavía no cargaste inversiones. Sumá tu primera posición."}
+            />
+          )
         }
       />
 
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Nueva inversión"
         style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}
         onPress={() => router.push("/modals/add-investment")}
       >
@@ -102,7 +113,6 @@ const styles = StyleSheet.create({
   summaryPnlLabel: { color: colors.textMuted, fontSize: 13 },
   listLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
   separator: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
-  empty: { color: colors.textMuted, textAlign: "center", marginTop: 20 },
   fab: {
     position: "absolute",
     right: 20,

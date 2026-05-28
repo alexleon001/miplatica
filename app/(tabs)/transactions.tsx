@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MoneyAmount } from "../../components/MoneyAmount";
+import { StateMessage } from "../../components/StateMessage";
 import { TransactionItem } from "../../components/TransactionItem";
 import { useMonthlyBalance } from "../../lib/hooks/use-monthly-balance";
+import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
 import { useTransactions } from "../../lib/hooks/use-transactions";
 import { colors } from "../../lib/colors";
 
@@ -19,8 +21,9 @@ const FILTERS: { value: Filter; label: string }[] = [
 export default function TransactionsScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
-  const { data: txs, isLoading } = useTransactions();
+  const { data: txs, isLoading, isError, refetch } = useTransactions();
   const monthly = useMonthlyBalance();
+  const { refreshing, onRefresh } = usePullRefresh();
 
   const filtered = useMemo(() => {
     if (!txs) return [];
@@ -60,14 +63,24 @@ export default function TransactionsScreen() {
         renderItem={({ item }) => <TransactionItem tx={item} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+        }
         ListEmptyComponent={
-          <Text style={styles.empty}>
-            {isLoading ? "Cargando…" : "Todavía no hay movimientos. Agregá el primero."}
-          </Text>
+          isError ? (
+            <StateMessage kind="error" message="No pude cargar los movimientos." onRetry={() => refetch()} />
+          ) : (
+            <StateMessage
+              kind={isLoading ? "loading" : "empty"}
+              message={isLoading ? "Cargando…" : "Todavía no hay movimientos. Agregá el primero."}
+            />
+          )
         }
       />
 
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Nuevo movimiento"
         style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}
         onPress={() => router.push("/modals/add-transaction")}
       >
@@ -123,7 +136,6 @@ const styles = StyleSheet.create({
   chipTextActive: { color: colors.textPrimary },
   list: { paddingHorizontal: 20, paddingBottom: 100, flexGrow: 1 },
   separator: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
-  empty: { color: colors.textMuted, textAlign: "center", marginTop: 40 },
   fab: {
     position: "absolute",
     right: 20,
