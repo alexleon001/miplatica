@@ -9,23 +9,28 @@
 
 | Capa | Tecnología | Versión / Notas |
 |---|---|---|
-| App móvil | React Native + Expo + Expo Router | SDK por instalar en Sprint 0 |
-| Lenguaje | TypeScript | 5.8+ (strict) |
+| App móvil | React Native + Expo + Expo Router | Expo SDK 52, RN 0.76, React 18.3 |
+| Lenguaje | TypeScript | 5.8+ (strict, `noEmit`) |
 | Runtime / Package manager | Bun | 1.x (heredado del boilerplate KATA) |
-| Backend | Supabase (Postgres 17 + Auth + Edge Functions + Storage) | proyecto `mi-platica` a crear en `sa-east-1` |
-| IA | Claude Sonnet 4.6 vía Edge Functions | `claude-sonnet-4-6` |
-| Tests E2E (futuro) | Playwright + KATA | heredado del boilerplate, sin tocar |
-| Cotizaciones | dolarapi.com (gratis), CAFCI, BYMA | sin auth |
+| Backend | Supabase (Postgres 17 + Auth + Edge Functions + Storage) | proyecto `mi-platica` (`jgszdxqhrbpfjqtqqlpw`) en `sa-east-1` |
+| Estado global | Zustand 5 (con `persist` sobre AsyncStorage) | currency display + usdType |
+| Server state | TanStack Query 5 (`@tanstack/react-query` + `query-async-storage-persister`) | cache 5 min, persistor 24 h |
+| IA | Claude vía Edge Function — `claude-sonnet-4-5-20250929` | upgrade a sonnet-4-6 cuando esté GA (ver Deuda técnica) |
+| OTA | EAS Update (`expo-updates`) | `runtimeVersion.policy=appVersion`, channels dev/preview/production |
+| Tests E2E (futuro) | Playwright + KATA | heredado del boilerplate, vive en `tests/`, sin tocar |
+| Cotizaciones | dolarapi.com (gratis) + CAFCI + BYMA (Sprint 3) | sin auth |
 
 **Repo:** `https://github.com/alexleon001/miplatica.git`
+**Org Supabase:** `alexleon001` (`lfzwokjsazkhznvyvzbk`)
+**Project URL:** `https://jgszdxqhrbpfjqtqqlpw.supabase.co`
 
 ---
 
 ## Sprint actual
 
-**Sprint 0 — Setup y estructura**
+**Pausa de testing entre Sprint 2 y Sprint 3** (2026-05-28).
 
-Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conectado, auth funcional y primera Edge Function desplegada.
+Sprints 0 → 2 completos y pusheados a `main`. Próximo paso es validar end-to-end con Expo Go antes de seguir con Sprint 3 (portafolio de inversiones). Ver checklist al final del archivo.
 
 ---
 
@@ -93,13 +98,15 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 
 ## Variables de entorno requeridas
 
-| Variable | Dónde | Sprint en que se introduce |
+| Variable | Dónde | Estado |
 |---|---|---|
-| `EXPO_PUBLIC_SUPABASE_URL` | cliente (app) | Sprint 0 |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | cliente (app) | Sprint 0 |
-| `ANTHROPIC_API_KEY` | **solo Edge Functions** (`supabase secrets set`) | Sprint 2 |
-| `MP_CLIENT_ID` | **solo Edge Functions** | Sprint 4 |
-| `MP_CLIENT_SECRET` | **solo Edge Functions** | Sprint 4 |
+| `EXPO_PUBLIC_SUPABASE_URL` | cliente (app, `.env`) | ✅ seteada |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | cliente (app, `.env`) | ✅ seteada (publishable `sb_publishable_...`) |
+| `EXPO_PUBLIC_APP_ENV` | cliente (app, `.env`) | ✅ seteada (`development`) |
+| `ANTHROPIC_API_KEY` | **Edge Functions** (`supabase secrets set`) | ⚠️ **pendiente del user** (bloquea "Sugerir IA") |
+| `MP_CLIENT_ID` | **Edge Functions** | ⏳ Sprint 4 |
+| `MP_CLIENT_SECRET` | **Edge Functions** | ⏳ Sprint 4 |
+| `MP_REDIRECT_URI` | **Edge Functions** | ⏳ Sprint 4 |
 
 > Regla #2 del super prompt: API keys **JAMÁS** en el cliente. Todo lo sensible vive en Edge Functions / Supabase secrets.
 
@@ -112,10 +119,18 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 | 1 | Convivir Expo + Playwright en el mismo repo | Usuario pidió misma carpeta y reutilizar lo que sirva. Playwright se mantiene para E2E web futuro (panel admin, edge functions). |
 | 2 | Región Supabase = `sa-east-1` (São Paulo) | Latencia óptima para usuarios AR. |
 | 3 | Usar **publishable keys** (`sb_publishable_...`), no legacy anon JWT | Mejor seguridad y rotación independiente (recomendación oficial Supabase). |
-| 4 | Edge Functions con `verify_jwt: true` por defecto | Toda función requiere usuario auth, salvo cron/webhooks explícitamente públicos. |
+| 4 | Edge Functions con `verify_jwt: true` por defecto | Toda función requiere usuario auth, salvo cron/webhooks explícitamente públicos (`fetch-exchange-rates` queda con `verify_jwt=false`). |
 | 5 | Naming del proyecto: `mi-platica` (kebab-case) | Convención Supabase. |
-| 6 | `claude-sonnet-4-6` para IA | Per super prompt; balance costo/calidad para categorización + asesor. |
+| 6 | `claude-sonnet-4-5-20250929` para IA | Más reciente GA al 2026-05-28. Migrar a `claude-sonnet-4-6` cuando salga (ver Deuda técnica). |
 | 7 | Tipos de cambio: `dolarapi.com`, sin auth, cron 30 min | Suficiente para v1; sin scraping. |
+| 8 | **Zustand** para currency state (display + usdType) con `persist` en AsyncStorage | Estado global mínimo, sin React Context boilerplate. Persiste preferencia entre sesiones. |
+| 9 | **TanStack Query** con persistor AsyncStorage (24 h) | Conectividad inconsistente en AR (subte, ascensores) → cache local + revalidación + retries. |
+| 10 | **Optimistic updates con rollback** en `useCreateTransaction` | UX instantáneo para movimientos diarios. Pattern aplicable a todos los `useMutation` futuros (Sprint 3+). |
+| 11 | **Vistas SQL con `security_invoker = on`** (`v_net_worth`, `v_monthly_balance`) | RLS de las tablas underlying aplica al consumir las vistas → menos código de filtrado en cliente. |
+| 12 | **`tsconfig` split**: raíz extiende `expo/tsconfig.base` para app; `tsconfig.test.json` para KATA/Playwright | Evita choques de `types` (`react-native` vs `@playwright/test`). |
+| 13 | **Prompt caching** en `categorize-transaction` (system prompt con `cache_control: ephemeral`) | El system prompt cambia poco; ahorra ~80% tokens en categorizaciones repetidas. |
+| 14 | **`AuthGate` redirige a `onboarding`** si `profile.name is null` | Gate suave: el user nuevo configura preferencias antes de ver el Dashboard. Sincroniza el currency store con el profile. |
+| 15 | **Categorías como diccionario tipado** (`lib/categories.ts`) en vez de enum DB | Permite cambiar label/icon/color sin migration. El modelo IA solo puede devolver IDs de `CATEGORY_IDS`. |
 
 ---
 
@@ -239,11 +254,15 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 
 ## Integraciones activas
 
-- [x] **Proyecto Supabase `mi-platica`** creado en `sa-east-1` (id `jgszdxqhrbpfjqtqqlpw`, URL `https://jgszdxqhrbpfjqtqqlpw.supabase.co`).
+- [x] **Proyecto Supabase `mi-platica`** en `sa-east-1` (id `jgszdxqhrbpfjqtqqlpw`).
 - [x] **Migración `init_schema`** aplicada — 9 tablas + RLS + triggers (auto-profile, set_updated_at).
-- [x] **Auth Supabase** (email + password) cableada vía `lib/supabase.ts` + `lib/auth.tsx`.
-- [x] **Edge Function `fetch-exchange-rates`** desplegada (v1, ACTIVE, `verify_jwt=false` para cron).
-- [ ] **pg_cron** que invoque la edge function cada 30 min — pendiente config en Dashboard.
+- [x] **Migración `helper_views`** aplicada — `v_net_worth`, `v_monthly_balance` con `security_invoker=on`.
+- [x] **Auth Supabase** (email + password) cableada vía `lib/supabase.ts` + `lib/auth.tsx` + `lib/hooks/use-profile.ts`.
+- [x] **Edge Function `fetch-exchange-rates`** desplegada (v1, ACTIVE, `verify_jwt=false`). Consume `dolarapi.com`, upsert en `exchange_rates`. Self-healing desde el cliente vía `useExchangeRates`.
+- [x] **Edge Function `categorize-transaction`** desplegada (v1, ACTIVE, `verify_jwt=true`). Claude `sonnet-4-5-20250929` con prompt caching. ⚠️ **Sin `ANTHROPIC_API_KEY` devuelve 500.**
+- [ ] **pg_cron `fetch-exchange-rates`** cada 30 min — pendiente config en Dashboard (mientras tanto, `useExchangeRates` self-heals).
+- [ ] **`ANTHROPIC_API_KEY`** seteada en Supabase secrets — bloquea "Sugerir IA" en `add-transaction`.
+- [ ] **EAS Update `updates.url`** completar con `bunx eas update:configure` (después de `eas-cli init`).
 - [ ] Mercado Pago OAuth — Sprint 4
 - [ ] BYMA / CAFCI — Sprint 3
 - [ ] CSV Cocos Capital — Sprint 4
@@ -254,9 +273,17 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 
 ## Deuda técnica
 
-- `CLAUDE.boilerplate.md` queda como referencia; cuando el equipo defina si Playwright/KATA se usará para algún panel web futuro, decidir si extraer o eliminar.
-- `package.json` aún declara nombre `kata-playwright-boilerplate`. Pendiente renombrar a `mi-platica` (se hace en el commit de Sprint 0).
-- `.gitignore` necesita bloques para artefactos Expo (`.expo/`, `dist/`, `web-build/`) — se agrega en Sprint 0.
+- **App no probada end-to-end en device.** Sprints 0 → 2 cerrados sin validar `bun start` ni Expo Go. Riesgo de mismatch de versiones (Expo SDK 52 + RN 0.76 + React 18.3 fueron hardcodeadas; `bunx expo install --check` puede empujar ajustes).
+- **`assets/icon.png`, `splash.png`, `adaptive-icon.png`, `favicon.png`** son placeholders inexistentes. El build EAS va a fallar hasta que estén los archivos reales.
+- **`claude-sonnet-4-5-20250929` en `categorize-transaction`** — migrar a `claude-sonnet-4-6` cuando esté GA. Solo cambia el `MODEL` const en `supabase/functions/categorize-transaction/index.ts` y redeploy.
+- **`budgets.spent_ars` no se mantiene solo.** Falta trigger SQL que recalcule al insert/update/delete de `transactions` que tienen `category` matcheada. Hoy `BudgetsList` muestra `spent_ars=0` siempre. Sprint 6 (o 2.5 si se quiere antes).
+- **pg_cron no configurado.** `fetch-exchange-rates` solo corre on-demand vía el self-healing de `useExchangeRates`. Para Sprint 3 hay que sumar `update-asset-prices` con cron real.
+- **`CLAUDE.boilerplate.md`** queda como referencia del kata-playwright-boilerplate. Si nunca se usa Playwright en el proyecto, archivar/borrar.
+- **`tests/` (KATA/Playwright)** sigue intacto pero no apunta a la app Mi Platica. Si se decide testear la app móvil con Maestro o Detox, replantear esta carpeta. Si se mantiene para tests web (panel admin futuro), adaptar `tests/components/ui/` cuando exista.
+- **Sin Sentry / observability.** Errores del cliente y de Edge Functions no se reportan. Sprint 3+ es buen momento para sumar `@sentry/react-native` (5k errors/mes free).
+- **Sin onboarding gate para usuarios viejos.** Si un user creó cuenta antes de Sprint 1.5 (no aplica acá, pero general), `profile.name` puede ser null → AuthGate los manda a onboarding. Está bien.
+- **`type-check` del repo entero** corre dos `tsc` en serie (app + test). Lento en CI eventual. Considerar `concurrently` o project references cuando crezca.
+- **EAS `projectId: null`** en `app.json/extra/eas`. Se autocompleta con `bunx eas-cli init`. Sin esto, `eas build` falla.
 
 ---
 
@@ -289,8 +316,6 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 | 4 | Integración Mercado Pago + import CSV brokers | ⏳ |
 | 5 | Asesor financiero IA (chat con contexto completo) | ⏳ |
 | 6 | Deudas, metas y presupuestos avanzados | ⏳ |
-
----
 
 ---
 
