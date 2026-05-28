@@ -470,7 +470,7 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      refresh_positions: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never

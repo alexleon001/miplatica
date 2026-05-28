@@ -28,9 +28,9 @@
 
 ## Sprint actual
 
-**Sprint 3 (portafolio de inversiones) — código completo, sin probar en device** (2026-05-28).
+**Sprint 3 (portafolio de inversiones) — código completo + backend desplegado; falta validar UI en device** (2026-05-28).
 
-Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo Go Android SDK 54). Sprint 3 escrito siguiendo los patrones establecidos (hooks + optimistic + componentes + modal + Edge Function). `type-check:app` limpio en los archivos nuevos (los 4 errores restantes son ruido pre-existente de KATA en `api/`, `cli/`, `app/_layout.tsx`). **Pendiente:** desplegar `update-asset-prices`, configurar crons, y validar el flujo en Expo Go.
+Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo Go Android SDK 54). Sprint 3 escrito siguiendo los patrones establecidos (hooks + optimistic + componentes + modal + Edge Function). Backend live: Edge Function `update-asset-prices` **desplegada** (probada: trajo 1734 cotizaciones reales a `asset_prices`), migración `refresh_positions` **aplicada** (revaloriza posiciones; la Edge Function la llama por RPC). `type-check:app` limpio en los archivos nuevos (los 4 errores restantes son ruido pre-existente de KATA en `api/`, `cli/`, `app/_layout.tsx`). **Pendiente:** configurar pg_cron (15 min) y validar el flujo de inversiones en Expo Go.
 
 ---
 
@@ -75,12 +75,13 @@ Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo
 - [x] **Sprint 3/C** — Componentes `PnLBadge` (pct con flecha + color), `InvestmentRow` (icon + nombre + valor + badge), `PortfolioDistribution` (barra apilada + leyenda por tipo, agregado client-side).
 - [x] **Sprint 3/D** — Pantalla `investments.tsx`: CurrencyToggle + resumen (valor + resultado total) + distribución + lista de posiciones + FAB "+ Nueva".
 - [x] **Sprint 3/E** — Modal `add-investment.tsx` con switch de campos por tipo de instrumento (`instrument.fields`), lookup de precio live por ticker, conversión con la tasa del `usdType` activo, create optimistic.
-- [x] **Sprint 3/F** — Edge Function `update-asset-prices` (best-effort, cron 15min): consume data912.com (acciones/CEDEARs/bonos/ON) + dolarapi (MEP) → upsert en `asset_prices`. **Escrita, NO desplegada.**
+- [x] **Sprint 3/F** — Edge Function `update-asset-prices` (best-effort, cron 15min): consume data912.com (acciones/CEDEARs/bonos/ON) + dolarapi (MEP) → upsert en `asset_prices`. **Desplegada (v1, ACTIVE, `verify_jwt=false`) y probada: 1734 cotizaciones reales.**
+- [x] **Sprint 3/G** — Migración `0003_refresh_positions.sql` **aplicada**: función `public.refresh_positions()` (espejo SQL de `deriveInvestmentValues`; recalcula valor + P&L de mercado/dólar/plazo-fijo con la última tasa MEP). `security definer`, solo `service_role`. La Edge Function `update-asset-prices` la llama por RPC al final (best-effort). Tipos regenerados (`Functions.refresh_positions`).
 
 ## Próxima tarea
 
-**Operativo Sprint 3 (antes de que el portafolio funcione con cotizaciones live):**
-- ⏳ **Desplegar `update-asset-prices`** (`verify_jwt=false`) y configurar pg_cron cada 15 min en horario bursátil. Sin esto, las posiciones usan el costo promedio del usuario como precio (P&L = 0 hasta que haya cotización).
+**Operativo Sprint 3 (lo único que falta para portafolio 100% live):**
+- ⏳ **Configurar pg_cron** para `update-asset-prices` cada 15 min en horario bursátil (la función ya hace upsert de precios + revaloriza posiciones en una sola corrida). Mientras tanto se puede disparar manual con `curl` (ver header de la función).
 - ⏳ **Validar Sprint 3 en Expo Go**: crear una posición de cada tipo, ver distribución + P&L, confirmar que el patrimonio neto (Dashboard) sube con la nueva inversión.
 
 **Sprint 4 — Integración Mercado Pago + import CSV brokers** (próximo bloque de features).
@@ -198,11 +199,7 @@ Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo
 
 > Propuestas derivadas de Sprint 3 (portafolio de inversiones).
 
-1. **Job batch `refresh-positions`** que recalcule `current_value_*`/`profit_loss_*` de todas las posiciones cuando entran nuevas cotizaciones.
-   - Qué resuelve: hoy `deriveInvestmentValues` corre solo al **crear** la posición. Si después `update-asset-prices` trae un precio nuevo, la posición no se actualiza sola (queda con el valor del momento de carga). Falta el paso 7 del sprint.
-   - Cómo: SQL function/trigger sobre `asset_prices` (al upsert, joinea `investments` por ticker y recalcula) **o** segunda Edge Function que corre después del cron de precios. La lógica de `deriveInvestmentValues` habría que portarla a SQL o llamarla desde un Edge job que lea posiciones + precios.
-   - Complejidad: **media-alta** (portar el cálculo ARS/USD + P&L a SQL, o batch en TS).
-   - Sprint sugerido: 3.5 (antes de Sprint 4) — sin esto el "live" del portafolio es a medias.
+1. **Job batch `refresh-positions`** — ✅ HECHO (migración `0003_refresh_positions.sql`, función SQL llamada por RPC desde `update-asset-prices`). Pendiente solo el cron que la dispara periódicamente.
 
 2. **Vista SQL `v_portfolio_by_type`** (`security_invoker=on`) para la distribución.
    - Qué resuelve: hoy `PortfolioDistribution` agrega client-side. Con muchas posiciones conviene una vista pre-agregada (como `v_net_worth`).
@@ -285,7 +282,8 @@ Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo
 - [x] **Auth Supabase** (email + password) cableada vía `lib/supabase.ts` + `lib/auth.tsx` + `lib/hooks/use-profile.ts`.
 - [x] **Edge Function `fetch-exchange-rates`** desplegada (v1, ACTIVE, `verify_jwt=false`). Consume `dolarapi.com`, upsert en `exchange_rates`. Self-healing desde el cliente vía `useExchangeRates`.
 - [x] **Edge Function `categorize-transaction`** desplegada (v1, ACTIVE, `verify_jwt=true`). Claude `sonnet-4-5-20250929` con prompt caching. ⚠️ **Sin `ANTHROPIC_API_KEY` devuelve 500.**
-- [x] **Edge Function `update-asset-prices`** escrita (best-effort: data912 + dolarapi → `asset_prices`). **NO desplegada** — falta `deploy_edge_function` + pg_cron 15 min.
+- [x] **Edge Function `update-asset-prices`** desplegada (v1, ACTIVE, `verify_jwt=false`). data912 + dolarapi → `asset_prices` (probada: 1734 filas). Llama `refresh_positions()` por RPC al final.
+- [x] **Migración `refresh_positions`** aplicada — función que revaloriza posiciones (`security_definer`, solo `service_role`).
 - [ ] **pg_cron `fetch-exchange-rates`** cada 30 min — pendiente config en Dashboard (mientras tanto, `useExchangeRates` self-heals).
 - [ ] **pg_cron `update-asset-prices`** cada 15 min (horario bursátil) — pendiente.
 - [ ] **`ANTHROPIC_API_KEY`** seteada en Supabase secrets — bloquea "Sugerir IA" en `add-transaction`.
@@ -314,7 +312,7 @@ Sprints 0 → 2 completos, pusheados a `main`, **y verificados en device** (Expo
 - **`claude-sonnet-4-5-20250929` en `categorize-transaction`** — migrar a `claude-sonnet-4-6` cuando esté GA. Solo cambia el `MODEL` const en `supabase/functions/categorize-transaction/index.ts` y redeploy.
 - **`budgets.spent_ars` no se mantiene solo.** Falta trigger SQL que recalcule al insert/update/delete de `transactions` que tienen `category` matcheada. Hoy `BudgetsList` muestra `spent_ars=0` siempre. Sprint 6 (o 2.5 si se quiere antes).
 - **pg_cron no configurado.** `fetch-exchange-rates` solo corre on-demand vía el self-healing de `useExchangeRates`. Falta sumar `update-asset-prices` con cron real (y desplegarla).
-- **Posiciones no se revalorizan solas (Sprint 3, paso 7 pendiente).** `deriveInvestmentValues` corre al crear la inversión. Cuando `update-asset-prices` trae precios nuevos, las rows de `investments` NO se actualizan automáticamente → `current_value_*`/`profit_loss_*` quedan congelados al momento de la carga. Falta el job `refresh-positions` (ver Ideas Sprint 3 #1).
+- **Revalorización de posiciones (Sprint 3, paso 7) — RESUELTO vía `refresh_positions()`.** La función SQL (migración `0003`) recalcula `current_value_*`/`profit_loss_*` de todas las posiciones; la llama `update-asset-prices` por RPC tras cada carga de precios. ⚠️ Limitación: solo corre cuando corre `update-asset-prices` → con el cron aún sin configurar, hay que dispararla manual (curl a la función). El plazo fijo, además, solo se revaloriza cuando se ejecuta esa función, no al abrir la app.
 - **`update-asset-prices` depende de data912.com** (fuente gratuita no oficial, sin SLA). Si cambia el shape de la respuesta, ajustar `SOURCES`/`normalize` en la función. FCI (CAFCI) y cripto todavía no tienen fuente conectada.
 - **`CLAUDE.boilerplate.md`** queda como referencia del kata-playwright-boilerplate. Si nunca se usa Playwright en el proyecto, archivar/borrar.
 - **`tests/` (KATA/Playwright)** sigue intacto pero no apunta a la app Mi Platica. Si se decide testear la app móvil con Maestro o Detox, replantear esta carpeta. Si se mantiene para tests web (panel admin futuro), adaptar `tests/components/ui/` cuando exista.

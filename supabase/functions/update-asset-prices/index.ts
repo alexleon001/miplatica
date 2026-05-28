@@ -134,7 +134,18 @@ Deno.serve(async (_req: Request) => {
   const { error } = await supabase.from("asset_prices").upsert(rows, { onConflict: "ticker" });
   if (error) return json({ error: error.message }, 500);
 
-  return json({ ok: true, updated: rows.length, sources: SOURCES.length + (mep ? 1 : 0) });
+  // Revaloriza las posiciones con los precios recién cargados (best-effort:
+  // si la función SQL aún no existe, no rompemos el upsert de precios).
+  let refreshed: number | null = null;
+  try {
+    const { data, error: rpcErr } = await supabase.rpc("refresh_positions");
+    if (rpcErr) console.warn("[update-asset-prices] refresh_positions falló:", rpcErr.message);
+    else refreshed = typeof data === "number" ? data : null;
+  } catch (e) {
+    console.warn("[update-asset-prices] refresh_positions falló:", e);
+  }
+
+  return json({ ok: true, updated: rows.length, refreshed, sources: SOURCES.length + (mep ? 1 : 0) });
 });
 
 function json(body: unknown, status = 200): Response {
