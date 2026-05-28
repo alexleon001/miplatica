@@ -292,4 +292,30 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 
 ---
 
-*Actualizar al cierre de cada sprint o tarea relevante. Última actualización: 2026-05-28.*
+---
+
+## Sesión 2026-05-28 — pausa para testing
+
+Acumulamos Sprints 0 → 2 en una sola sesión, **sin probar la app**. Antes de seguir con Sprint 3, validar el camino feliz end-to-end con Expo Go. Si algo rompe, anotar acá en "Deuda técnica" y arreglar antes de avanzar.
+
+**Checklist de testing operativo:**
+
+- [ ] `bun install` corre limpio
+- [ ] `bunx expo install --check` no reporta deps desalineadas
+- [ ] `bun start` levanta Metro y muestra QR
+- [ ] Escaneo QR con Expo Go → app levanta sin crash
+- [ ] Signup con email/password → redirige a onboarding
+- [ ] Onboarding: completar 4 campos → redirige a Dashboard
+- [ ] Dashboard: muestra "Hola, {alias}", fecha en es-AR, currency toggle
+- [ ] Cambiar toggle ARS / USD / Ambas → re-renderiza montos
+- [ ] Cambiar selector MEP / Blue / Oficial / CCL → barra inferior resalta el activo
+- [ ] "+ Agregar cuenta" → modal → submit → cuenta aparece en lista
+- [ ] Tab Movimientos → ver lista vacía + FAB "+ Nuevo"
+- [ ] Modal add-transaction → completar tipo + monto + descripción + cuenta
+- [ ] Botón "✨ Sugerir categoría con IA" → categoría se prellena (requiere ANTHROPIC_API_KEY en Supabase secrets)
+- [ ] Submit transacción → vuelve a lista, transacción aparece al toque (optimistic), se confirma
+- [ ] Dashboard: el patrimonio neto refleja la nueva transacción (vista SQL `v_net_worth`)
+- [ ] Tab Más → muestra Perfil + Sesión + Cerrar sesión
+- [ ] Cerrar sesión → vuelve a login
+
+*Última actualización: 2026-05-28.*
