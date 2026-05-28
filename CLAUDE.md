@@ -50,24 +50,37 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 - [x] **Sprint 0.5/3** — Currency store (`lib/store/currency.ts` Zustand+AsyncStorage) + `components/CurrencyToggle.tsx` integrado en Dashboard.
 - [x] **Sprint 0.5/4** — TanStack Query + persistor offline (`lib/query-client.ts`, `lib/query-provider.tsx` envolviendo el root, `lib/hooks/use-exchange-rates.ts` como hook de referencia).
 - [x] Dashboard usa el patrón end-to-end: `CurrencyToggle` → `useCurrencyStore` → muestra ARS/USD según display, y `useExchangeRates` cachea la última tasa.
+- [x] **Sprint 1/A** — Migration `0002_helper_views.sql` aplicada (vistas `v_net_worth`, `v_monthly_balance` con `security_invoker = on`). Tipos regenerados.
+- [x] **Sprint 1/B** — `tsconfig.json` split en dos: raíz extiende `expo/tsconfig.base` (app/lib/components/scripts), `tsconfig.test.json` mantiene KATA/Playwright. Scripts `type-check:app` / `type-check:test`.
+- [x] **Sprint 1/C** — `components/MoneyAmount.tsx` reusable (formato es-AR, size sm/md/lg, tone default/positive/negative, consume `useCurrencyStore`).
+- [x] **Sprint 1/D** — `useExchangeRates` self-healing: si la última row no es de hoy, dispara `fetch-exchange-rates` Edge Function (best-effort, no rompe UI si falla).
+- [x] **Sprint 1/E** — Hooks `useAccounts()` (activas) + `useNetWorth()` (lee `v_net_worth`).
+- [x] **Sprint 1/F** — `NetWorthCard` (patrimonio neto + breakdown) + `AccountsList` (lista + CTA "+ Agregar cuenta") + `ExchangeRatesBar` (4 tasas, resalta la activa).
+- [x] **Sprint 1/G** — `app/modals/_layout.tsx` + `app/modals/add-account.tsx` (form name/type/currency/balance; invalidate accounts + net_worth on success).
+- [x] **Sprint 1/H** — Dashboard final: saludo personalizado + fecha en es-AR + CurrencyToggle + NetWorthCard + AccountsList + ExchangeRatesBar.
 
 ## Próxima tarea
 
-**Sprint 1 — Dashboard Patrimonial multi-moneda**
+**Sprint 2 — Transacciones + categorización IA + presupuestos**
 
-1. Hooks: `useAccounts()`, `useNetWorth()` (con cache TanStack Query).
-2. Componente `NetWorthCard` (patrimonio total ARS + USD, variación 30d).
-3. Componente `MoneyAmount` reusable (consume `useCurrencyStore`).
-4. Sección "Mis cuentas" con lista (`accounts`) y CTA "+ Agregar cuenta".
-5. Modal `add-account.tsx` (cuenta manual: name, type, currency, balance inicial).
-6. Sección "Tipo de cambio actual" con todos (oficial/MEP/blue/CCL) — useExchangeRates ya existe.
+1. Edge Function `categorize-transaction` con Claude Sonnet 4.6 (input: description + amount + currency + account_name → JSON con category/subcategory/merchant/confidence/is_recurrent).
+2. `lib/categories.ts` — enum centralizado con label/icon/color por categoría.
+3. Pantalla `transactions.tsx` (lista cronológica + chips de filtro + resumen del mes).
+4. Modal `add-transaction.tsx` con sugerencia IA en vivo.
+5. Hooks `useTransactions`, `useMonthlyBalance` (lee `v_monthly_balance`), `useCreateTransaction` con optimistic update.
+6. `useProfile()` + onboarding al primer login (monedas preferidas, ingresos).
+7. Budgets básicos: tabla ya existe; agregar UI en `more.tsx`.
 
 **Operativo (usuario):**
 - `bun install` para resolver deps Expo/Supabase/Zustand/TanStack Query/expo-updates.
 - `bunx expo install --check` para alinear versiones SDK.
-- `bun start` → QR con Expo Go → probar signup/signin y CurrencyToggle.
+- `bun start` → QR con Expo Go → probar signup/signin, Dashboard con CurrencyToggle, agregar primera cuenta.
 - (Una vez): `bunx eas-cli login` + `bunx eas-cli init` + `bunx eas update:configure` para completar `updates.url` en app.json.
 - Configurar pg_cron en Supabase Dashboard para invocar `fetch-exchange-rates` cada 30 min.
+- (Una vez, antes de Sprint 2): setear `ANTHROPIC_API_KEY` como secret en Supabase Edge Functions:
+  ```
+  bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+  ```
 - (Opcional) `bunx supabase login` para habilitar `bun run db:types`.
 
 ---
@@ -129,6 +142,32 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
    - Cómo: `@tanstack/react-query` + `@tanstack/query-async-storage-persister`. Provider en `_layout.tsx`. Migrar la primera query (patrimonio) en Sprint 1 como pattern de referencia.
    - Complejidad: **media** (setup baja, migración progresiva media)
    - Sprint sugerido: 1 (Dashboard, donde más se nota la latencia).
+
+---
+
+### Sprint 1 — cierre (2026-05-28)
+
+> Propuestas derivadas de Sprint 1 (Dashboard real con NetWorth + AccountsList + ExchangeRatesBar).
+
+1. **`useProfile()` + onboarding al primer login**
+   - Qué resuelve: el user nuevo entra al Dashboard con todos los defaults (`preferred_usd_type=mep`, `currency_display=both`, sin ingresos mensuales). Vale la pena un onboarding de 3 pasos en `app/(auth)/onboarding.tsx` que actualice `profiles` y, además, sirva como gate antes del Dashboard si `profiles.name is null`.
+   - Complejidad: **baja-media**
+   - Sprint sugerido: 1.5 (puente entre Sprint 1 y 2) — debe correr antes de Sprint 2 para que `currency_display` venga del perfil y no del store por default.
+
+2. **Edge Function `categorize-transaction` con Claude Sonnet 4.6**
+   - Qué resuelve: clave del Sprint 2. Acepta `{ description, amount, currency, account_name }`, devuelve `{ category, subcategory, merchant_normalized, confidence, is_recurrent, notes }` parseado a JSON estricto.
+   - Complejidad: **media** (prompt + rate limits + cache de respuestas comunes con Redis o `asset_prices`-like tabla)
+   - Sprint sugerido: 2 — bloquea el modal add-transaction con autosugerencia.
+
+3. **`lib/categories.ts` — diccionario centralizado**
+   - Qué resuelve: hoy `transactions.category` es text libre. Sin un diccionario con label/icon/color/grupo, cada UI inventa su propio mapeo (ya pasó en `AccountsList` con `TYPE_LABELS`). Centralizarlo evita drift.
+   - Complejidad: **baja**
+   - Sprint sugerido: 2 — antes del modal add-transaction.
+
+4. **`useMutation` patterns + optimistic updates**
+   - Qué resuelve: en Sprint 1 el insert de cuenta es sync (`busy=true → await → invalidate`). Para transacciones (que son muchas por día), eso va a parecer lento. Patrón con `onMutate` para actualizar la cache inmediatamente, rollback si falla.
+   - Complejidad: **baja-media**
+   - Sprint sugerido: 2.
 
 ---
 
@@ -211,8 +250,8 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 |---|---|---|
 | 0 | Setup, navegación, Supabase, auth, edge function rates | ✅ done (2026-05-28) |
 | 0.5 | Type-safety (db.types), EAS Update, Currency store, TanStack Query | ✅ done (2026-05-28) |
-| 1 | Dashboard patrimonial multi-moneda | 🚧 próximo |
-| 2 | Transacciones + categorización IA + presupuestos | ⏳ |
+| 1 | Dashboard patrimonial multi-moneda | ✅ done (2026-05-28) |
+| 2 | Transacciones + categorización IA + presupuestos | 🚧 próximo |
 | 3 | Portafolio de inversiones con cotizaciones live | ⏳ |
 | 4 | Integración Mercado Pago + import CSV brokers | ⏳ |
 | 5 | Asesor financiero IA (chat con contexto completo) | ⏳ |

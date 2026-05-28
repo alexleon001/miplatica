@@ -443,7 +443,31 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_monthly_balance: {
+        Row: {
+          balance_ars: number | null
+          expense_ars: number | null
+          income_ars: number | null
+          month: number | null
+          owner_id: string | null
+          year: number | null
+        }
+        Relationships: []
+      }
+      v_net_worth: {
+        Row: {
+          accounts_ars: number | null
+          accounts_usd: number | null
+          debts_ars: number | null
+          debts_usd: number | null
+          investments_ars: number | null
+          investments_usd: number | null
+          net_ars: number | null
+          net_usd: number | null
+          owner_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

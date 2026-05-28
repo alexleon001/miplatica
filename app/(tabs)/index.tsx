@@ -1,70 +1,49 @@
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AccountsList } from "../../components/AccountsList";
 import { CurrencyToggle } from "../../components/CurrencyToggle";
-import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
-import { useCurrencyStore } from "../../lib/store/currency";
+import { ExchangeRatesBar } from "../../components/ExchangeRatesBar";
+import { NetWorthCard } from "../../components/NetWorthCard";
+import { useAuth } from "../../lib/auth";
 import { colors } from "../../lib/colors";
 
+const fechaFmt = new Intl.DateTimeFormat("es-AR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
 export default function DashboardScreen() {
-  const display = useCurrencyStore((s) => s.display);
-  const usdType = useCurrencyStore((s) => s.usdType);
-  const rates = useExchangeRates();
-  const currentRate = rates.data?.[usdType];
+  const { session } = useAuth();
+  const name = session?.user.email?.split("@")[0] ?? "";
 
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <View style={styles.container}>
-        <Text style={styles.greeting}>Hola 👋</Text>
-        <Text style={styles.subtitle}>
-          Acá va a vivir tu Dashboard Patrimonial (Sprint 1).
-        </Text>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={styles.greeting}>Hola{name ? `, ${name}` : ""} 👋</Text>
+          <Text style={styles.date}>{fechaFmt.format(new Date())}</Text>
+        </View>
+
         <CurrencyToggle />
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Patrimonio Total</Text>
-          {(display === "ars" || display === "both") && (
-            <Text style={styles.cardAmountArs}>— ARS</Text>
-          )}
-          {(display === "usd" || display === "both") && (
-            <Text style={styles.cardAmountUsd}>— USD</Text>
-          )}
+        <NetWorthCard />
+        <AccountsList />
+
+        <View style={styles.ratesSection}>
+          <Text style={styles.ratesLabel}>Tipo de cambio hoy</Text>
+          <ExchangeRatesBar />
         </View>
-        <View style={styles.rateRow}>
-          <Text style={styles.rateLabel}>USD {usdType.toUpperCase()}</Text>
-          <Text style={styles.rateValue}>
-            {rates.isLoading
-              ? "..."
-              : currentRate
-                ? `$${currentRate.toLocaleString("es-AR")}`
-                : "sin dato"}
-          </Text>
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { flex: 1, padding: 20, gap: 12 },
+  container: { padding: 20, gap: 16 },
+  header: { gap: 4 },
   greeting: { color: colors.textPrimary, fontSize: 24, fontWeight: "700" },
-  subtitle: { color: colors.textMuted, fontSize: 14, marginBottom: 12 },
-  card: {
-    backgroundColor: colors.surfaceDark,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 4,
-  },
-  cardLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
-  cardAmountArs: { color: colors.ars, fontSize: 28, fontWeight: "700" },
-  cardAmountUsd: { color: colors.usd, fontSize: 18, fontWeight: "500" },
-  rateRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 4,
-    marginTop: 4,
-  },
-  rateLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1 },
-  rateValue: { color: colors.usd, fontSize: 13, fontWeight: "600" },
+  date: { color: colors.textMuted, fontSize: 13, textTransform: "capitalize" },
+  ratesSection: { gap: 8, marginTop: 4 },
+  ratesLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
 });
