@@ -273,8 +273,14 @@ Sprints 0 → 2 completos y pusheados a `main`. Próximo paso es validar end-to-
 
 ## Deuda técnica
 
-- **App no probada end-to-end en device.** Sprints 0 → 2 cerrados sin validar `bun start` ni Expo Go. Riesgo de mismatch de versiones (Expo SDK 52 + RN 0.76 + React 18.3 fueron hardcodeadas; `bunx expo install --check` puede empujar ajustes).
-- **`assets/icon.png`, `splash.png`, `adaptive-icon.png`, `favicon.png`** son placeholders inexistentes. El build EAS va a fallar hasta que estén los archivos reales.
+- **App probada parcialmente** (2026-05-28): `pnpm install` ✅, `pnpm start` levanta Metro y QR ✅. Bloqueos resueltos:
+    - `app.json` declaraba `web` con `favicon: ./assets/favicon.png` inexistente → bundler crasheaba al abrir `--web`. **Fix:** se removió bloque `web` y refs a `assets/` (Expo usa defaults). Si en Sprint 4+ se suma panel web, agregar `react-native-web` + `@expo/metro-runtime` y volver a poner `web` en `app.json`.
+    - Script `web` removido del `package.json`.
+- **Android SDK local no instalado.** `pnpm android` falla con "Default install location not found". Workarounds:
+    - **Expo Go en celular** (más simple) — escanear QR del Metro server.
+    - **EAS Build remoto** (`pnpm dlx eas-cli build --profile development --platform android` → APK que se instala en el celular).
+    - Instalar Android Studio (opcional, solo si el user quiere emulador local).
+- **`assets/icon.png`, `splash.png`, `adaptive-icon.png`** sin archivos reales (Expo usa defaults). Agregar antes del primer EAS Build de production y reactivar refs en `app.json`.
 - **`claude-sonnet-4-5-20250929` en `categorize-transaction`** — migrar a `claude-sonnet-4-6` cuando esté GA. Solo cambia el `MODEL` const en `supabase/functions/categorize-transaction/index.ts` y redeploy.
 - **`budgets.spent_ars` no se mantiene solo.** Falta trigger SQL que recalcule al insert/update/delete de `transactions` que tienen `category` matcheada. Hoy `BudgetsList` muestra `spent_ars=0` siempre. Sprint 6 (o 2.5 si se quiere antes).
 - **pg_cron no configurado.** `fetch-exchange-rates` solo corre on-demand vía el self-healing de `useExchangeRates`. Para Sprint 3 hay que sumar `update-asset-prices` con cron real.
