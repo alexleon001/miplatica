@@ -34,7 +34,11 @@ export default function DebtsScreen() {
         data={debts ?? []}
         keyExtractor={(d) => d.id}
         renderItem={({ item }) => (
-          <DebtItem debt={item} onLongPress={() => confirmDelete(item.name, () => del.mutate(item.id))} />
+          <DebtItem
+            debt={item}
+            onPress={() => router.push({ pathname: "/modals/add-debt", params: { id: item.id } })}
+            onLongPress={() => confirmDelete(item.name, () => del.mutate(item.id))}
+          />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={styles.list}

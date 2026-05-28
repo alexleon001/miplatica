@@ -12,7 +12,15 @@ const TYPE_META: Record<string, { label: string; icon: string }> = {
 
 const dayFmt = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" });
 
-export function DebtItem({ debt, onLongPress }: { debt: Debt; onLongPress?: () => void }) {
+export function DebtItem({
+  debt,
+  onPress,
+  onLongPress,
+}: {
+  debt: Debt;
+  onPress?: () => void;
+  onLongPress?: () => void;
+}) {
   const meta = TYPE_META[debt.type] ?? { label: debt.type, icon: "💸" };
 
   const sub = [
@@ -27,8 +35,9 @@ export function DebtItem({ debt, onLongPress }: { debt: Debt; onLongPress?: () =
 
   return (
     <Pressable
+      onPress={onPress}
       onLongPress={onLongPress}
-      style={({ pressed }) => [styles.row, pressed && onLongPress ? { opacity: 0.6 } : null]}
+      style={({ pressed }) => [styles.row, pressed && (onPress || onLongPress) ? { opacity: 0.6 } : null]}
     >
       <View style={styles.icon}>
         <Text style={styles.iconText}>{meta.icon}</Text>

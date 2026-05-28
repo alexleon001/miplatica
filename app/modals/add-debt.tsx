@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -11,8 +11,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack, useRouter } from "expo-router";
-import { useCreateDebt } from "../../lib/hooks/use-debts";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useCreateDebt, useDebts, useUpdateDebt } from "../../lib/hooks/use-debts";
 import { colors } from "../../lib/colors";
 
 type DebtType = "credit_card" | "loan" | "informal" | "cuotas";
@@ -34,6 +34,10 @@ function parseNum(s: string): number {
 export default function AddDebtModal() {
   const router = useRouter();
   const create = useCreateDebt();
+  const update = useUpdateDebt();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const editing = !!id;
+  const debts = useDebts();
 
   const [name, setName] = useState("");
   const [type, setType] = useState<DebtType>("credit_card");
@@ -43,6 +47,21 @@ export default function AddDebtModal() {
   const [interestRate, setInterestRate] = useState("");
   const [monthlyPayment, setMonthlyPayment] = useState("");
   const [nextPayment, setNextPayment] = useState("");
+
+  useEffect(() => {
+    if (!editing) return;
+    const d = debts.data?.find((x) => x.id === id);
+    if (d) {
+      setName(d.name);
+      setType(d.type as DebtType);
+      setCurrency(d.currency as DebtCurrency);
+      setTotal(String(d.total_amount));
+      setRemaining(String(d.remaining_amount));
+      setInterestRate(d.interest_rate != null ? String(d.interest_rate) : "");
+      setMonthlyPayment(d.monthly_payment != null ? String(d.monthly_payment) : "");
+      setNextPayment(d.next_payment_date ?? "");
+    }
+  }, [editing, id, debts.data]);
 
   async function submit() {
     if (!name.trim()) {
@@ -60,17 +79,20 @@ export default function AddDebtModal() {
       return;
     }
 
+    const payload = {
+      name: name.trim(),
+      type,
+      currency,
+      total_amount: totalNum,
+      remaining_amount: remainingNum,
+      interest_rate: interestRate.trim() ? parseNum(interestRate) : null,
+      monthly_payment: monthlyPayment.trim() ? parseNum(monthlyPayment) : null,
+      next_payment_date: nextPayment.trim() ? nextPayment.trim() : null,
+    };
+
     try {
-      await create.mutateAsync({
-        name: name.trim(),
-        type,
-        currency,
-        total_amount: totalNum,
-        remaining_amount: remainingNum,
-        interest_rate: interestRate.trim() ? parseNum(interestRate) : null,
-        monthly_payment: monthlyPayment.trim() ? parseNum(monthlyPayment) : null,
-        next_payment_date: nextPayment.trim() ? nextPayment.trim() : null,
-      });
+      if (editing) await update.mutateAsync({ id: id!, patch: payload });
+      else await create.mutateAsync(payload);
       router.back();
     } catch (e) {
       Alert.alert("Ups", e instanceof Error ? e.message : "No pude guardar la deuda.");
@@ -79,7 +101,7 @@ export default function AddDebtModal() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Nueva deuda" }} />
+      <Stack.Screen options={{ title: editing ? "Editar deuda" : "Nueva deuda" }} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <Field label="Nombre">
@@ -176,11 +198,17 @@ export default function AddDebtModal() {
           </Field>
 
           <Pressable
-            style={({ pressed }) => [styles.submit, pressed && { opacity: 0.85 }, create.isPending && { opacity: 0.5 }]}
+            style={({ pressed }) => [
+              styles.submit,
+              pressed && { opacity: 0.85 },
+              (create.isPending || update.isPending) && { opacity: 0.5 },
+            ]}
             onPress={submit}
-            disabled={create.isPending}
+            disabled={create.isPending || update.isPending}
           >
-            <Text style={styles.submitText}>{create.isPending ? "Guardando…" : "Guardar deuda"}</Text>
+            <Text style={styles.submitText}>
+              {create.isPending || update.isPending ? "Guardando…" : editing ? "Guardar cambios" : "Guardar deuda"}
+            </Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -33,6 +33,7 @@ export function AccountsList() {
         accounts.map((acc) => (
           <Pressable
             key={acc.id}
+            onPress={() => router.push({ pathname: "/modals/add-account", params: { id: acc.id } })}
             onLongPress={() => confirmDelete(acc.name, () => del.mutate(acc.id))}
             style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
           >

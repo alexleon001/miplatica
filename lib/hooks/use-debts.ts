@@ -3,7 +3,7 @@
 // net_worth.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Tables, TablesInsert } from "../database.types";
+import type { Tables, TablesInsert, TablesUpdate } from "../database.types";
 import { supabase } from "../supabase";
 
 export type Debt = Tables<"debts">;
@@ -43,6 +43,20 @@ export function useCreateDebt() {
       return data;
     },
 
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["debts"] });
+      qc.invalidateQueries({ queryKey: ["net_worth"] });
+    },
+  });
+}
+
+export function useUpdateDebt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: TablesUpdate<"debts"> }) => {
+      const { error } = await supabase.from("debts").update(patch).eq("id", id);
+      if (error) throw error;
+    },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["debts"] });
       qc.invalidateQueries({ queryKey: ["net_worth"] });

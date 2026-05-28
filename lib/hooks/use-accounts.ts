@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { TablesUpdate } from "../database.types";
 import { supabase } from "../supabase";
 
 export function useAccounts() {
@@ -13,6 +14,20 @@ export function useAccounts() {
 
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+export function useUpdateAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: TablesUpdate<"accounts"> }) => {
+      const { error } = await supabase.from("accounts").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["accounts"] });
+      qc.invalidateQueries({ queryKey: ["net_worth"] });
     },
   });
 }

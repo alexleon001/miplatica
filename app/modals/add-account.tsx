@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -11,9 +11,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, Stack } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../lib/auth";
+import { useAccounts, useUpdateAccount } from "../../lib/hooks/use-accounts";
 import { supabase } from "../../lib/supabase";
 import { colors } from "../../lib/colors";
 
@@ -34,12 +35,28 @@ export default function AddAccountModal() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { session } = useAuth();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const editing = !!id;
+  const accounts = useAccounts();
+  const update = useUpdateAccount();
 
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("wallet");
   const [currency, setCurrency] = useState<AccountCurrency>("ARS");
   const [balance, setBalance] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Modo edición: precargar desde la cache de cuentas.
+  useEffect(() => {
+    if (!editing) return;
+    const acc = accounts.data?.find((a) => a.id === id);
+    if (acc) {
+      setName(acc.name);
+      setType(acc.type as AccountType);
+      setCurrency(acc.currency as AccountCurrency);
+      setBalance(String(acc.balance_amount));
+    }
+  }, [editing, id, accounts.data]);
 
   async function submit() {
     if (!session?.user.id) {
@@ -58,29 +75,42 @@ export default function AddAccountModal() {
     }
 
     setBusy(true);
-    const { error } = await supabase.from("accounts").insert({
-      owner_id: session.user.id,
-      name: name.trim(),
-      type,
-      currency,
-      balance_amount: balanceNum,
-      balance_updated_at: new Date().toISOString(),
-    });
-    setBusy(false);
-
-    if (error) {
-      Alert.alert("Ups", error.message);
-      return;
+    try {
+      if (editing) {
+        await update.mutateAsync({
+          id: id!,
+          patch: {
+            name: name.trim(),
+            type,
+            currency,
+            balance_amount: balanceNum,
+            balance_updated_at: new Date().toISOString(),
+          },
+        });
+      } else {
+        const { error } = await supabase.from("accounts").insert({
+          owner_id: session.user.id,
+          name: name.trim(),
+          type,
+          currency,
+          balance_amount: balanceNum,
+          balance_updated_at: new Date().toISOString(),
+        });
+        if (error) throw error;
+        await queryClient.invalidateQueries({ queryKey: ["accounts"] });
+        await queryClient.invalidateQueries({ queryKey: ["net_worth"] });
+      }
+      router.back();
+    } catch (e) {
+      Alert.alert("Ups", e instanceof Error ? e.message : "No pude guardar la cuenta.");
+    } finally {
+      setBusy(false);
     }
-
-    await queryClient.invalidateQueries({ queryKey: ["accounts"] });
-    await queryClient.invalidateQueries({ queryKey: ["net_worth"] });
-    router.back();
   }
 
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Nueva cuenta" }} />
+      <Stack.Screen options={{ title: editing ? "Editar cuenta" : "Nueva cuenta" }} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -144,7 +174,7 @@ export default function AddAccountModal() {
             onPress={submit}
             disabled={busy}
           >
-            <Text style={styles.submitText}>{busy ? "Guardando…" : "Guardar cuenta"}</Text>
+            <Text style={styles.submitText}>{busy ? "Guardando…" : editing ? "Guardar cambios" : "Guardar cuenta"}</Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
