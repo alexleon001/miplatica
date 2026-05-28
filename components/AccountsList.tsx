@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useAccounts } from "../lib/hooks/use-accounts";
 import { MoneyAmount } from "./MoneyAmount";
+import { RowsSkeleton } from "./Skeleton";
 import { colors } from "../lib/colors";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -21,7 +22,7 @@ export function AccountsList() {
       <Text style={styles.sectionLabel}>Mis cuentas</Text>
 
       {isLoading ? (
-        <Text style={styles.muted}>Cargando…</Text>
+        <RowsSkeleton count={2} />
       ) : !accounts || accounts.length === 0 ? (
         <Text style={styles.muted}>
           Todavía no agregaste cuentas. Empezá con la primera.

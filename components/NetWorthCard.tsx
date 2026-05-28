@@ -5,6 +5,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useNetWorth } from "../lib/hooks/use-net-worth";
 import { MoneyAmount } from "./MoneyAmount";
+import { Skeleton } from "./Skeleton";
 import { StateMessage } from "./StateMessage";
 import { colors } from "../lib/colors";
 
@@ -20,7 +21,10 @@ export function NetWorthCard() {
       {isError ? (
         <StateMessage kind="error" message="No pude cargar el patrimonio." onRetry={() => refetch()} />
       ) : isLoading ? (
-        <Text style={styles.loading}>Cargando…</Text>
+        <View style={styles.loadingWrap}>
+          <Skeleton width={200} height={34} />
+          <Skeleton width={140} height={16} />
+        </View>
       ) : (
         <MoneyAmount ars={netArs} usd={netUsd} size="lg" />
       )}
@@ -54,7 +58,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
-  loading: { color: colors.textMuted, fontSize: 18 },
+  loadingWrap: { gap: 8, marginVertical: 2 },
   breakdown: { marginTop: 12, gap: 6, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   rowLabel: { color: colors.textMuted, fontSize: 13 },

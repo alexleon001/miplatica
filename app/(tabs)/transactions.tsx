@@ -3,6 +3,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MoneyAmount } from "../../components/MoneyAmount";
+import { RowsSkeleton } from "../../components/Skeleton";
 import { StateMessage } from "../../components/StateMessage";
 import { TransactionItem } from "../../components/TransactionItem";
 import { useMonthlyBalance } from "../../lib/hooks/use-monthly-balance";
@@ -69,11 +70,10 @@ export default function TransactionsScreen() {
         ListEmptyComponent={
           isError ? (
             <StateMessage kind="error" message="No pude cargar los movimientos." onRetry={() => refetch()} />
+          ) : isLoading ? (
+            <RowsSkeleton count={6} />
           ) : (
-            <StateMessage
-              kind={isLoading ? "loading" : "empty"}
-              message={isLoading ? "Cargando…" : "Todavía no hay movimientos. Agregá el primero."}
-            />
+            <StateMessage kind="empty" message="Todavía no hay movimientos. Agregá el primero." />
           )
         }
       />

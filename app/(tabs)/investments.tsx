@@ -7,6 +7,7 @@ import { InvestmentRow } from "../../components/InvestmentRow";
 import { MoneyAmount } from "../../components/MoneyAmount";
 import { PnLBadge } from "../../components/PnLBadge";
 import { PortfolioDistribution } from "../../components/PortfolioDistribution";
+import { RowsSkeleton } from "../../components/Skeleton";
 import { StateMessage } from "../../components/StateMessage";
 import { useInvestments } from "../../lib/hooks/use-investments";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
@@ -66,11 +67,10 @@ export default function InvestmentsScreen() {
         ListEmptyComponent={
           isError ? (
             <StateMessage kind="error" message="No pude cargar las inversiones." onRetry={() => refetch()} />
+          ) : isLoading ? (
+            <RowsSkeleton count={5} />
           ) : (
-            <StateMessage
-              kind={isLoading ? "loading" : "empty"}
-              message={isLoading ? "Cargando…" : "Todavía no cargaste inversiones. Sumá tu primera posición."}
-            />
+            <StateMessage kind="empty" message="Todavía no cargaste inversiones. Sumá tu primera posición." />
           )
         }
       />
