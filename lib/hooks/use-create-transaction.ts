@@ -81,6 +81,7 @@ export function useCreateTransaction() {
       qc.invalidateQueries({ queryKey: ["monthly_balance"] });
       qc.invalidateQueries({ queryKey: ["net_worth"] });
       qc.invalidateQueries({ queryKey: ["accounts"] });
+      qc.invalidateQueries({ queryKey: ["budgets"] });
     },
   });
 }

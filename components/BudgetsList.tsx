@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { categoryById } from "../lib/categories";
 import { useBudgets } from "../lib/hooks/use-budgets";
 import { colors } from "../lib/colors";
@@ -7,15 +8,28 @@ const fmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 
 export function BudgetsList() {
   const { data: budgets, isLoading } = useBudgets();
+  const router = useRouter();
+
+  const cta = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Agregar presupuesto"
+      style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
+      onPress={() => router.push("/modals/add-budget")}
+    >
+      <Text style={styles.ctaText}>+ Agregar presupuesto</Text>
+    </Pressable>
+  );
 
   if (isLoading) {
     return <Text style={styles.muted}>Cargando presupuestos…</Text>;
   }
   if (!budgets || budgets.length === 0) {
     return (
-      <Text style={styles.muted}>
-        Aún no configuraste presupuestos. (UI de creación viene en Sprint 6.)
-      </Text>
+      <View style={styles.list}>
+        <Text style={styles.muted}>Aún no configuraste presupuestos. Creá el primero.</Text>
+        {cta}
+      </View>
     );
   }
 
@@ -44,6 +58,7 @@ export function BudgetsList() {
           </View>
         );
       })}
+      {cta}
     </View>
   );
 }
@@ -51,6 +66,15 @@ export function BudgetsList() {
 const styles = StyleSheet.create({
   list: { gap: 14 },
   muted: { color: colors.textMuted, fontSize: 13 },
+  cta: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  ctaText: { color: colors.primary, fontWeight: "600" },
   row: { gap: 6 },
   head: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   label: { color: colors.textPrimary, fontSize: 14, fontWeight: "600" },
