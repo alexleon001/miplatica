@@ -14,16 +14,9 @@
     "android": {
       "package": "com.alexleon001.miplatica"
     },
-    "plugins": ["expo-router", "expo-updates"],
+    "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": true
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "fallbackToCacheTimeout": 0,
-      "checkAutomatically": "ON_LOAD"
     },
     "extra": {
       "router": {

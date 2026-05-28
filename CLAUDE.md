@@ -273,9 +273,10 @@ Sprints 0 → 2 completos y pusheados a `main`. Próximo paso es validar end-to-
 
 ## Deuda técnica
 
-- **App probada parcialmente** (2026-05-28): `pnpm install` ✅, `pnpm start` levanta Metro y QR ✅. Bloqueos resueltos:
+- **App probada parcialmente** (2026-05-28): `pnpm install` ✅, `pnpm start` levanta Metro y QR ✅. Expo Go abre el bundle pero **antes de levantar la UI**, `expo-updates` con `checkAutomatically: ON_LOAD` intenta bajar update remoto del endpoint default → `java.io.IOException: Failed to download remote update`. Bloqueos resueltos:
     - `app.json` declaraba `web` con `favicon: ./assets/favicon.png` inexistente → bundler crasheaba al abrir `--web`. **Fix:** se removió bloque `web` y refs a `assets/` (Expo usa defaults). Si en Sprint 4+ se suma panel web, agregar `react-native-web` + `@expo/metro-runtime` y volver a poner `web` en `app.json`.
     - Script `web` removido del `package.json`.
+    - **Plugin `expo-updates` + bloque `updates` + `runtimeVersion`** removidos del `app.json`. Sin `updates.url` configurada (porque no se corrió `eas init`), `expo-updates` arrancaba al boot, intentaba pegarle a un endpoint inexistente y crasheaba con `IOException`. Se reactiva automáticamente cuando se corra `pnpm dlx eas-cli init` + `pnpm dlx eas update:configure` — esos comandos vuelven a meter plugin + URL + runtimeVersion en `app.json`. La dep `expo-updates` se mantiene en `package.json` (no estorba; futuras builds nativas la usan).
 - **Android SDK local no instalado.** `pnpm android` falla con "Default install location not found". Workarounds:
     - **Expo Go en celular** (más simple) — escanear QR del Metro server.
     - **EAS Build remoto** (`pnpm dlx eas-cli build --profile development --platform android` → APK que se instala en el celular).
