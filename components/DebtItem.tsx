@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { Debt } from "../lib/hooks/use-debts";
 import { MoneyAmount } from "./MoneyAmount";
 import { colors } from "../lib/colors";
@@ -12,7 +12,7 @@ const TYPE_META: Record<string, { label: string; icon: string }> = {
 
 const dayFmt = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" });
 
-export function DebtItem({ debt }: { debt: Debt }) {
+export function DebtItem({ debt, onLongPress }: { debt: Debt; onLongPress?: () => void }) {
   const meta = TYPE_META[debt.type] ?? { label: debt.type, icon: "💸" };
 
   const sub = [
@@ -26,7 +26,10 @@ export function DebtItem({ debt }: { debt: Debt }) {
   const remainingUsd = debt.currency === "USD" ? debt.remaining_amount : null;
 
   return (
-    <View style={styles.row}>
+    <Pressable
+      onLongPress={onLongPress}
+      style={({ pressed }) => [styles.row, pressed && onLongPress ? { opacity: 0.6 } : null]}
+    >
       <View style={styles.icon}>
         <Text style={styles.iconText}>{meta.icon}</Text>
       </View>
@@ -41,7 +44,7 @@ export function DebtItem({ debt }: { debt: Debt }) {
       </View>
 
       <MoneyAmount ars={remainingArs} usd={remainingUsd} size="sm" tone="negative" />
-    </View>
+    </Pressable>
   );
 }
 

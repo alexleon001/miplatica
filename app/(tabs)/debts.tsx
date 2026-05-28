@@ -7,14 +7,16 @@ import { DebtItem } from "../../components/DebtItem";
 import { MoneyAmount } from "../../components/MoneyAmount";
 import { RowsSkeleton } from "../../components/Skeleton";
 import { StateMessage } from "../../components/StateMessage";
-import { useDebts } from "../../lib/hooks/use-debts";
+import { useDebts, useDeleteDebt } from "../../lib/hooks/use-debts";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
+import { confirmDelete } from "../../lib/confirm";
 import { colors } from "../../lib/colors";
 
 export default function DebtsScreen() {
   const router = useRouter();
   const { data: debts, isLoading, isError, refetch } = useDebts();
   const { refreshing, onRefresh } = usePullRefresh();
+  const del = useDeleteDebt();
 
   const totals = useMemo(() => {
     let ars = 0;
@@ -31,7 +33,9 @@ export default function DebtsScreen() {
       <FlatList
         data={debts ?? []}
         keyExtractor={(d) => d.id}
-        renderItem={({ item }) => <DebtItem debt={item} />}
+        renderItem={({ item }) => (
+          <DebtItem debt={item} onLongPress={() => confirmDelete(item.name, () => del.mutate(item.id))} />
+        )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={styles.list}
         refreshControl={

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { useAccounts } from "../lib/hooks/use-accounts";
+import { useAccounts, useDeleteAccount } from "../lib/hooks/use-accounts";
+import { confirmDelete } from "../lib/confirm";
 import { MoneyAmount } from "./MoneyAmount";
 import { RowsSkeleton } from "./Skeleton";
 import { colors } from "../lib/colors";
@@ -16,6 +17,7 @@ const TYPE_LABELS: Record<string, string> = {
 export function AccountsList() {
   const { data: accounts, isLoading } = useAccounts();
   const router = useRouter();
+  const del = useDeleteAccount();
 
   return (
     <View style={styles.section}>
@@ -29,7 +31,11 @@ export function AccountsList() {
         </Text>
       ) : (
         accounts.map((acc) => (
-          <View key={acc.id} style={styles.row}>
+          <Pressable
+            key={acc.id}
+            onLongPress={() => confirmDelete(acc.name, () => del.mutate(acc.id))}
+            style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
+          >
             <View style={{ flex: 1 }}>
               <Text style={styles.accountName}>{acc.name}</Text>
               <Text style={styles.accountType}>
@@ -41,7 +47,7 @@ export function AccountsList() {
             ) : (
               <MoneyAmount ars={null} usd={acc.balance_amount} size="sm" />
             )}
-          </View>
+          </Pressable>
         ))
       )}
 

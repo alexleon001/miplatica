@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { categoryById } from "../lib/categories";
 import type { Transaction } from "../lib/hooks/use-transactions";
 import { MoneyAmount } from "./MoneyAmount";
@@ -6,7 +6,7 @@ import { colors } from "../lib/colors";
 
 const dayFmt = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" });
 
-export function TransactionItem({ tx }: { tx: Transaction }) {
+export function TransactionItem({ tx, onLongPress }: { tx: Transaction; onLongPress?: () => void }) {
   const cat = categoryById(tx.category);
   const isIncome = tx.type === "income";
   const tone = isIncome ? "positive" : tx.type === "expense" ? "negative" : "default";
@@ -16,7 +16,10 @@ export function TransactionItem({ tx }: { tx: Transaction }) {
   const signedUsd = tx.amount_usd != null ? (isIncome ? tx.amount_usd : -tx.amount_usd) : null;
 
   return (
-    <View style={styles.row}>
+    <Pressable
+      onLongPress={onLongPress}
+      style={({ pressed }) => [styles.row, pressed && onLongPress ? { opacity: 0.6 } : null]}
+    >
       <View style={[styles.icon, { backgroundColor: (cat?.color ?? colors.border) + "33" }]}>
         <Text style={styles.iconText}>{cat?.icon ?? "📦"}</Text>
       </View>
@@ -31,7 +34,7 @@ export function TransactionItem({ tx }: { tx: Transaction }) {
       </View>
 
       <MoneyAmount ars={signedArs} usd={signedUsd} size="sm" tone={tone} />
-    </View>
+    </Pressable>
   );
 }
 

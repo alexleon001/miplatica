@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Tables } from "../database.types";
 import { supabase } from "../supabase";
 
@@ -16,6 +16,20 @@ export function useInvestments() {
 
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+export function useDeleteInvestment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("investments").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["investments"] });
+      qc.invalidateQueries({ queryKey: ["net_worth"] });
     },
   });
 }

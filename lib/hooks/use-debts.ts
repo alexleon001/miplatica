@@ -49,3 +49,18 @@ export function useCreateDebt() {
     },
   });
 }
+
+// Soft-delete: marca is_active=false.
+export function useDeleteDebt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("debts").update({ is_active: false }).eq("id", id);
+      if (error) throw error;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["debts"] });
+      qc.invalidateQueries({ queryKey: ["net_worth"] });
+    },
+  });
+}

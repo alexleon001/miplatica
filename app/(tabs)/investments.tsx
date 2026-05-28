@@ -9,14 +9,16 @@ import { PnLBadge } from "../../components/PnLBadge";
 import { PortfolioDistribution } from "../../components/PortfolioDistribution";
 import { RowsSkeleton } from "../../components/Skeleton";
 import { StateMessage } from "../../components/StateMessage";
-import { useInvestments } from "../../lib/hooks/use-investments";
+import { useDeleteInvestment, useInvestments } from "../../lib/hooks/use-investments";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
+import { confirmDelete } from "../../lib/confirm";
 import { colors } from "../../lib/colors";
 
 export default function InvestmentsScreen() {
   const router = useRouter();
   const { data: investments, isLoading, isError, refetch } = useInvestments();
   const { refreshing, onRefresh } = usePullRefresh();
+  const del = useDeleteInvestment();
 
   const summary = useMemo(() => {
     const list = investments ?? [];
@@ -39,7 +41,9 @@ export default function InvestmentsScreen() {
       <FlatList
         data={investments ?? []}
         keyExtractor={(i) => i.id}
-        renderItem={({ item }) => <InvestmentRow inv={item} />}
+        renderItem={({ item }) => (
+          <InvestmentRow inv={item} onLongPress={() => confirmDelete(item.name, () => del.mutate(item.id))} />
+        )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={styles.list}
         refreshControl={

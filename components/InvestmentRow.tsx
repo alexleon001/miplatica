@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { instrumentById } from "../lib/instruments";
 import type { Investment } from "../lib/hooks/use-investments";
 import { MoneyAmount } from "./MoneyAmount";
@@ -7,7 +7,7 @@ import { colors } from "../lib/colors";
 
 const qtyFmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 4 });
 
-export function InvestmentRow({ inv }: { inv: Investment }) {
+export function InvestmentRow({ inv, onLongPress }: { inv: Investment; onLongPress?: () => void }) {
   const instrument = instrumentById(inv.type);
 
   const subtitle = [
@@ -18,7 +18,10 @@ export function InvestmentRow({ inv }: { inv: Investment }) {
     .join(" · ");
 
   return (
-    <View style={styles.row}>
+    <Pressable
+      onLongPress={onLongPress}
+      style={({ pressed }) => [styles.row, pressed && onLongPress ? { opacity: 0.6 } : null]}
+    >
       <View style={[styles.icon, { backgroundColor: (instrument?.color ?? colors.border) + "33" }]}>
         <Text style={styles.iconText}>{instrument?.icon ?? "💎"}</Text>
       </View>
@@ -36,7 +39,7 @@ export function InvestmentRow({ inv }: { inv: Investment }) {
         <MoneyAmount ars={inv.current_value_ars} usd={inv.current_value_usd} size="sm" />
         <PnLBadge pct={inv.profit_loss_pct} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 

@@ -8,7 +8,8 @@ import { StateMessage } from "../../components/StateMessage";
 import { TransactionItem } from "../../components/TransactionItem";
 import { useMonthlyBalance } from "../../lib/hooks/use-monthly-balance";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
-import { useTransactions } from "../../lib/hooks/use-transactions";
+import { useDeleteTransaction, useTransactions } from "../../lib/hooks/use-transactions";
+import { confirmDelete } from "../../lib/confirm";
 import { colors } from "../../lib/colors";
 
 type Filter = "all" | "income" | "expense";
@@ -25,6 +26,7 @@ export default function TransactionsScreen() {
   const { data: txs, isLoading, isError, refetch } = useTransactions();
   const monthly = useMonthlyBalance();
   const { refreshing, onRefresh } = usePullRefresh();
+  const del = useDeleteTransaction();
 
   const filtered = useMemo(() => {
     if (!txs) return [];
@@ -61,7 +63,14 @@ export default function TransactionsScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(t) => t.id}
-        renderItem={({ item }) => <TransactionItem tx={item} />}
+        renderItem={({ item }) => (
+          <TransactionItem
+            tx={item}
+            onLongPress={() =>
+              confirmDelete(item.merchant ?? item.description ?? "este movimiento", () => del.mutate(item.id))
+            }
+          />
+        )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={styles.list}
         refreshControl={

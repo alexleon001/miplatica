@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../supabase";
 
 export function useAccounts() {
@@ -13,6 +13,22 @@ export function useAccounts() {
 
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+// Soft-delete: marca is_active=false (las transacciones referencian la cuenta
+// con on delete restrict, así que no se borra físicamente).
+export function useDeleteAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("accounts").update({ is_active: false }).eq("id", id);
+      if (error) throw error;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["accounts"] });
+      qc.invalidateQueries({ queryKey: ["net_worth"] });
     },
   });
 }

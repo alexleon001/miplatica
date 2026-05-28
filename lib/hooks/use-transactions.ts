@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Tables } from "../database.types";
 import { supabase } from "../supabase";
 
@@ -19,6 +19,23 @@ export function useTransactions(limit: number = DEFAULT_LIMIT) {
 
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+export function useDeleteTransaction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("transactions").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["monthly_balance"] });
+      qc.invalidateQueries({ queryKey: ["net_worth"] });
+      qc.invalidateQueries({ queryKey: ["accounts"] });
+      qc.invalidateQueries({ queryKey: ["budgets"] });
     },
   });
 }
