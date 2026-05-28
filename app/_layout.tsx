@@ -3,14 +3,17 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "../lib/auth";
+import { QueryProvider } from "../lib/query-provider";
 import { colors } from "../lib/colors";
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <StatusBar style="light" />
-      <AuthGate />
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <StatusBar style="light" />
+        <AuthGate />
+      </AuthProvider>
+    </QueryProvider>
   );
 }
 
