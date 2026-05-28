@@ -9,7 +9,7 @@
 
 | Capa | Tecnología | Versión / Notas |
 |---|---|---|
-| App móvil | React Native + Expo + Expo Router | Expo SDK 52, RN 0.76, React 18.3 |
+| App móvil | React Native + Expo + Expo Router | Expo SDK 54, RN 0.81, React 19.1 |
 | Lenguaje | TypeScript | 5.8+ (strict, `noEmit`) |
 | Runtime / Package manager | Bun | 1.x (heredado del boilerplate KATA) |
 | Backend | Supabase (Postgres 17 + Auth + Edge Functions + Storage) | proyecto `mi-platica` (`jgszdxqhrbpfjqtqqlpw`) en `sa-east-1` |
