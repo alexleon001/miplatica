@@ -58,30 +58,36 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 - [x] **Sprint 1/F** — `NetWorthCard` (patrimonio neto + breakdown) + `AccountsList` (lista + CTA "+ Agregar cuenta") + `ExchangeRatesBar` (4 tasas, resalta la activa).
 - [x] **Sprint 1/G** — `app/modals/_layout.tsx` + `app/modals/add-account.tsx` (form name/type/currency/balance; invalidate accounts + net_worth on success).
 - [x] **Sprint 1/H** — Dashboard final: saludo personalizado + fecha en es-AR + CurrencyToggle + NetWorthCard + AccountsList + ExchangeRatesBar.
+- [x] **Sprint 1.5** — `useProfile` + `useUpdateProfile` hooks; pantalla `onboarding.tsx` (4 campos: nombre, ingreso, dólar preferido, display). `AuthGate` redirige a onboarding si `profile.name is null`; sincroniza el currency store con `profile.preferred_usd_type` + `profile.currency_display`.
+- [x] **Sprint 2/A** — `lib/categories.ts` con 19 categorías tipadas (label/icon emoji/color/group). Helpers `categoryById`, `categoriesByGroup`, `CATEGORY_IDS`.
+- [x] **Sprint 2/B** — Edge Function `categorize-transaction` desplegada (v1, ACTIVE, `verify_jwt=true`). Usa Claude (`claude-sonnet-4-5-20250929` por ahora; cambiar a sonnet-4-6 cuando esté GA) con **prompt caching** sobre el system prompt. Fallback robusto si el modelo inventa categorías o devuelve JSON inválido. **Requiere `ANTHROPIC_API_KEY` en Supabase secrets.**
+- [x] **Sprint 2/C** — `lib/hooks/use-transactions.ts`, `use-monthly-balance.ts` (lee `v_monthly_balance`), `use-create-transaction.ts` (optimistic update con rollback), `use-categorize-transaction.ts`.
+- [x] **Sprint 2/D** — `components/TransactionItem.tsx` (icon + label + signed MoneyAmount). Pantalla `transactions.tsx` con resumen del mes (income/expense/balance), chips de filtro, FAB "+ Nuevo".
+- [x] **Sprint 2/E** — `app/modals/add-transaction.tsx` con flujo: tipo + monto + descripción → botón ✨ "Sugerir categoría con IA" → category chips → submit con optimistic insert.
+- [x] **Sprint 2/F** — `lib/hooks/use-budgets.ts` + `components/BudgetsList.tsx` (barra de progreso con colores por umbral 80%/100%+). `more.tsx` integra BudgetsList + sección Perfil + Cerrar sesión.
 
 ## Próxima tarea
 
-**Sprint 2 — Transacciones + categorización IA + presupuestos**
+**Sprint 3 — Portafolio de inversiones con cotizaciones live**
 
-1. Edge Function `categorize-transaction` con Claude Sonnet 4.6 (input: description + amount + currency + account_name → JSON con category/subcategory/merchant/confidence/is_recurrent).
-2. `lib/categories.ts` — enum centralizado con label/icon/color por categoría.
-3. Pantalla `transactions.tsx` (lista cronológica + chips de filtro + resumen del mes).
-4. Modal `add-transaction.tsx` con sugerencia IA en vivo.
-5. Hooks `useTransactions`, `useMonthlyBalance` (lee `v_monthly_balance`), `useCreateTransaction` con optimistic update.
-6. `useProfile()` + onboarding al primer login (monedas preferidas, ingresos).
-7. Budgets básicos: tabla ya existe; agregar UI en `more.tsx`.
+1. Edge Function `update-asset-prices` (cron 15min): consume BYMA + CAFCI + dolarapi → upserts en `asset_prices`.
+2. `lib/instruments.ts` — diccionario de tipos de instrumentos (fci/cedear/accion/plazo_fijo/on/bono/lecap/dolar_mep) con campos requeridos por tipo.
+3. Hooks `useInvestments`, `useCreateInvestment` (optimistic), `useAssetPrice(ticker)`.
+4. Componentes `PnLBadge`, `InvestmentRow`, `PortfolioDistribution` (gráfico simple por tipo).
+5. Pantalla `investments.tsx`: resumen del portafolio + distribución + lista de posiciones.
+6. Modal `add-investment.tsx` con switch por tipo (FCI vs CEDEAR vs Plazo Fijo vs MEP).
+7. Job batch: refrescar `current_value_*` de las posiciones al levantar cotizaciones.
 
-**Operativo (usuario):**
-- `bun install` para resolver deps Expo/Supabase/Zustand/TanStack Query/expo-updates.
-- `bunx expo install --check` para alinear versiones SDK.
-- `bun start` → QR con Expo Go → probar signup/signin, Dashboard con CurrencyToggle, agregar primera cuenta.
-- (Una vez): `bunx eas-cli login` + `bunx eas-cli init` + `bunx eas update:configure` para completar `updates.url` en app.json.
-- Configurar pg_cron en Supabase Dashboard para invocar `fetch-exchange-rates` cada 30 min.
-- (Una vez, antes de Sprint 2): setear `ANTHROPIC_API_KEY` como secret en Supabase Edge Functions:
+**Operativo (usuario, antes de Sprint 3 funcional):**
+- ⚠️ **Setear `ANTHROPIC_API_KEY` en Supabase secrets** (sin esto, modal add-transaction "Sugerir con IA" devuelve 500):
   ```
+  bunx supabase login
+  bunx supabase link --project-ref jgszdxqhrbpfjqtqqlpw
   bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
   ```
-- (Opcional) `bunx supabase login` para habilitar `bun run db:types`.
+- `bun install` (deps de Sprint 2: ninguna nueva).
+- Configurar pg_cron para `fetch-exchange-rates` cada 30 min.
+- (Sprint 3) configurar pg_cron para `update-asset-prices` cada 15 min en horario bursátil.
 
 ---
 
@@ -142,6 +148,32 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
    - Cómo: `@tanstack/react-query` + `@tanstack/query-async-storage-persister`. Provider en `_layout.tsx`. Migrar la primera query (patrimonio) en Sprint 1 como pattern de referencia.
    - Complejidad: **media** (setup baja, migración progresiva media)
    - Sprint sugerido: 1 (Dashboard, donde más se nota la latencia).
+
+---
+
+### Sprint 2 — cierre (2026-05-28)
+
+> Propuestas derivadas de Sprint 2 (transacciones + IA + budgets MVP).
+
+1. **Edge Function `update-asset-prices`** (cron 15 min en horario bursátil)
+   - Qué resuelve: Sprint 3 necesita cotizaciones live para CEDEARs, FCI y MEP. Sin cron, el user las ve stale. Patrón análogo a `fetch-exchange-rates` (ya probado, OK).
+   - Complejidad: **media** (3 fuentes: BYMA + CAFCI + dolarapi → normalizar a `asset_prices`)
+   - Sprint sugerido: 3
+
+2. **Componente `PnLBadge` reusable** (variación con color)
+   - Qué resuelve: Sprint 3 lo necesita por cada posición. Sprint 1 retrofit lo usaría también para "variación 30d del patrimonio". Centralizá colores + formato.
+   - Complejidad: **baja**
+   - Sprint sugerido: 3 (early, antes de InvestmentRow)
+
+3. **Ajuste por inflación en cards de variación**
+   - Qué resuelve: regla del super prompt #5 ("rendimientos históricos: siempre IPC"). Mostrar "+15% nominal / −2% real" donde aplique. Requiere endpoint de IPC mensual (ej `https://api.argentinadatos.com/v1/finanzas/indices/inflacion`).
+   - Complejidad: **media-alta**
+   - Sprint sugerido: 3 o 4 (depende de qué tan crítica sea la métrica real en el portafolio inicial)
+
+4. **Modal `add-budget.tsx` + invalidaciones en cascada al crear/editar transacciones de la categoría**
+   - Qué resuelve: hoy `BudgetsList` solo muestra; no se pueden crear desde UI. Cuando esté el modal, el `useCreateTransaction` también debería invalidar `budgets` para que `spent_ars` se refleje en tiempo real (hoy `spent_ars` no se actualiza automáticamente — viene de un trigger pendiente).
+   - Complejidad: **baja** (modal) + **media** (trigger SQL que mantiene `budgets.spent_ars` consistente)
+   - Sprint sugerido: 6 (per super prompt) — o adelantarlo a 2.5 si quisieras presupuestos vivos antes.
 
 ---
 
@@ -251,8 +283,9 @@ Objetivo: proyecto corriendo en Expo Go con navegación a 5 tabs, Supabase conec
 | 0 | Setup, navegación, Supabase, auth, edge function rates | ✅ done (2026-05-28) |
 | 0.5 | Type-safety (db.types), EAS Update, Currency store, TanStack Query | ✅ done (2026-05-28) |
 | 1 | Dashboard patrimonial multi-moneda | ✅ done (2026-05-28) |
-| 2 | Transacciones + categorización IA + presupuestos | 🚧 próximo |
-| 3 | Portafolio de inversiones con cotizaciones live | ⏳ |
+| 1.5 | Onboarding al primer login + sincronización con profile | ✅ done (2026-05-28) |
+| 2 | Transacciones + categorización IA + presupuestos | ✅ done (2026-05-28) |
+| 3 | Portafolio de inversiones con cotizaciones live | 🚧 próximo |
 | 4 | Integración Mercado Pago + import CSV brokers | ⏳ |
 | 5 | Asesor financiero IA (chat con contexto completo) | ⏳ |
 | 6 | Deudas, metas y presupuestos avanzados | ⏳ |

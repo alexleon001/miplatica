@@ -3,7 +3,13 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "../lib/auth";
+import { useProfile } from "../lib/hooks/use-profile";
 import { QueryProvider } from "../lib/query-provider";
+import {
+  type CurrencyDisplay,
+  type UsdType,
+  useCurrencyStore,
+} from "../lib/store/currency";
 import { colors } from "../lib/colors";
 
 export default function RootLayout() {
@@ -19,19 +25,34 @@ export default function RootLayout() {
 
 function AuthGate() {
   const { session, loading } = useAuth();
+  const profileQuery = useProfile();
   const router = useRouter();
   const segments = useSegments();
+
+  // Sincroniza el currency store con las preferencias del profile al cargar.
+  // El profile gana al default del store; el toggle local sigue funcionando.
+  const setDisplay = useCurrencyStore((s) => s.setDisplay);
+  const setUsdType = useCurrencyStore((s) => s.setUsdType);
+  useEffect(() => {
+    const p = profileQuery.data;
+    if (!p) return;
+    setDisplay(p.currency_display as CurrencyDisplay);
+    setUsdType(p.preferred_usd_type as UsdType);
+  }, [profileQuery.data, setDisplay, setUsdType]);
 
   useEffect(() => {
     if (loading) return;
     const inAuthGroup = segments[0] === "(auth)";
+    const needsOnboarding = !!session && profileQuery.data !== undefined && !profileQuery.data?.name;
 
     if (!session && !inAuthGroup) {
       router.replace("/(auth)/login");
-    } else if (session && inAuthGroup) {
+    } else if (session && needsOnboarding && segments[1] !== "onboarding") {
+      router.replace("/(auth)/onboarding");
+    } else if (session && inAuthGroup && !needsOnboarding) {
       router.replace("/(tabs)");
     }
-  }, [session, loading, segments, router]);
+  }, [session, loading, segments, router, profileQuery.data]);
 
   if (loading) {
     return (

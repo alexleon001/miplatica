@@ -1,23 +1,142 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { MoneyAmount } from "../../components/MoneyAmount";
+import { TransactionItem } from "../../components/TransactionItem";
+import { useMonthlyBalance } from "../../lib/hooks/use-monthly-balance";
+import { useTransactions } from "../../lib/hooks/use-transactions";
 import { colors } from "../../lib/colors";
 
+type Filter = "all" | "income" | "expense";
+
+const FILTERS: { value: Filter; label: string }[] = [
+  { value: "all",     label: "Todos" },
+  { value: "income",  label: "Ingresos" },
+  { value: "expense", label: "Gastos" },
+];
+
 export default function TransactionsScreen() {
+  const router = useRouter();
+  const [filter, setFilter] = useState<Filter>("all");
+  const { data: txs, isLoading } = useTransactions();
+  const monthly = useMonthlyBalance();
+
+  const filtered = useMemo(() => {
+    if (!txs) return [];
+    if (filter === "all") return txs;
+    return txs.filter((t) => t.type === filter);
+  }, [txs, filter]);
+
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <View style={styles.container}>
+      <View style={styles.header}>
         <Text style={styles.title}>Movimientos</Text>
-        <Text style={styles.muted}>
-          Acá van a vivir tus gastos, ingresos y transferencias (Sprint 2).
-        </Text>
+
+        <View style={styles.summary}>
+          <SummaryItem label="Ingresos"  amount={monthly.data?.income_ars}  tone="positive" />
+          <SummaryItem label="Gastos"    amount={monthly.data?.expense_ars} tone="negative" />
+          <SummaryItem label="Balance"   amount={monthly.data?.balance_ars} tone="default" />
+        </View>
+
+        <View style={styles.filters}>
+          {FILTERS.map((f) => (
+            <Pressable
+              key={f.value}
+              style={[styles.chip, filter === f.value && styles.chipActive]}
+              onPress={() => setFilter(f.value)}
+            >
+              <Text style={[styles.chipText, filter === f.value && styles.chipTextActive]}>
+                {f.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
+
+      <FlatList
+        data={filtered}
+        keyExtractor={(t) => t.id}
+        renderItem={({ item }) => <TransactionItem tx={item} />}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        contentContainerStyle={styles.list}
+        ListEmptyComponent={
+          <Text style={styles.empty}>
+            {isLoading ? "Cargando…" : "Todavía no hay movimientos. Agregá el primero."}
+          </Text>
+        }
+      />
+
+      <Pressable
+        style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}
+        onPress={() => router.push("/modals/add-transaction")}
+      >
+        <Text style={styles.fabText}>+ Nuevo</Text>
+      </Pressable>
     </SafeAreaView>
+  );
+}
+
+function SummaryItem({
+  label,
+  amount,
+  tone,
+}: {
+  label: string;
+  amount: number | null | undefined;
+  tone: "default" | "positive" | "negative";
+}) {
+  return (
+    <View style={styles.summaryItem}>
+      <Text style={styles.summaryLabel}>{label}</Text>
+      <MoneyAmount ars={amount ?? 0} usd={null} size="sm" tone={tone} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { flex: 1, padding: 20, gap: 8 },
+  header: { padding: 20, gap: 14 },
   title: { color: colors.textPrimary, fontSize: 24, fontWeight: "700" },
-  muted: { color: colors.textMuted },
+  summary: {
+    flexDirection: "row",
+    backgroundColor: colors.surfaceDark,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 12,
+  },
+  summaryItem: { flex: 1, gap: 4 },
+  summaryLabel: { color: colors.textMuted, fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase" },
+  filters: { flexDirection: "row", gap: 6 },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceDark,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.textMuted, fontSize: 13, fontWeight: "600" },
+  chipTextActive: { color: colors.textPrimary },
+  list: { paddingHorizontal: 20, paddingBottom: 100, flexGrow: 1 },
+  separator: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
+  empty: { color: colors.textMuted, textAlign: "center", marginTop: 40 },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  fabText: { color: colors.textPrimary, fontWeight: "700", fontSize: 15 },
 });
