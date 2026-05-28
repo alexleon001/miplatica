@@ -1,0 +1,92 @@
+# ====================================
+# KATA Architecture - .gitignore
+# ====================================
+
+# Dependencies
+node_modules/
+
+# ===== Playwright Test Artifacts =====
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+.playwright/user-data
+.playwright/output
+
+# ===== Auth Storage (Session State) =====
+/.auth/
+
+# ===== Test Data (Downloads) =====
+/tests/data/downloads/*
+!/tests/data/downloads/.gitkeep
+
+# ===== API Documentation (OpenAPI) =====
+# Regenerate with: bun run api:sync
+# openapi.json is intermediate (downloaded from backend)
+# types.ts is committed (used in code)
+/api/openapi.json
+/api/.openapi-config.json
+
+# ===== Allure Reports =====
+/allure-results/
+/allure-report/
+
+# ===== Custom Reports =====
+/reports/
+*.json.bak
+
+# ===== Environment =====
+.env
+.env.local
+.env.*.local
+
+# ===== IDE & Editor =====
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ===== Build Artifacts =====
+dist/
+build/
+*.tsbuildinfo
+
+# ===== AI/Tools Configuration =====
+.mcp.json
+.mcp.catalog.json
+dbhub.toml
+.backups/
+.gemini/settings.json
+.gemini/settings.catalog.json
+
+# ===== Local Useful Files =====
+
+# AI Tool Specific (user-local settings only)
+.claude/settings.local.json
+
+# ====================================
+# MI PLATICA - Expo / React Native
+# ====================================
+.expo/
+.expo-shared/
+web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+ios/Pods/
+android/.gradle/
+android/app/build/
+android/build/
+
+# Supabase CLI local
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# EAS / Expo
+expo-env.d.ts
+.expo/types/
