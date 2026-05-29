@@ -137,7 +137,7 @@ bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 - [x] Auth Supabase (email+password) vía `lib/supabase.ts` + `lib/auth.tsx` + `use-profile.ts`.
 - [x] Edge `fetch-exchange-rates` (ACTIVE, `verify_jwt=false`) → dolarapi → `exchange_rates`. Self-healing client-side.
 - [x] Edge `categorize-transaction` (ACTIVE, `verify_jwt=true`, prompt caching). ⚠️ Sin `ANTHROPIC_API_KEY` → 500.
-- [x] Edge `financial-advisor` (ACTIVE, `verify_jwt=true`, prompt caching). Arma contexto del user vía RLS. ⚠️ Sin `ANTHROPIC_API_KEY` → 500. **(Sesión 4: el código del repo suma bloque de inflación — IPC mensual + acum. 3m/12m — para que el asesor razone rendimiento real; ⚠️ falta deployar.)**
+- [x] Edge `financial-advisor` (ACTIVE, `verify_jwt=true`, prompt caching). Arma contexto del user vía RLS. ⚠️ Sin `ANTHROPIC_API_KEY` → 500. **(Sesión 4: el código del repo suma contexto de inflación — IPC mensual + acum. 3m/12m + rendimiento REAL por posición en pesos, consistente con `realReturnForPosition`; ⚠️ falta deployar.)**
 - [x] Edge `update-asset-prices` (ACTIVE, `verify_jwt=false`) → data912 + dolarapi → `asset_prices`. Llama `refresh_positions()` por RPC al final.
 - [x] Edge `fetch-inflation` (ACTIVE, `verify_jwt=false`) → argentinadatos → `inflation` (IPC mensual, upsert idempotente). 998 meses backfilleados.
 - [x] Función SQL `refresh_positions()` (migración `0003`, `security_definer`, revaloriza posiciones).

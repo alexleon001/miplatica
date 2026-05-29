@@ -148,12 +148,12 @@ async function buildFinancialContext(
         .limit(40),
       supabase
         .from("investments")
-        .select("name, type, ticker, currency, current_value_ars, current_value_usd, profit_loss_pct")
+        .select("name, type, ticker, currency, current_value_ars, current_value_usd, profit_loss_ars, profit_loss_pct, purchase_date, created_at")
         .order("current_value_ars", { ascending: false }),
       supabase.from("debts").select("name, type, currency, remaining_amount, interest_rate, monthly_payment, next_payment_date").eq("is_active", true),
       supabase.from("budgets").select("category, limit_ars, spent_ars").eq("year", year).eq("month", month),
       supabase.from("exchange_rates").select("date, oficial, mep, blue, ccl, tarjeta").order("date", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("inflation").select("month, ipc").order("month", { ascending: false }).limit(12),
+      supabase.from("inflation").select("month, ipc").order("month", { ascending: false }).limit(120),
     ]);
 
   const fmt = (n: number | null | undefined) =>
@@ -204,12 +204,40 @@ async function buildFinancialContext(
     for (const a of accs) lines.push(`  - ${a.name} (${a.type}): ${fmt(a.balance_amount)} ${a.currency}`);
   }
 
+  // Inflación acumulada (compuesta) desde el primer día del mes de `sinceIso`
+  // hasta hoy, usando la serie `inf` (orden desc). null si no hay datos.
+  const monthStartOf = (iso: string | null | undefined): string | null => {
+    if (!iso) return null;
+    const m = /^(\d{4})-(\d{2})/.exec(iso);
+    return m ? `${m[1]}-${m[2]}-01` : null;
+  };
+  const cumulativeSince = (sinceIso: string | null | undefined): number | null => {
+    if (!inf.length) return null;
+    const from = monthStartOf(sinceIso);
+    if (!from) return null;
+    let factor = 1;
+    for (const x of inf) {
+      if (x.month > from) factor *= 1 + Number(x.ipc) / 100;
+    }
+    return (factor - 1) * 100;
+  };
+
   const invs = investments.data ?? [];
   if (invs.length) {
     lines.push("\nInversiones:");
     for (const i of invs) {
+      // Rendimiento real EN PESOS (consistente con la app): nominal ARS de
+      // profit_loss_ars vs. inflación acumulada desde la compra.
+      let realStr = "";
+      const costArs = (i.current_value_ars ?? 0) - (i.profit_loss_ars ?? 0);
+      const infl = cumulativeSince(i.purchase_date ?? i.created_at);
+      if (costArs > 0 && i.profit_loss_ars != null && infl != null) {
+        const nomArs = (i.profit_loss_ars / costArs) * 100;
+        const real = ((1 + nomArs / 100) / (1 + infl / 100) - 1) * 100;
+        realStr = ` · real ${real > 0 ? "+" : ""}${real.toFixed(1)}% (infl. ${infl.toFixed(1)}% desde compra)`;
+      }
       lines.push(
-        `  - ${i.name}${i.ticker ? ` (${i.ticker})` : ""} [${i.type}]: ${fmt(i.current_value_ars)} ARS${i.profit_loss_pct != null ? ` · P&L ${i.profit_loss_pct > 0 ? "+" : ""}${i.profit_loss_pct.toFixed(1)}%` : ""}`,
+        `  - ${i.name}${i.ticker ? ` (${i.ticker})` : ""} [${i.type}]: ${fmt(i.current_value_ars)} ARS${i.profit_loss_pct != null ? ` · P&L nom. ${i.profit_loss_pct > 0 ? "+" : ""}${i.profit_loss_pct.toFixed(1)}%` : ""}${realStr}`,
       );
     }
   }
