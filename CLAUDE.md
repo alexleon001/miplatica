@@ -55,13 +55,16 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 
 ## Próxima sesión (sesión 5) — plan
 
-**🚚 Cola de deploy de sesión 4 — COMPLETADA:**
-1. ✅ **2 Edge Functions deployadas**: `update-asset-prices` (v4, cripto+coverage; verificado: stocks 91/cedears 907/bonds 161/corp 537/**crypto 21**/mep 1) + `financial-advisor` (v2, inflación + real por posición).
-2. ✅ **`ANTHROPIC_API_KEY`** seteada por el user en secrets → IA desbloqueada (asesor + "sugerir categoría"). Falta validar respuesta real en device.
-3. ✅ **Push** a `origin/main` (HEAD == origin/main).
-4. 🛠️ **Rebuild APK disparado**: build `ad6d2dee-0cae-4d27-b67e-5c9673412d30` (perfil preview, commit `7fde477`) corriendo en EAS → seguir/descargar en https://expo.dev/accounts/alexleon001/projects/mi-platica/builds. **Pendiente: instalar y validar en device toda la UI de sesión 4.**
+**🔴 ARRANCAR POR ACÁ — 2 hallazgos del user al validar MP en device (29/05, APK `fa3d3965`):**
 
-**Único pendiente real: validación en device del APK `ad6d2dee`** (camino feliz completo + IA con la key ya seteada).
+La conexión OAuth de MP **funciona end-to-end en device** (autorizó, tokens guardados, "Conectado" en Más; pantalla de retorno `mp-connected` entregada por OTA). Pero al ver el dashboard el user marcó 2 problemas a resolver primero:
+
+1. **No se ve el SALDO de MP (lo más importante para él).** Hoy `mp-sync-movements` solo trae *pagos recibidos* → `transactions`; **nunca setea el balance** de la cuenta MP, así que aparece en `$0` y no suma al patrimonio. **Fix:** en el sync, traer el saldo real de MP y setear `accounts.balance_amount` de la cuenta MP. Endpoint candidato: `GET https://api.mercadopago.com/users/{mp_user_id}/mercadopago_account/balance` (usar `mp_user_id` guardado + access_token; verificar shape/scope en la primera corrida). Eso haría que el saldo se vea en "Activos en cuentas".
+2. **Quedaron 2 cuentas "Mercado Pago" duplicadas.** El user ya tenía una manual ("Mercado pago", `integration_type='manual'`) y el sync creó otra ("Mercado Pago", `integration_type='api'`) porque `ensureMpAccount` matchea por nombre exacto + `integration_type='api'`. **Fix:** que `ensureMpAccount` reuse una cuenta MP existente del user (match case-insensitive por nombre o por algún flag) en vez de crear una nueva, o dejar que el user **elija qué cuenta linkear** al conectar. Considerar también limpiar la duplicada ya creada.
+
+> Nota: ambos se tocan en `supabase/functions/mp-sync-movements/index.ts` (`ensureMpAccount` + agregar fetch de balance) → requiere re-deploy de esa edge. El saldo en patrimonio sale de `v_net_worth.accounts_ars`, que ya suma `accounts.balance_amount`, así que con setear el balance alcanza (no hace falta tocar la vista).
+
+**Cola de deploy de sesión 4 — COMPLETADA:** edges (`update-asset-prices` v4 cripto+coverage, `financial-advisor` v2 inflación) + `ANTHROPIC_API_KEY` seteada + MP backend live (migración `0007` + 3 edges + 4 secrets) + push + APK `fa3d3965` (sesión 4 + MP) buildeado e instalado. **Falta validar en device:** IA (asesor/sugerir categoría con la key), camino feliz general, y los 2 fixes de MP de arriba.
 
 **Opciones priorizadas (elegir al arrancar):**
 
