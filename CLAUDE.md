@@ -29,9 +29,9 @@
 
 ## Estado actual (sesión 3, 2026-05-29)
 
-Sprints 0 → 3 y 5 completos; 4 parcial (CSV ✅, MP OAuth bloqueado); 6 parcial (deudas + presupuestos vivos). Todo en `main`.
+Sprints 0 → 3, 5 y 6 completos; 4 parcial (CSV ✅, MP OAuth bloqueado por credenciales del user). Todo en `main`.
 **Verificado en device (Expo Go):** Sprints 0 → 1 (auth, onboarding, dashboard, toggles, tasas). El resto **no se validó en device aún**.
-**APK preview buildeado y verificado** vía EAS (build `11dda3ab`, 2026-05-29) con la anon key cargada.
+**APK preview:** build `2a8ddb8c` (sesión 3, con ícono nuevo + íconos de tabs + recordatorios + asesor + edit CRUD) — verificar estado/descarga en https://expo.dev/accounts/alexleon001/projects/mi-platica/builds. Build previo OK fue `11dda3ab` (anon key cargada).
 
 **Qué existe hoy (features):**
 - **Dashboard** multi-moneda: `NetWorthCard`, `AccountsList`, `ExchangeRatesBar`, `CurrencyToggle`, pull-refresh, skeletons, estados de error con reintento.
@@ -52,15 +52,29 @@ Sprints 0 → 3 y 5 completos; 4 parcial (CSV ✅, MP OAuth bloqueado); 6 parcia
 
 ---
 
-## Próxima tarea
+## Próxima sesión (sesión 4) — plan
 
-**1. Setear `ANTHROPIC_API_KEY` en Supabase secrets** (pendiente del user) — desbloquea "Sugerir IA" en add-transaction **y el asesor IA** (ambas Edge Functions devuelven 500 sin la key). Comando abajo en "Variables de entorno".
+**Bloqueos del user (hacer primero, desbloquean lo demás):**
+- ⚠️ **Setear `ANTHROPIC_API_KEY`** en Supabase secrets (comando en "Variables de entorno") → sin esto "Sugerir IA" y el asesor devuelven 500. **Es lo único que falta para que la IA funcione.**
+- Instalar el **APK nuevo** (build `2a8ddb8c`) para validar íconos + recordatorios + asesor en device.
 
-**2. Validar en device (Expo Go o el APK)** todo lo no probado aún: navegación post expo-router 6, alta/edición/borrado de las 4 entidades, import CSV, presupuestos vivos, portafolio, **chat del asesor IA**.
+**Opciones priorizadas (elegir al arrancar):**
 
-**3. Sprint 3.5/mejoras:** ajuste por inflación en P&L (IPC argentinadatos), vista `v_portfolio_by_type`, resiliencia de fuentes de precios. Notificaciones: probar el scheduling en device (los locales no andan bien en Expo Go; sí en el APK).
+1. **🔴 Validación en device + fix de bugs (recomendado primero).** Casi nada post-Sprint 1 se probó en device. Camino feliz completo en el APK: alta/edición/borrado de las 4 entidades, import CSV, presupuestos vivos, portafolio, asesor IA (con la key), banner + notificación de recordatorios. Anotar y arreglar lo que rompa. *Es el mayor riesgo acumulado.*
 
-**Sprint 4 (resto) — Mercado Pago OAuth:** bloqueado hasta que el user genere `MP_CLIENT_ID`/`MP_CLIENT_SECRET`/`MP_REDIRECT_URI`.
+2. **📈 Ajuste por inflación en P&L (regla #5, Sprint 3.5).** Mostrar "+X% nominal / +Y% real" en `PnLBadge` e inversiones ARS. Plan: Edge/cron que baje IPC mensual de `api.argentinadatos.com/v1/finanzas/indices/inflacion` → tabla `inflation` (migración) → hook `useInflation` → helper de retorno real. *Diferencial de producto que aún no existe.*
+
+3. **🛡️ Observabilidad — Sentry (`@sentry/react-native`).** Antes del primer beta real: capturar crashes del cliente + errores de Edge Functions (hoy el scheduling de notifs y los flujos de IA fallan en silencio). ~5k errores/mes gratis.
+
+4. **🔌 Resiliencia de fuentes de precios.** `update-asset-prices` depende solo de data912 (sin SLA). Fallback CAFCI (FCI) + criptoya (cripto), loguear cobertura por fuente, marcar precios stale en la UI.
+
+**Mejoras chicas (si sobra tiempo):**
+- Acción "Aportar" en metas y "Registrar pago" en deudas (descuenta del saldo) — hoy hay que editar a mano.
+- Deep-link al tocar una notificación de recordatorio (abrir Deudas/Metas).
+- Vista SQL `v_portfolio_by_type` (mover la agregación client-side de `PortfolioDistribution`).
+- Auth social (Google/Apple) para bajar fricción de signup.
+
+**Bloqueado por credenciales del user:** Sprint 4 — Mercado Pago OAuth (`MP_CLIENT_ID`/`MP_CLIENT_SECRET`/`MP_REDIRECT_URI`).
 
 ---
 
