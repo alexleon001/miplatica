@@ -54,7 +54,7 @@ create or replace function public.mp_store_connection(
 ) returns void
 language sql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   insert into public.mp_connections
     (owner_id, mp_user_id, access_token_enc, refresh_token_enc, scope, expires_at, updated_at)
@@ -78,7 +78,7 @@ create or replace function public.mp_get_tokens(p_owner uuid, p_key text)
 returns table (access_token text, refresh_token text, expires_at timestamptz, mp_user_id text)
 language sql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   select
     pgp_sym_decrypt(access_token_enc, p_key),

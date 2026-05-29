@@ -31,7 +31,7 @@
 
 Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP OAuth bloqueado por credenciales del user). Todo en `main`.
 **Verificado en device (Expo Go):** Sprints 0 → 1 (auth, onboarding, dashboard, toggles, tasas). El resto **no se validó en device aún**.
-**APK preview:** build `ad6d2dee` (sesión 4 — inflación/real, acciones rápidas, deep-link, resiliencia de precios, plazo fijo fresco, asesor inflation-aware) **corriendo/recién buildeado** — estado/descarga en https://expo.dev/accounts/alexleon001/projects/mi-platica/builds. Previos: `2a8ddb8c` (sesión 3), `11dda3ab` (primer OK con anon key).
+**APK preview:** build `fa3d3965` (sesión 4 completa + **Mercado Pago**; incluye `expo-web-browser`) **corriendo/recién buildeado** — estado/descarga en https://expo.dev/accounts/alexleon001/projects/mi-platica/builds. Previos: `ad6d2dee` (sesión 4 sin MP), `2a8ddb8c` (sesión 3), `11dda3ab` (primer OK con anon key).
 
 **Qué existe hoy (features):**
 - **Dashboard** multi-moneda: `NetWorthCard`, `AccountsList`, `ExchangeRatesBar`, `CurrencyToggle`, pull-refresh, skeletons, estados de error con reintento.
@@ -106,7 +106,7 @@ Notas: el APK pega a Supabase **productivo**. Ícono/splash por default (cosmét
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | cliente `.env` + EAS env `preview` | ✅ (publishable `sb_publishable_...`) |
 | `EXPO_PUBLIC_APP_ENV` | cliente `.env` + `eas.json/preview env` | ✅ |
 | `ANTHROPIC_API_KEY` | **Edge Functions** (`supabase secrets set`) | ⚠️ **pendiente del user** (bloquea IA) |
-| `MP_CLIENT_ID` / `MP_CLIENT_SECRET` / `MP_REDIRECT_URI` / `MP_TOKEN_KEY` | **Edge Functions** | ⏳ **código de Sprint 4 listo**, falta que el user cree la app MP + setee estos secrets + se apliquen/deployen migración+edges (ver "Mercado Pago — setup") |
+| `MP_CLIENT_ID` / `MP_CLIENT_SECRET` / `MP_REDIRECT_URI` / `MP_TOKEN_KEY` | **Edge Functions** | ✅ seteados; migración + 3 edges live. Falta validar el flujo en device (APK `fa3d3965`) |
 
 > Regla #2: API keys sensibles **JAMÁS** en el cliente. Solo la anon publishable (diseñada para exponerse) viaja al bundle.
 
@@ -118,21 +118,21 @@ bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 
 ---
 
-## Mercado Pago — setup (para activar el código de Sprint 4)
+## Mercado Pago — estado del setup
 
-Código completo en el repo; falta esto para activarlo (orden):
+✅ **Backend live** (hecho): app MP creada, Redirect URI registrado
+(`https://jgszdxqhrbpfjqtqqlpw.supabase.co/functions/v1/mp-oauth-callback`),
+4 secrets seteados (`MP_CLIENT_ID`/`MP_CLIENT_SECRET`/`MP_REDIRECT_URI`/`MP_TOKEN_KEY`),
+migración `0007` aplicada, 3 edges deployadas.
 
-1. **Crear app en MP** → https://www.mercadopago.com.ar/developers/panel/app → copiar **Client ID** + **Client Secret**.
-2. **Registrar el Redirect URI** en la app de MP, exactamente:
-   `https://jgszdxqhrbpfjqtqqlpw.supabase.co/functions/v1/mp-oauth-callback`
-3. **Setear 4 secrets** (Dashboard → Edge Functions → Secrets, o `supabase secrets set`):
-   - `MP_CLIENT_ID`, `MP_CLIENT_SECRET`
-   - `MP_REDIRECT_URI` = la URL del paso 2
-   - `MP_TOKEN_KEY` = una passphrase fuerte aleatoria (se usa para cifrar tokens con pgcrypto; guardala, si cambia se invalidan las conexiones).
-4. **Aplicar migración** `0007_mp_connections` (`apply_migration`, requiere OK — regla #7).
-5. **Deployar 3 edges**: `mp-oauth-start` (verify_jwt=true), `mp-oauth-callback` (**verify_jwt=false**), `mp-sync-movements` (verify_jwt=true).
-6. **Rebuild del APK** (se agregó `expo-web-browser`, dep nativa → no anda en el APK previo).
-7. (Opcional) cron diario para `mp-sync-movements` por usuario — hoy el sync es manual (botón "Sincronizar ahora").
+⏳ **Falta:** validar el flujo en device con el APK `fa3d3965` (tocar "Conectar
+Mercado Pago" en Más → autorizar → "Sincronizar ahora" → ver pagos en Movimientos).
+
+Gotchas para debug si algo falla en el device:
+- El **Redirect URI** debe coincidir EXACTO con el secret `MP_REDIRECT_URI` y con lo registrado en la app de MP (si no, MP rechaza el `code`).
+- Las credenciales de MP son de **producción** (pegan a la cuenta real). Para sandbox: credenciales de prueba + usuarios de test.
+- Si `MP_TOKEN_KEY` cambia, las conexiones guardadas dejan de descifrarse (hay que reconectar).
+- (Opcional a futuro) cron para `mp-sync-movements` — hoy el sync es manual (botón).
 
 > Recordá: trae **pagos recibidos** (cobrador), no la billetera personal completa.
 
@@ -168,11 +168,10 @@ Código completo en el repo; falta esto para activarlo (orden):
 - [x] pg_cron: `update-asset-prices` (`*/15 14-20 * * 1-5`) + `fetch-exchange-rates` (`*/30 * * * *`) + `fetch-inflation` (`0 14 4,17 * *`), vía `net.http_post` keyless. Probados.
 - [x] Import CSV de movimientos (Cocos/PPI/IOL/banco) por alias de columnas + dedup `external_id`.
 - [ ] **`ANTHROPIC_API_KEY`** en secrets — bloquea IA.
-- [~] **Mercado Pago OAuth — código completo (Sprint 4), falta setup+deploy.** Migración `0007` (mp_connections cifrada con pgcrypto + mp_oauth_states) + 3 edges (`mp-oauth-start` jwt, `mp-oauth-callback` público, `mp-sync-movements` jwt) + cliente (`use-mp.ts` + `MercadoPagoConnect` en `more.tsx`, `expo-web-browser`). Trae pagos RECIBIDOS (cobrador), no billetera personal. **Necesita rebuild de APK** (dep nativa nueva). Ver "Mercado Pago — setup".
+- [x] **Mercado Pago OAuth — backend LIVE (Sprint 4).** Migración `0007` aplicada + 3 edges ACTIVE (`mp-oauth-start` v1 jwt, `mp-oauth-callback` v1 público, `mp-sync-movements` v1 jwt) + 4 secrets seteados (CLIENT_ID/SECRET/REDIRECT_URI/TOKEN_KEY). Verificado: callback 302 OK, pgcrypto round-trip OK. Cliente: `use-mp.ts` + `MercadoPagoConnect` en `more.tsx` (`expo-web-browser`). Trae pagos RECIBIDOS (cobrador), no billetera personal. **Falta: validar el flujo completo en device** (APK `fa3d3965`, que ya incluye `expo-web-browser`). Sync manual (botón); cron opcional a futuro.
 - [ ] CAFCI (FCI) y cripto: sin fuente de precios aún. Open Banking BCRA — eval Sprint 5+.
 
-**Migraciones aplicadas:** `0001_init_schema`, `0002_helper_views`, `0003_refresh_positions`, `0004_schedule_crons`, `0005_budget_spent_triggers`, `0006_inflation`.
-**Migración escrita pero NO aplicada:** `0007_mp_connections` (tablas `mp_connections`+`mp_oauth_states` + funciones pgcrypto `mp_store_connection`/`mp_get_tokens`). Aplicar cuando se haga el setup de MP.
+**Migraciones aplicadas:** `0001_init_schema`, `0002_helper_views`, `0003_refresh_positions`, `0004_schedule_crons`, `0005_budget_spent_triggers`, `0006_inflation`, `0007_mp_connections` (mp_connections cifrada con pgcrypto + mp_oauth_states + funciones `mp_store_connection`/`mp_get_tokens` con `search_path = public, extensions` — pgcrypto vive en `extensions` en Supabase).
 
 ---
 
@@ -217,7 +216,7 @@ Código completo en el repo; falta esto para activarlo (orden):
 | 2 | Transacciones + categorización IA + presupuestos | ✅ |
 | 3 | Portafolio con cotizaciones live | ✅ (backend+crons live; falta verificar UI en device) |
 | 3.5 | Ajuste por inflación / rendimiento real (regla #5) | ✅ (tabla `inflation` + Edge `fetch-inflation` + cron + `useInflation` + `PnLBadge` real; falta verificar en device) |
-| 4 | Mercado Pago + import CSV | 🚧 CSV ✅; MP OAuth bloqueado por credenciales del user |
+| 4 | Mercado Pago + import CSV | ✅ CSV + MP OAuth (backend live: migración 0007 + 3 edges + secrets; falta validar flujo en device en APK `fa3d3965`) |
 | 5 | Asesor financiero IA | ✅ (Edge `financial-advisor` + chat; falta `ANTHROPIC_API_KEY` + probar en device) |
 | 6 | Deudas, metas y presupuestos avanzados | ✅ deudas + presupuestos vivos + metas de ahorro + recordatorios de vencimiento (in-app + notif locales) |
 
