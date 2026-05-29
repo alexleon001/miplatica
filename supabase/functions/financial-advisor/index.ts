@@ -135,7 +135,7 @@ async function buildFinancialContext(
     .toISOString()
     .slice(0, 10);
 
-  const [profile, netWorth, accounts, txs, investments, debts, budgets, rates] =
+  const [profile, netWorth, accounts, txs, investments, debts, budgets, rates, inflation] =
     await Promise.all([
       supabase.from("profiles").select("name, monthly_income_ars, preferred_usd_type, currency_display").maybeSingle(),
       supabase.from("v_net_worth").select("*").maybeSingle(),
@@ -153,6 +153,7 @@ async function buildFinancialContext(
       supabase.from("debts").select("name, type, currency, remaining_amount, interest_rate, monthly_payment, next_payment_date").eq("is_active", true),
       supabase.from("budgets").select("category, limit_ars, spent_ars").eq("year", year).eq("month", month),
       supabase.from("exchange_rates").select("date, oficial, mep, blue, ccl, tarjeta").order("date", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("inflation").select("month, ipc").order("month", { ascending: false }).limit(12),
     ]);
 
   const fmt = (n: number | null | undefined) =>
@@ -172,6 +173,20 @@ async function buildFinancialContext(
   if (r) {
     lines.push(
       `\nTipos de cambio (${r.date}): oficial ${fmt(r.oficial)} · MEP ${fmt(r.mep)} · blue ${fmt(r.blue)} · CCL ${fmt(r.ccl)} · tarjeta ${fmt(r.tarjeta)} (ARS por USD)`,
+    );
+  }
+
+  // Inflación: IPC mensual reciente + acumulados (para razonar rendimiento real).
+  const inf = (inflation.data ?? []).filter((x: { ipc: number | null }) => x.ipc != null);
+  if (inf.length) {
+    const compound = (rows: { ipc: number }[]) =>
+      (rows.reduce((f, x) => f * (1 + Number(x.ipc) / 100), 1) - 1) * 100;
+    const last = inf[0];
+    const last3 = compound(inf.slice(0, 3));
+    const last12 = compound(inf.slice(0, 12));
+    lines.push(
+      `\nInflación (IPC mensual INDEC): último mes (${last.month}) ${Number(last.ipc).toFixed(1)}% · acum. 3 meses ${last3.toFixed(1)}% · acum. 12 meses ${last12.toFixed(1)}%`,
+      `  (Rendimiento real ≈ ((1 + nominal) / (1 + inflación) − 1). Un rendimiento por debajo de la inflación es pérdida de poder adquisitivo. Los P&L de las inversiones de abajo son NOMINALES.)`,
     );
   }
 
