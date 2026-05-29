@@ -9,8 +9,9 @@ import { PnLBadge } from "../../components/PnLBadge";
 import { PortfolioDistribution } from "../../components/PortfolioDistribution";
 import { RowsSkeleton } from "../../components/Skeleton";
 import { StateMessage } from "../../components/StateMessage";
-import { useDeleteInvestment, useInvestments } from "../../lib/hooks/use-investments";
+import { freshenPlazoFijo, useDeleteInvestment, useInvestments } from "../../lib/hooks/use-investments";
 import { useInflation } from "../../lib/hooks/use-inflation";
+import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
 import { confirmDelete } from "../../lib/confirm";
 import { realReturnForPosition } from "../../lib/inflation";
@@ -20,14 +21,22 @@ export default function InvestmentsScreen() {
   const router = useRouter();
   const { data: investments, isLoading, isError, refetch } = useInvestments();
   const { data: inflationRows } = useInflation();
+  const { data: rates } = useExchangeRates();
   const { refreshing, onRefresh } = usePullRefresh();
   const del = useDeleteInvestment();
+
+  // Recalcula el interés devengado de plazos fijos al vuelo (ver freshenPlazoFijo).
+  const mep = rates?.mep ?? null;
+  const positions = useMemo(
+    () => (investments ?? []).map((inv) => freshenPlazoFijo(inv, mep)),
+    [investments, mep],
+  );
 
   // Rendimiento real (ajustado por inflación, regla #5) por posición + agregado.
   // El agregado compone el costo de cada posición por su inflación acumulada
   // desde la compra y lo compara contra el valor actual en pesos.
   const { realByInvestment, summary } = useMemo(() => {
-    const list = investments ?? [];
+    const list = positions;
     const rows = inflationRows ?? [];
     const today = new Date().toISOString().slice(0, 10);
     const realMap = new Map<string, number>();
@@ -68,12 +77,12 @@ export default function InvestmentsScreen() {
     const plPct = costArs > 0 ? (plArs / costArs) * 100 : null;
     const realPct = hasReal && adjCostArs > 0 ? (realGainArs / adjCostArs) * 100 : null;
     return { realByInvestment: realMap, summary: { valueArs, valueUsd, plArs, plPct, realPct } };
-  }, [investments, inflationRows]);
+  }, [positions, inflationRows]);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <FlatList
-        data={investments ?? []}
+        data={positions}
         keyExtractor={(i) => i.id}
         renderItem={({ item }) => (
           <InvestmentRow
@@ -102,7 +111,7 @@ export default function InvestmentsScreen() {
               </View>
             </View>
 
-            <PortfolioDistribution investments={investments ?? []} />
+            <PortfolioDistribution investments={positions} />
 
             <Text style={styles.listLabel}>Posiciones</Text>
           </View>
