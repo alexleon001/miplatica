@@ -53,11 +53,19 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 
 ---
 
-## Próxima sesión (sesión 4) — plan
+## Próxima sesión (sesión 5) — plan
+
+**🚚 Cola de deploy de sesión 4 (código en `main` local, sin deployar/pushear) — hacer al buildear, en orden:**
+1. **Deployar 2 Edge Functions** (`deploy_edge_function`, `verify_jwt=false` para prices / `true` para advisor):
+   - `update-asset-prices` → activa cripto (CoinGecko) + logging de `coverage`.
+   - `financial-advisor` → activa contexto de inflación + rendimiento real por posición.
+2. **Setear `ANTHROPIC_API_KEY`** en secrets → desbloquea IA (asesor + sugerir categoría).
+3. **Push** de los 10 commits de sesión 4 a `origin/main`.
+4. **Rebuild APK** (`eas build -p android --profile preview`) y **validar en device** toda la UI nueva.
 
 **Bloqueos del user (hacer primero, desbloquean lo demás):**
-- ⚠️ **Setear `ANTHROPIC_API_KEY`** en Supabase secrets (comando en "Variables de entorno") → sin esto "Sugerir IA" y el asesor devuelven 500. **Es lo único que falta para que la IA funcione.**
-- Instalar el **APK nuevo** (build `2a8ddb8c`) para validar íconos + recordatorios + asesor en device.
+- ⚠️ **Setear `ANTHROPIC_API_KEY`** (ver paso 2 arriba).
+- Instalar el **APK nuevo** (rebuild pendiente; el `2a8ddb8c` es previo a sesión 4) para validar en device.
 
 **Opciones priorizadas (elegir al arrancar):**
 
