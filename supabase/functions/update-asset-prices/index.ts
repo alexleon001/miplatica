@@ -48,10 +48,13 @@ const SOURCES: Source[] = [
 // USD-denominados; deriveInvestmentValues/refresh_positions convierten a ARS por
 // MEP). Mapea el ticker del usuario → id de CoinGecko. (data912 no cubre cripto;
 // esto cierra ese hueco de cobertura, no es un fallback de otra fuente.)
+// MATIC/POL comparten id (Polygon migró MATIC → POL; CoinGecko deprecó
+// `matic-network`). fetchCrypto emite una fila por cada ticker que comparta id.
 const CRYPTO_IDS: Record<string, string> = {
   BTC: "bitcoin", ETH: "ethereum", USDT: "tether", USDC: "usd-coin",
   BNB: "binancecoin", SOL: "solana", XRP: "ripple", ADA: "cardano",
-  DOGE: "dogecoin", DOT: "polkadot", MATIC: "matic-network", LTC: "litecoin",
+  DOGE: "dogecoin", DOT: "polkadot", LTC: "litecoin",
+  MATIC: "polygon-ecosystem-token", POL: "polygon-ecosystem-token",
   AVAX: "avalanche-2", LINK: "chainlink", ARB: "arbitrum", OP: "optimism",
   DAI: "dai", TRX: "tron", SHIB: "shiba-inu", ATOM: "cosmos",
 };
@@ -107,7 +110,11 @@ async function fetchSource(src: Source, now: string): Promise<AssetPriceRow[]> {
 // Cripto desde CoinGecko: una sola llamada con todos los ids mapeados.
 async function fetchCrypto(now: string): Promise<AssetPriceRow[]> {
   const ids = [...new Set(Object.values(CRYPTO_IDS))].join(",");
-  const idToTicker = new Map(Object.entries(CRYPTO_IDS).map(([t, id]) => [id, t]));
+  // Un id puede mapear a varios tickers (ej: MATIC y POL).
+  const idToTickers = new Map<string, string[]>();
+  for (const [ticker, id] of Object.entries(CRYPTO_IDS)) {
+    idToTickers.set(id, [...(idToTickers.get(id) ?? []), ticker]);
+  }
   try {
     const res = await fetch(
       `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`,
@@ -120,10 +127,11 @@ async function fetchCrypto(now: string): Promise<AssetPriceRow[]> {
     const body = (await res.json()) as Record<string, { usd?: number }>;
     const rows: AssetPriceRow[] = [];
     for (const [id, obj] of Object.entries(body)) {
-      const ticker = idToTicker.get(id);
       const price = num(obj?.usd);
-      if (!ticker || price == null) continue;
-      rows.push({ ticker, name: null, price_ars: null, price_usd: price, variation_pct: null, fetched_at: now });
+      if (price == null) continue;
+      for (const ticker of idToTickers.get(id) ?? []) {
+        rows.push({ ticker, name: null, price_ars: null, price_usd: price, variation_pct: null, fetched_at: now });
+      }
     }
     return rows;
   } catch (e) {
