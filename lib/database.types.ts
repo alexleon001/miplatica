@@ -540,6 +540,17 @@ export type Database = {
         }
         Relationships: []
       }
+      v_portfolio_by_type: {
+        Row: {
+          owner_id: string | null
+          pct: number | null
+          position_count: number | null
+          type: string | null
+          value_ars: number | null
+          value_usd: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       refresh_positions: { Args: never; Returns: number }

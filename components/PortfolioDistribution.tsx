@@ -1,42 +1,33 @@
 // Distribución del portafolio por tipo de instrumento.
 // Barra horizontal apilada (proporcional al valor en ARS) + leyenda con %.
-// Agrega client-side desde la lista de investments (sin vista SQL extra).
+// Agrega server-side vía la vista SQL `v_portfolio_by_type` (usePortfolioByType).
 
 import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { instrumentById } from "../lib/instruments";
-import type { Investment } from "../lib/hooks/use-investments";
+import { usePortfolioByType } from "../lib/hooks/use-portfolio-by-type";
 import { colors } from "../lib/colors";
 
 const pctFmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 1 });
 
-type Slice = { type: string; label: string; color: string; value: number; pct: number };
+type Slice = { type: string; label: string; color: string; pct: number };
 
-export function PortfolioDistribution({ investments }: { investments: Investment[] }) {
-  const slices = useMemo<Slice[]>(() => {
-    const byType = new Map<string, number>();
-    for (const inv of investments) {
-      const v = inv.current_value_ars ?? 0;
-      if (v <= 0) continue;
-      byType.set(inv.type, (byType.get(inv.type) ?? 0) + v);
-    }
+export function PortfolioDistribution() {
+  const { data: rows } = usePortfolioByType();
 
-    const total = [...byType.values()].reduce((a, b) => a + b, 0);
-    if (total <= 0) return [];
-
-    return [...byType.entries()]
-      .map(([type, value]) => {
-        const instrument = instrumentById(type);
+  const slices = useMemo<Slice[]>(
+    () =>
+      (rows ?? []).map((r) => {
+        const instrument = instrumentById(r.type);
         return {
-          type,
-          label: instrument?.label ?? type,
+          type: r.type,
+          label: instrument?.label ?? r.type,
           color: instrument?.color ?? colors.border,
-          value,
-          pct: (value / total) * 100,
+          pct: r.pct,
         };
-      })
-      .sort((a, b) => b.value - a.value);
-  }, [investments]);
+      }),
+    [rows],
+  );
 
   if (slices.length === 0) return null;
 

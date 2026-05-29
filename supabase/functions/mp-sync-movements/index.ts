@@ -11,7 +11,7 @@
 //
 // Endpoint: POST /functions/v1/mp-sync-movements
 // Auth: verify_jwt = true
-// Response 200: { inserted, skipped, fetched, last_synced_at }
+// Response 200: { inserted, skipped, fetched, balance, last_synced_at }
 //
 // Secrets: MP_CLIENT_ID, MP_CLIENT_SECRET, MP_TOKEN_KEY
 // ============================================
@@ -21,6 +21,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const MP_TOKEN_URL = "https://api.mercadopago.com/oauth/token";
 const MP_PAYMENTS_URL = "https://api.mercadopago.com/v1/payments/search";
+const MP_BALANCE_URL = (mpUserId: string) =>
+  `https://api.mercadopago.com/users/${mpUserId}/mercadopago_account/balance`;
 const PAGE_LIMIT = 100;
 
 // deno-lint-ignore no-explicit-any
@@ -80,6 +82,21 @@ Deno.serve(async (req: Request) => {
     return json({ error: e instanceof Error ? e.message : "No pude crear la cuenta MP" }, 500);
   }
 
+  // Saldo real de la billetera MP → accounts.balance_amount (best-effort: si
+  // falla, seguimos con los pagos; el balance se reintenta el próximo sync).
+  let balance: number | null = null;
+  try {
+    balance = await fetchBalance(accessToken, tok.mp_user_id);
+    if (balance != null) {
+      await admin
+        .from("accounts")
+        .update({ balance_amount: balance, balance_updated_at: new Date().toISOString() })
+        .eq("id", accountId);
+    }
+  } catch (e) {
+    console.warn("[mp-sync] balance fetch falló:", e instanceof Error ? e.message : e);
+  }
+
   // Traer pagos recibidos (collector). Best-effort: si MP falla, devolvemos error claro.
   let payments: MpPayment[];
   try {
@@ -116,7 +133,7 @@ Deno.serve(async (req: Request) => {
   const lastSyncedAt = new Date().toISOString();
   await admin.from("mp_connections").update({ last_synced_at: lastSyncedAt }).eq("owner_id", ownerId);
 
-  return json({ inserted, skipped: rows.length - inserted, fetched: payments.length, last_synced_at: lastSyncedAt });
+  return json({ inserted, skipped: rows.length - inserted, fetched: payments.length, balance, last_synced_at: lastSyncedAt });
 });
 
 type MpPayment = {
@@ -141,6 +158,22 @@ async function fetchPayments(accessToken: string): Promise<MpPayment[]> {
   if (!res.ok) throw new Error(`MP ${res.status}`);
   const body = (await res.json()) as { results?: MpPayment[] };
   return body.results ?? [];
+}
+
+// Saldo disponible de la billetera MP. El shape de este endpoint no está bien
+// documentado y varía por site → leemos defensivamente varios nombres de campo
+// (verificar en la primera corrida con el `balance` devuelto en la respuesta).
+async function fetchBalance(accessToken: string, mpUserId: string | null): Promise<number | null> {
+  if (!mpUserId) return null;
+  const res = await fetch(MP_BALANCE_URL(mpUserId), {
+    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+  });
+  if (!res.ok) throw new Error(`MP balance ${res.status}`);
+  const b = (await res.json()) as Record<string, unknown>;
+  const candidate =
+    b.available_balance ?? b.total_amount ?? b.balance ?? b.unwithdrawn_balance ?? null;
+  const n = typeof candidate === "string" ? Number(candidate) : candidate;
+  return typeof n === "number" && Number.isFinite(n) ? n : null;
 }
 
 async function refreshToken(
@@ -184,15 +217,31 @@ async function refreshToken(
   }
 }
 
+// Find-or-create de la cuenta MP. Reusa CUALQUIER cuenta del user cuyo nombre
+// matchee "mercado pago" (case/spacing-insensitive), sin importar el
+// integration_type, para no duplicar la que el user pudo haber creado a mano.
+// Prioriza una ya 'api'; si adopta una manual la promueve a 'api'/'connected'.
 async function ensureMpAccount(admin: Sb, ownerId: string): Promise<string> {
-  const { data: existing } = await admin
+  const { data: matches } = await admin
     .from("accounts")
-    .select("id")
+    .select("id, integration_type")
     .eq("owner_id", ownerId)
-    .eq("integration_type", "api")
-    .eq("name", "Mercado Pago")
-    .maybeSingle();
-  if (existing?.id) return existing.id;
+    .or("name.ilike.%mercado%pago%,name.ilike.%mercadopago%")
+    .order("created_at", { ascending: true });
+
+  const existing = Array.isArray(matches) && matches.length
+    ? (matches.find((a: { integration_type: string }) => a.integration_type === "api") ?? matches[0])
+    : null;
+
+  if (existing?.id) {
+    if (existing.integration_type !== "api") {
+      await admin
+        .from("accounts")
+        .update({ integration_type: "api", integration_status: "connected" })
+        .eq("id", existing.id);
+    }
+    return existing.id;
+  }
 
   const { data, error } = await admin
     .from("accounts")

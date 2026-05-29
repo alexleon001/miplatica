@@ -112,6 +112,7 @@ export function useCreateInvestment() {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["investments"] });
       qc.invalidateQueries({ queryKey: ["net_worth"] });
+      qc.invalidateQueries({ queryKey: ["portfolio"] });
     },
   });
 }
@@ -134,6 +135,7 @@ export function useUpdateInvestment() {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["investments"] });
       qc.invalidateQueries({ queryKey: ["net_worth"] });
+      qc.invalidateQueries({ queryKey: ["portfolio"] });
     },
   });
 }

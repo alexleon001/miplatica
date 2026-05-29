@@ -111,7 +111,7 @@ export default function InvestmentsScreen() {
               </View>
             </View>
 
-            <PortfolioDistribution investments={positions} />
+            <PortfolioDistribution />
 
             <Text style={styles.listLabel}>Posiciones</Text>
           </View>

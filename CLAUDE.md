@@ -55,14 +55,12 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 
 ## Próxima sesión (sesión 5) — plan
 
-**🔴 ARRANCAR POR ACÁ — 2 hallazgos del user al validar MP en device (29/05, APK `fa3d3965`):**
+**✅ 2 hallazgos de MP — RESUELTOS (sesión 5, `mp-sync-movements` v2 ACTIVE):**
 
-La conexión OAuth de MP **funciona end-to-end en device** (autorizó, tokens guardados, "Conectado" en Más; pantalla de retorno `mp-connected` entregada por OTA). Pero al ver el dashboard el user marcó 2 problemas a resolver primero:
+1. **Saldo de MP.** `fetchBalance()` pega a `GET /users/{mp_user_id}/mercadopago_account/balance` (mp_user_id guardado + access_token) y setea `accounts.balance_amount` + `balance_updated_at` de la cuenta MP. Best-effort (si falla, el sync de pagos sigue y reintenta el balance la próxima). Lee defensivo `available_balance ?? total_amount ?? balance ?? unwithdrawn_balance`; **la respuesta del sync ahora devuelve `balance`** → verificar el shape real en la primera corrida en device. El patrimonio ya lo toma de `v_net_worth.accounts_ars` (suma `balance_amount`).
+2. **Duplicados.** `ensureMpAccount` ahora reusa **cualquier** cuenta del user con nombre tipo "mercado pago" (ilike, case/espacios-insensitive), sin importar `integration_type`; prioriza la `api`, y si adopta una manual la promueve a `api`/`connected`. Ya no crea cuentas nuevas si existe una. **Limpieza hecha:** se borró la cuenta manual vacía duplicada (`85cd2b9d`, 0 tx/0 balance); queda solo la `api` `8d354a5c` (100 tx).
 
-1. **No se ve el SALDO de MP (lo más importante para él).** Hoy `mp-sync-movements` solo trae *pagos recibidos* → `transactions`; **nunca setea el balance** de la cuenta MP, así que aparece en `$0` y no suma al patrimonio. **Fix:** en el sync, traer el saldo real de MP y setear `accounts.balance_amount` de la cuenta MP. Endpoint candidato: `GET https://api.mercadopago.com/users/{mp_user_id}/mercadopago_account/balance` (usar `mp_user_id` guardado + access_token; verificar shape/scope en la primera corrida). Eso haría que el saldo se vea en "Activos en cuentas".
-2. **Quedaron 2 cuentas "Mercado Pago" duplicadas.** El user ya tenía una manual ("Mercado pago", `integration_type='manual'`) y el sync creó otra ("Mercado Pago", `integration_type='api'`) porque `ensureMpAccount` matchea por nombre exacto + `integration_type='api'`. **Fix:** que `ensureMpAccount` reuse una cuenta MP existente del user (match case-insensitive por nombre o por algún flag) en vez de crear una nueva, o dejar que el user **elija qué cuenta linkear** al conectar. Considerar también limpiar la duplicada ya creada.
-
-> Nota: ambos se tocan en `supabase/functions/mp-sync-movements/index.ts` (`ensureMpAccount` + agregar fetch de balance) → requiere re-deploy de esa edge. El saldo en patrimonio sale de `v_net_worth.accounts_ars`, que ya suma `accounts.balance_amount`, así que con setear el balance alcanza (no hace falta tocar la vista).
+> ⏳ **Falta validar en device:** "Sincronizar ahora" en el APK → ver el saldo real de MP en "Activos en cuentas" (revisar el `balance` devuelto; si viene `null`/error, ver logs del edge por scope/shape del endpoint de balance) + confirmar que sigue habiendo una sola cuenta MP.
 
 **Cola de deploy de sesión 4 — COMPLETADA:** edges (`update-asset-prices` v4 cripto+coverage, `financial-advisor` v2 inflación) + `ANTHROPIC_API_KEY` seteada + MP backend live (migración `0007` + 3 edges + 4 secrets) + push + APK `fa3d3965` (sesión 4 + MP) buildeado e instalado. **Falta validar en device:** IA (asesor/sugerir categoría con la key), camino feliz general, y los 2 fixes de MP de arriba.
 
@@ -79,7 +77,7 @@ La conexión OAuth de MP **funciona end-to-end en device** (autorizó, tokens gu
 **Mejoras chicas (si sobra tiempo):**
 - ~~Acción "Aportar" en metas y "Registrar pago" en deudas~~ ✅ **HECHO sesión 4** (`useRegisterDebtPayment`/`useAddGoalContribution` + modal `quick-amount` + píldoras "Pagar"/"+ Aportar"). Falta verificar en device.
 - ~~Deep-link al tocar una notificación de recordatorio~~ ✅ **HECHO sesión 4** (listener en `useRemindersSync`: deuda→tab Deudas, meta→Más; cubre app cerrada vía `getLastNotificationResponseAsync`). Falta verificar en device.
-- Vista SQL `v_portfolio_by_type` (mover la agregación client-side de `PortfolioDistribution`).
+- ~~Vista SQL `v_portfolio_by_type` (mover la agregación client-side de `PortfolioDistribution`)~~ ✅ **HECHO sesión 5** (migración `0008` + hook `usePortfolioByType` + `PortfolioDistribution` sin prop; invalidación `["portfolio"]` en mutations de inversiones). Tabla `investments` vacía → no validado con datos reales, pero lógica testeada con datos sintéticos (pct suma 100%, excluye valor 0). Nota: la vista usa `current_value_ars` guardado; el freshening de plazo fijo no se refleja (atraso de interés de ~1 día, despreciable para %).
 - Auth social (Google/Apple) para bajar fricción de signup.
 
 **Bloqueado por credenciales del user:** Sprint 4 — Mercado Pago OAuth (`MP_CLIENT_ID`/`MP_CLIENT_SECRET`/`MP_REDIRECT_URI`).
@@ -174,7 +172,7 @@ Gotchas para debug si algo falla en el device:
 - [x] **Mercado Pago OAuth — backend LIVE (Sprint 4).** Migración `0007` aplicada + 3 edges ACTIVE (`mp-oauth-start` v1 jwt, `mp-oauth-callback` v1 público, `mp-sync-movements` v1 jwt) + 4 secrets seteados (CLIENT_ID/SECRET/REDIRECT_URI/TOKEN_KEY). Verificado: callback 302 OK, pgcrypto round-trip OK. Cliente: `use-mp.ts` + `MercadoPagoConnect` en `more.tsx` (`expo-web-browser`). Trae pagos RECIBIDOS (cobrador), no billetera personal. **Falta: validar el flujo completo en device** (APK `fa3d3965`, que ya incluye `expo-web-browser`). Sync manual (botón); cron opcional a futuro.
 - [ ] CAFCI (FCI) y cripto: sin fuente de precios aún. Open Banking BCRA — eval Sprint 5+.
 
-**Migraciones aplicadas:** `0001_init_schema`, `0002_helper_views`, `0003_refresh_positions`, `0004_schedule_crons`, `0005_budget_spent_triggers`, `0006_inflation`, `0007_mp_connections` (mp_connections cifrada con pgcrypto + mp_oauth_states + funciones `mp_store_connection`/`mp_get_tokens` con `search_path = public, extensions` — pgcrypto vive en `extensions` en Supabase).
+**Migraciones aplicadas:** `0001_init_schema`, `0002_helper_views`, `0003_refresh_positions`, `0004_schedule_crons`, `0005_budget_spent_triggers`, `0006_inflation`, `0007_mp_connections` (mp_connections cifrada con pgcrypto + mp_oauth_states + funciones `mp_store_connection`/`mp_get_tokens` con `search_path = public, extensions` — pgcrypto vive en `extensions` en Supabase), `0008_portfolio_by_type` (vista `v_portfolio_by_type` con `security_invoker=on` — agrega valor/% por tipo de instrumento).
 
 ---
 
@@ -184,7 +182,7 @@ Gotchas para debug si algo falla en el device:
 - **Validación en device incompleta:** solo Sprints 0→1 probados en Expo Go. Resto de sesión 2 sin validar (ojo navegación post expo-router 6).
 - **`claude-sonnet-4-5-20250929`** en `categorize-transaction` (y futuro `financial-advisor`) → migrar a `claude-sonnet-4-6` cuando GA (cambiar const `MODEL` + redeploy).
 - **`update-asset-prices` depende de data912.com** (gratuita, no oficial, sin SLA) para acciones/CEDEARs/bonos/ON; cripto vía CoinGecko; MEP vía dolarapi. Si cambia el shape de data912, ajustar `SOURCES`/`normalize`. **FCI sin fuente** (CAFCI diferido). Sin Sentry. (Edge deployada v4 — cripto + coverage live.)
-- **Plazo fijo (interés devengado):** ✅ resuelto client-side — `freshenPlazoFijo` (en `use-investments.ts`) recalcula `current_value_*`/`profit_loss_*` al vuelo con la fecha de hoy (reusa `deriveInvestmentValues`). Aplicado en Inversiones (lista/resumen/distribución) **y en el dashboard** vía `useFreshNetWorth` (ajusta el patrimonio por el delta de devengado). El valor guardado en DB se sincroniza recién al correr el cron, pero la UI ya muestra el devengado al día.
+- **Plazo fijo (interés devengado):** ✅ resuelto client-side — `freshenPlazoFijo` (en `use-investments.ts`) recalcula `current_value_*`/`profit_loss_*` al vuelo con la fecha de hoy (reusa `deriveInvestmentValues`). Aplicado en Inversiones (lista/resumen) **y en el dashboard** vía `useFreshNetWorth` (la distribución ahora sale de la vista `v_portfolio_by_type` con el valor guardado — atraso despreciable para %) (ajusta el patrimonio por el delta de devengado). El valor guardado en DB se sincroniza recién al correr el cron, pero la UI ya muestra el devengado al día.
 - **Android SDK local no instalado** → `pnpm android` falla. Usar Expo Go (QR) o EAS Build remoto.
 - **Íconos de app:** `assets/icon.png` + `adaptive-icon.png` + `splash-icon.png` generados con `scripts/gen-icons.py` (PIL, gradiente + "$"). Placeholder de marca decente; reemplazar por un diseño definitivo antes del store si se quiere.
 - **Sin Sentry/observability.** Errores de cliente y Edge Functions no se reportan.
