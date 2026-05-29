@@ -42,7 +42,11 @@ export default function InvestmentsScreen() {
         data={investments ?? []}
         keyExtractor={(i) => i.id}
         renderItem={({ item }) => (
-          <InvestmentRow inv={item} onLongPress={() => confirmDelete(item.name, () => del.mutate(item.id))} />
+          <InvestmentRow
+            inv={item}
+            onPress={() => router.push(`/modals/add-investment?id=${item.id}`)}
+            onLongPress={() => confirmDelete(item.name, () => del.mutate(item.id))}
+          />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={styles.list}

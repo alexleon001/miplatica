@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Tables } from "../database.types";
+import type { Tables, TablesUpdate } from "../database.types";
 import { supabase } from "../supabase";
 
 export type Transaction = Tables<"transactions">;
@@ -19,6 +19,23 @@ export function useTransactions(limit: number = DEFAULT_LIMIT) {
 
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+export function useUpdateTransaction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: TablesUpdate<"transactions"> }) => {
+      const { error } = await supabase.from("transactions").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["monthly_balance"] });
+      qc.invalidateQueries({ queryKey: ["net_worth"] });
+      qc.invalidateQueries({ queryKey: ["accounts"] });
+      qc.invalidateQueries({ queryKey: ["budgets"] });
     },
   });
 }

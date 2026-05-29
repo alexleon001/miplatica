@@ -66,6 +66,7 @@ export default function TransactionsScreen() {
         renderItem={({ item }) => (
           <TransactionItem
             tx={item}
+            onPress={() => router.push(`/modals/add-transaction?id=${item.id}`)}
             onLongPress={() =>
               confirmDelete(item.merchant ?? item.description ?? "este movimiento", () => del.mutate(item.id))
             }

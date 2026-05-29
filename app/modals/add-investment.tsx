@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
   INSTRUMENTS,
   instrumentById,
@@ -21,7 +21,8 @@ import {
 } from "../../lib/instruments";
 import { useAccounts } from "../../lib/hooks/use-accounts";
 import { useAssetPrice } from "../../lib/hooks/use-asset-price";
-import { useCreateInvestment } from "../../lib/hooks/use-create-investment";
+import { useCreateInvestment, useUpdateInvestment } from "../../lib/hooks/use-create-investment";
+import { useInvestments } from "../../lib/hooks/use-investments";
 import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
 import { useCurrencyStore } from "../../lib/store/currency";
 import { colors } from "../../lib/colors";
@@ -36,8 +37,12 @@ function parseNum(s: string): number {
 
 export default function AddInvestmentModal() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const editing = !!id;
   const accounts = useAccounts();
+  const investments = useInvestments();
   const create = useCreateInvestment();
+  const update = useUpdateInvestment();
   const rates = useExchangeRates();
   const usdType = useCurrencyStore((s) => s.usdType);
 
@@ -51,14 +56,37 @@ export default function AddInvestmentModal() {
   const [purchaseDate, setPurchaseDate] = useState("");
   const [maturityDate, setMaturityDate] = useState("");
   const [accountId, setAccountId] = useState<string | null>(null);
+  const prefilled = useRef(false);
 
   const instrument = instrumentById(type)!;
   const has = (f: InstrumentField) => instrument.fields.includes(f);
 
-  // Al cambiar de tipo, alineamos la moneda al default del instrumento.
+  // Cambio de tipo (acción del usuario): alinea la moneda al default del
+  // instrumento. En modo edición no usamos un effect sobre `type` para no
+  // pisar la moneda precargada.
+  function changeType(next: InstrumentType) {
+    setType(next);
+    setCurrency(instrumentById(next)!.defaultCurrency);
+  }
+
+  // Modo edición: precargar desde la cache de inversiones (una sola vez).
   useEffect(() => {
-    setCurrency(instrument.defaultCurrency);
-  }, [type, instrument.defaultCurrency]);
+    if (!editing || prefilled.current || !investments.data) return;
+    const inv = investments.data.find((i) => i.id === id);
+    if (!inv) return;
+    setType(inv.type as InstrumentType);
+    setName(inv.name);
+    setTicker(inv.ticker ?? "");
+    setCurrency(inv.currency as InstrumentCurrency);
+    setQuantity(String(inv.quantity));
+    const cost = inv.currency === "USD" ? inv.avg_cost_usd : inv.avg_cost_ars;
+    setAvgCost(cost != null ? String(cost) : "");
+    setInterestRate(inv.interest_rate != null ? String(inv.interest_rate) : "");
+    setPurchaseDate(inv.purchase_date ?? "");
+    setMaturityDate(inv.maturity_date ?? "");
+    setAccountId(inv.account_id ?? null);
+    prefilled.current = true;
+  }, [editing, id, investments.data]);
 
   // Cotización live del ticker (solo para instrumentos de mercado).
   const liveTicker = instrument.hasLivePrice ? ticker : "";
@@ -88,21 +116,27 @@ export default function AddInvestmentModal() {
 
     const finalName = name.trim() || ticker.trim().toUpperCase() || instrument.label;
 
+    const input = {
+      type,
+      name: finalName,
+      ticker: ticker.trim() ? ticker.trim().toUpperCase() : null,
+      currency,
+      quantity: qty,
+      avgCost: cost,
+      currentPrice: livePrice,
+      interestRate: has("interest_rate") && interestRate.trim() ? parseNum(interestRate) : null,
+      purchaseDate: has("purchase_date") && purchaseDate.trim() ? purchaseDate.trim() : null,
+      maturityDate: has("maturity_date") && maturityDate.trim() ? maturityDate.trim() : null,
+      accountId,
+      mep,
+    };
+
     try {
-      await create.mutateAsync({
-        type,
-        name: finalName,
-        ticker: ticker.trim() ? ticker.trim().toUpperCase() : null,
-        currency,
-        quantity: qty,
-        avgCost: cost,
-        currentPrice: livePrice,
-        interestRate: has("interest_rate") && interestRate.trim() ? parseNum(interestRate) : null,
-        purchaseDate: has("purchase_date") && purchaseDate.trim() ? purchaseDate.trim() : null,
-        maturityDate: has("maturity_date") && maturityDate.trim() ? maturityDate.trim() : null,
-        accountId,
-        mep,
-      });
+      if (editing) {
+        await update.mutateAsync({ id: id!, input });
+      } else {
+        await create.mutateAsync(input);
+      }
       router.back();
     } catch (e) {
       Alert.alert("Ups", e instanceof Error ? e.message : "No pude guardar la inversión.");
@@ -111,7 +145,7 @@ export default function AddInvestmentModal() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Nueva inversión" }} />
+      <Stack.Screen options={{ title: editing ? "Editar inversión" : "Nueva inversión" }} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <Field label="Tipo de instrumento">
@@ -120,7 +154,7 @@ export default function AddInvestmentModal() {
                 <Pressable
                   key={ins.id}
                   style={[styles.chip, type === ins.id && styles.chipActive]}
-                  onPress={() => setType(ins.id)}
+                  onPress={() => changeType(ins.id)}
                 >
                   <Text style={[styles.chipText, type === ins.id && styles.chipTextActive]}>
                     {ins.icon} {ins.label}
@@ -261,12 +295,18 @@ export default function AddInvestmentModal() {
             style={({ pressed }) => [
               styles.submit,
               pressed && { opacity: 0.85 },
-              create.isPending && { opacity: 0.5 },
+              (create.isPending || update.isPending) && { opacity: 0.5 },
             ]}
             onPress={submit}
-            disabled={create.isPending}
+            disabled={create.isPending || update.isPending}
           >
-            <Text style={styles.submitText}>{create.isPending ? "Guardando…" : "Guardar inversión"}</Text>
+            <Text style={styles.submitText}>
+              {create.isPending || update.isPending
+                ? "Guardando…"
+                : editing
+                  ? "Guardar cambios"
+                  : "Guardar inversión"}
+            </Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -115,3 +115,25 @@ export function useCreateInvestment() {
     },
   });
 }
+
+// Editar una posición existente: re-deriva valores (deriveInvestmentValues) con
+// los nuevos datos y la tasa MEP actual, y actualiza la fila. Sin optimistic:
+// el edit es menos frecuente y la invalidación refresca al instante.
+export function useUpdateInvestment() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: string; input: CreateInvestmentInput }) => {
+      const { error } = await supabase
+        .from("investments")
+        .update(buildRow(input))
+        .eq("id", id);
+      if (error) throw error;
+    },
+
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["investments"] });
+      qc.invalidateQueries({ queryKey: ["net_worth"] });
+    },
+  });
+}

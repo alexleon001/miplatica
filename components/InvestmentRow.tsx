@@ -7,7 +7,15 @@ import { colors } from "../lib/colors";
 
 const qtyFmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 4 });
 
-export function InvestmentRow({ inv, onLongPress }: { inv: Investment; onLongPress?: () => void }) {
+export function InvestmentRow({
+  inv,
+  onPress,
+  onLongPress,
+}: {
+  inv: Investment;
+  onPress?: () => void;
+  onLongPress?: () => void;
+}) {
   const instrument = instrumentById(inv.type);
 
   const subtitle = [
@@ -19,8 +27,9 @@ export function InvestmentRow({ inv, onLongPress }: { inv: Investment; onLongPre
 
   return (
     <Pressable
+      onPress={onPress}
       onLongPress={onLongPress}
-      style={({ pressed }) => [styles.row, pressed && onLongPress ? { opacity: 0.6 } : null]}
+      style={({ pressed }) => [styles.row, pressed && (onPress || onLongPress) ? { opacity: 0.6 } : null]}
     >
       <View style={[styles.icon, { backgroundColor: (instrument?.color ?? colors.border) + "33" }]}>
         <Text style={styles.iconText}>{instrument?.icon ?? "💎"}</Text>

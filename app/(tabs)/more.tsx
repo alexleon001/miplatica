@@ -22,6 +22,18 @@ export default function MoreScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Más</Text>
 
+        <Pressable
+          style={({ pressed }) => [styles.advisorBtn, pressed && { opacity: 0.9 }]}
+          onPress={() => router.push("/advisor")}
+        >
+          <Text style={styles.advisorIcon}>🧉</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.advisorTitle}>Asesor financiero IA</Text>
+            <Text style={styles.advisorSubtitle}>Chateá sobre tu plata con contexto real</Text>
+          </View>
+          <Text style={styles.advisorChevron}>›</Text>
+        </Pressable>
+
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Presupuestos del mes</Text>
           <BudgetsList />
@@ -99,4 +111,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   linkBtnText: { color: colors.primary, fontWeight: "600" },
+  advisorBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: colors.primary + "22",
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 8,
+  },
+  advisorIcon: { fontSize: 28 },
+  advisorTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: "700" },
+  advisorSubtitle: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  advisorChevron: { color: colors.primary, fontSize: 24, fontWeight: "700" },
 });

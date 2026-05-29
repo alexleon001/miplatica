@@ -6,7 +6,15 @@ import { colors } from "../lib/colors";
 
 const dayFmt = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" });
 
-export function TransactionItem({ tx, onLongPress }: { tx: Transaction; onLongPress?: () => void }) {
+export function TransactionItem({
+  tx,
+  onPress,
+  onLongPress,
+}: {
+  tx: Transaction;
+  onPress?: () => void;
+  onLongPress?: () => void;
+}) {
   const cat = categoryById(tx.category);
   const isIncome = tx.type === "income";
   const tone = isIncome ? "positive" : tx.type === "expense" ? "negative" : "default";
@@ -17,8 +25,9 @@ export function TransactionItem({ tx, onLongPress }: { tx: Transaction; onLongPr
 
   return (
     <Pressable
+      onPress={onPress}
       onLongPress={onLongPress}
-      style={({ pressed }) => [styles.row, pressed && onLongPress ? { opacity: 0.6 } : null]}
+      style={({ pressed }) => [styles.row, pressed && (onPress || onLongPress) ? { opacity: 0.6 } : null]}
     >
       <View style={[styles.icon, { backgroundColor: (cat?.color ?? colors.border) + "33" }]}>
         <Text style={styles.iconText}>{cat?.icon ?? "📦"}</Text>

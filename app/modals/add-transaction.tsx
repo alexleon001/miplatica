@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -11,11 +11,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { categoriesByGroup, categoryById } from "../../lib/categories";
 import { useAccounts } from "../../lib/hooks/use-accounts";
 import { useCategorizeTransaction } from "../../lib/hooks/use-categorize-transaction";
 import { useCreateTransaction } from "../../lib/hooks/use-create-transaction";
+import { useTransactions, useUpdateTransaction } from "../../lib/hooks/use-transactions";
 import { colors } from "../../lib/colors";
 
 type TxType = "income" | "expense" | "transfer" | "investment";
@@ -29,8 +30,12 @@ const TYPES: { value: TxType; label: string }[] = [
 
 export default function AddTransactionModal() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const editing = !!id;
   const accounts = useAccounts();
+  const txs = useTransactions();
   const create = useCreateTransaction();
+  const update = useUpdateTransaction();
   const categorize = useCategorizeTransaction();
 
   const [type, setType] = useState<TxType>("expense");
@@ -38,13 +43,30 @@ export default function AddTransactionModal() {
   const [description, setDescription] = useState("");
   const [accountId, setAccountId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const prefilled = useRef(false);
 
-  // Default a la primera cuenta activa cuando carguen.
+  // Default a la primera cuenta activa cuando carguen (solo en alta).
   useEffect(() => {
+    if (editing) return;
     if (!accountId && accounts.data && accounts.data.length > 0) {
       setAccountId(accounts.data[0].id);
     }
-  }, [accounts.data, accountId]);
+  }, [editing, accounts.data, accountId]);
+
+  // Modo edición: precargar desde la cache de transacciones (una sola vez).
+  useEffect(() => {
+    if (!editing || prefilled.current || !txs.data || !accounts.data) return;
+    const tx = txs.data.find((t) => t.id === id);
+    if (!tx) return;
+    setType(tx.type as TxType);
+    setDescription(tx.description ?? tx.merchant ?? "");
+    setAccountId(tx.account_id);
+    setCategoryId(tx.category ?? null);
+    const acc = accounts.data.find((a) => a.id === tx.account_id);
+    const amt = acc?.currency === "USD" ? tx.amount_usd : tx.amount_ars;
+    setAmount(amt != null ? String(amt) : "");
+    prefilled.current = true;
+  }, [editing, id, txs.data, accounts.data]);
 
   const selectedAccount = useMemo(
     () => accounts.data?.find((a) => a.id === accountId) ?? null,
@@ -91,17 +113,34 @@ export default function AddTransactionModal() {
       return;
     }
 
+    const amount_ars = selectedAccount.currency === "ARS" ? amountNum : 0;
+    const amount_usd = selectedAccount.currency === "USD" ? amountNum : null;
+
     try {
-      await create.mutateAsync({
-        account_id: selectedAccount.id,
-        type,
-        category: categoryId ?? null,
-        amount_ars: selectedAccount.currency === "ARS" ? amountNum : 0,
-        amount_usd: selectedAccount.currency === "USD" ? amountNum : null,
-        description: description.trim() || null,
-        merchant: null,
-        source: "manual",
-      });
+      if (editing) {
+        await update.mutateAsync({
+          id: id!,
+          patch: {
+            account_id: selectedAccount.id,
+            type,
+            category: categoryId ?? null,
+            amount_ars,
+            amount_usd,
+            description: description.trim() || null,
+          },
+        });
+      } else {
+        await create.mutateAsync({
+          account_id: selectedAccount.id,
+          type,
+          category: categoryId ?? null,
+          amount_ars,
+          amount_usd,
+          description: description.trim() || null,
+          merchant: null,
+          source: "manual",
+        });
+      }
       router.back();
     } catch (e) {
       Alert.alert("Ups", e instanceof Error ? e.message : "No pude guardar la transacción.");
@@ -110,7 +149,7 @@ export default function AddTransactionModal() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Nuevo movimiento" }} />
+      <Stack.Screen options={{ title: editing ? "Editar movimiento" : "Nuevo movimiento" }} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -206,13 +245,17 @@ export default function AddTransactionModal() {
             style={({ pressed }) => [
               styles.submit,
               pressed && { opacity: 0.85 },
-              create.isPending && { opacity: 0.5 },
+              (create.isPending || update.isPending) && { opacity: 0.5 },
             ]}
             onPress={submit}
-            disabled={create.isPending}
+            disabled={create.isPending || update.isPending}
           >
             <Text style={styles.submitText}>
-              {create.isPending ? "Guardando…" : "Guardar movimiento"}
+              {create.isPending || update.isPending
+                ? "Guardando…"
+                : editing
+                  ? "Guardar cambios"
+                  : "Guardar movimiento"}
             </Text>
           </Pressable>
         </ScrollView>

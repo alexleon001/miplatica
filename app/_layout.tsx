@@ -73,6 +73,7 @@ function AuthGate() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.backgroundDark } }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(auth)" />
+      <Stack.Screen name="advisor" />
       <Stack.Screen name="modals" options={{ presentation: "modal" }} />
     </Stack>
   );
