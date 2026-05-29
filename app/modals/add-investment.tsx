@@ -21,6 +21,7 @@ import {
 } from "../../lib/instruments";
 import { useAccounts } from "../../lib/hooks/use-accounts";
 import { useAssetPrice } from "../../lib/hooks/use-asset-price";
+import { isPriceStale, staleLabel } from "../../lib/prices";
 import { useCreateInvestment, useUpdateInvestment } from "../../lib/hooks/use-create-investment";
 import { useInvestments } from "../../lib/hooks/use-investments";
 import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
@@ -185,13 +186,19 @@ export default function AddInvestmentModal() {
                 onChangeText={setTicker}
               />
               {instrument.hasLivePrice && ticker.trim() ? (
-                <Text style={styles.hint}>
-                  {assetPrice.isLoading
-                    ? "Buscando precio…"
-                    : livePrice != null
-                      ? `Precio actual: ${arsFmt.format(livePrice)} ${currency}`
-                      : "Sin cotización cacheada (se usa tu costo promedio)."}
-                </Text>
+                livePrice != null && isPriceStale(assetPrice.data?.fetched_at) ? (
+                  <Text style={[styles.hint, styles.hintStale]}>
+                    Precio actual: {arsFmt.format(livePrice)} {currency} · ⚠ {staleLabel(assetPrice.data?.fetched_at)}
+                  </Text>
+                ) : (
+                  <Text style={styles.hint}>
+                    {assetPrice.isLoading
+                      ? "Buscando precio…"
+                      : livePrice != null
+                        ? `Precio actual: ${arsFmt.format(livePrice)} ${currency}`
+                        : "Sin cotización cacheada (se usa tu costo promedio)."}
+                  </Text>
+                )
               ) : null}
             </Field>
           ) : null}
@@ -351,6 +358,7 @@ const styles = StyleSheet.create({
   chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
   chipTextActive: { color: colors.textPrimary },
   hint: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
+  hintStale: { color: colors.warning },
   submit: {
     backgroundColor: colors.primary,
     paddingVertical: 14,

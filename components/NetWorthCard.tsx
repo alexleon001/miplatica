@@ -3,14 +3,14 @@
 // ceros (la vista v_net_worth no devuelve fila si nada existe).
 
 import { StyleSheet, Text, View } from "react-native";
-import { useNetWorth } from "../lib/hooks/use-net-worth";
+import { useFreshNetWorth } from "../lib/hooks/use-net-worth";
 import { MoneyAmount } from "./MoneyAmount";
 import { Skeleton } from "./Skeleton";
 import { StateMessage } from "./StateMessage";
 import { colors } from "../lib/colors";
 
 export function NetWorthCard() {
-  const { data, isLoading, isError, refetch } = useNetWorth();
+  const { data, isLoading, isError, refetch } = useFreshNetWorth();
 
   const netArs = data?.net_ars ?? 0;
   const netUsd = data?.net_usd ?? 0;
