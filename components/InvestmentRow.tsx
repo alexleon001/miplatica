@@ -9,10 +9,12 @@ const qtyFmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 4 });
 
 export function InvestmentRow({
   inv,
+  realPct,
   onPress,
   onLongPress,
 }: {
   inv: Investment;
+  realPct?: number | null;
   onPress?: () => void;
   onLongPress?: () => void;
 }) {
@@ -46,7 +48,7 @@ export function InvestmentRow({
 
       <View style={styles.right}>
         <MoneyAmount ars={inv.current_value_ars} usd={inv.current_value_usd} size="sm" />
-        <PnLBadge pct={inv.profit_loss_pct} />
+        <PnLBadge pct={inv.profit_loss_pct} realPct={realPct} />
       </View>
     </Pressable>
   );

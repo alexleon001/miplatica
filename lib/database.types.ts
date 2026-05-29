@@ -215,6 +215,24 @@ export type Database = {
         }
         Relationships: []
       }
+      inflation: {
+        Row: {
+          fetched_at: string
+          ipc: number
+          month: string
+        }
+        Insert: {
+          fetched_at?: string
+          ipc: number
+          month: string
+        }
+        Update: {
+          fetched_at?: string
+          ipc?: number
+          month?: string
+        }
+        Relationships: []
+      }
       investments: {
         Row: {
           account_id: string | null

@@ -27,9 +27,9 @@
 
 ---
 
-## Estado actual (sesión 3, 2026-05-29)
+## Estado actual (sesión 4, 2026-05-29)
 
-Sprints 0 → 3, 5 y 6 completos; 4 parcial (CSV ✅, MP OAuth bloqueado por credenciales del user). Todo en `main`.
+Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP OAuth bloqueado por credenciales del user). Todo en `main`.
 **Verificado en device (Expo Go):** Sprints 0 → 1 (auth, onboarding, dashboard, toggles, tasas). El resto **no se validó en device aún**.
 **APK preview:** build `2a8ddb8c` (sesión 3, con ícono nuevo + íconos de tabs + recordatorios + asesor + edit CRUD) — verificar estado/descarga en https://expo.dev/accounts/alexleon001/projects/mi-platica/builds. Build previo OK fue `11dda3ab` (anon key cargada).
 
@@ -41,12 +41,13 @@ Sprints 0 → 3, 5 y 6 completos; 4 parcial (CSV ✅, MP OAuth bloqueado por cre
 - **Deudas**: alta/edición/borrado, resta al patrimonio neto.
 - **Metas de ahorro (Sprint 6)**: `savings_goals` CRUD (`SavingsGoalsList` en `more.tsx` + modal `add-goal`), barra de progreso + ETA por aporte mensual. No entra al patrimonio neto.
 - **Recordatorios de vencimiento (Sprint 6)**: `lib/reminders.ts` (lógica pura) → banner in-app `UpcomingReminders` en el dashboard (vencidos + ≤14 días) + **notificaciones locales** (`expo-notifications`, hook `useRemindersSync` en el layout de tabs: agenda el día previo 09:00, reprograma al cambiar datos). Cubre deudas (`next_payment_date`) y metas (`target_date`).
+- **Rendimiento real / ajuste por inflación (Sprint 3.5, regla #5)**: tabla `inflation` (IPC mensual INDEC vía argentinadatos, 998 meses backfilleados) + Edge `fetch-inflation` (cron días 4 y 17) + hook `useInflation` (self-healing) + helpers puros `lib/inflation.ts` (`cumulativeInflation` compone mes a mes, `realReturn` Fisher, `realReturnForPosition`). `PnLBadge` muestra **"real +Y%"** bajo el % nominal (por posición y agregado del portafolio). El real se mide **en pesos**: nominal ARS de `profit_loss_ars` vs inflación acumulada desde `purchase_date ?? created_at`. Si no hay IPC cargado, oculta el real.
 - **Presupuestos vivos**: `budgets.spent_ars` mantenido por triggers; modal de alta.
 - **Import CSV de brokers** (pegar texto): parser sin deps + dedup por `external_id`.
 - **Asesor financiero IA (Sprint 5)**: chat `app/advisor.tsx` (entry en `more.tsx`) → Edge `financial-advisor` (persona AR + prompt caching + contexto financiero vía RLS) → `use-advisor`.
 - **CRUD completo**: borrar las 4 entidades (long-press); editar las 4 (tap = editar, reusan su modal de alta en modo edición; investments re-deriva con `deriveInvestmentValues`).
 - **Branding/UI**: ícono de app + adaptive + splash (gradiente indigo→cyan + "$", generados con `scripts/gen-icons.py` vía PIL → `assets/`). Tabs con íconos Ionicons (`@expo/vector-icons`), sin header redundante; todas las tabs con safe-area `top`; wordmark "Mi Platica" en el dashboard.
-- **Calidad**: 19 tests `bun test` (verde) sobre `csv.ts`, `broker-import.ts`, `instruments.ts`, `reminders.ts`. `type-check:app` limpio.
+- **Calidad**: 27 tests `bun test` (verde) sobre `csv.ts`, `broker-import.ts`, `instruments.ts`, `reminders.ts`, `inflation.ts`. `type-check:app` con errores **pre-existentes ajenos a la app** (KATA `api/`/`cli/` + tuple `segments[1]` en `app/_layout.tsx:50`); la feature de inflación compila limpia.
 
 **Backend live:** ver "Integraciones activas". Migraciones aplicadas hasta `0005`. Crons activos.
 
@@ -62,7 +63,7 @@ Sprints 0 → 3, 5 y 6 completos; 4 parcial (CSV ✅, MP OAuth bloqueado por cre
 
 1. **🔴 Validación en device + fix de bugs (recomendado primero).** Casi nada post-Sprint 1 se probó en device. Camino feliz completo en el APK: alta/edición/borrado de las 4 entidades, import CSV, presupuestos vivos, portafolio, asesor IA (con la key), banner + notificación de recordatorios. Anotar y arreglar lo que rompa. *Es el mayor riesgo acumulado.*
 
-2. **📈 Ajuste por inflación en P&L (regla #5, Sprint 3.5).** Mostrar "+X% nominal / +Y% real" en `PnLBadge` e inversiones ARS. Plan: Edge/cron que baje IPC mensual de `api.argentinadatos.com/v1/finanzas/indices/inflacion` → tabla `inflation` (migración) → hook `useInflation` → helper de retorno real. *Diferencial de producto que aún no existe.*
+2. ~~📈 Ajuste por inflación en P&L (Sprint 3.5)~~ ✅ **HECHO sesión 4** (tabla `inflation` + Edge + cron + `useInflation` + `realReturnForPosition` + `PnLBadge` con real). Falta **verificar en device** que el "real +Y%" se vea bien y los números cierren.
 
 3. **🛡️ Observabilidad — Sentry (`@sentry/react-native`).** Antes del primer beta real: capturar crashes del cliente + errores de Edge Functions (hoy el scheduling de notifs y los flujos de IA fallan en silencio). ~5k errores/mes gratis.
 
@@ -138,14 +139,15 @@ bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 - [x] Edge `categorize-transaction` (ACTIVE, `verify_jwt=true`, prompt caching). ⚠️ Sin `ANTHROPIC_API_KEY` → 500.
 - [x] Edge `financial-advisor` (ACTIVE, `verify_jwt=true`, prompt caching). Arma contexto del user vía RLS. ⚠️ Sin `ANTHROPIC_API_KEY` → 500.
 - [x] Edge `update-asset-prices` (ACTIVE, `verify_jwt=false`) → data912 + dolarapi → `asset_prices`. Llama `refresh_positions()` por RPC al final.
+- [x] Edge `fetch-inflation` (ACTIVE, `verify_jwt=false`) → argentinadatos → `inflation` (IPC mensual, upsert idempotente). 998 meses backfilleados.
 - [x] Función SQL `refresh_positions()` (migración `0003`, `security_definer`, revaloriza posiciones).
-- [x] pg_cron: `update-asset-prices` (`*/15 14-20 * * 1-5`, jobid 1) + `fetch-exchange-rates` (`*/30 * * * *`, jobid 2), vía `net.http_post` keyless. Probados.
+- [x] pg_cron: `update-asset-prices` (`*/15 14-20 * * 1-5`) + `fetch-exchange-rates` (`*/30 * * * *`) + `fetch-inflation` (`0 14 4,17 * *`), vía `net.http_post` keyless. Probados.
 - [x] Import CSV de movimientos (Cocos/PPI/IOL/banco) por alias de columnas + dedup `external_id`.
 - [ ] **`ANTHROPIC_API_KEY`** en secrets — bloquea IA.
 - [ ] Mercado Pago OAuth — Sprint 4.
 - [ ] CAFCI (FCI) y cripto: sin fuente de precios aún. Open Banking BCRA — eval Sprint 5+.
 
-**Migraciones aplicadas:** `0001_init_schema`, `0002_helper_views`, `0003_refresh_positions`, `0004_schedule_crons`, `0005_budget_spent_triggers`.
+**Migraciones aplicadas:** `0001_init_schema`, `0002_helper_views`, `0003_refresh_positions`, `0004_schedule_crons`, `0005_budget_spent_triggers`, `0006_inflation`.
 
 ---
 
@@ -189,8 +191,9 @@ bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 | 1 / 1.5 | Dashboard multi-moneda / onboarding + sync profile | ✅ |
 | 2 | Transacciones + categorización IA + presupuestos | ✅ |
 | 3 | Portafolio con cotizaciones live | ✅ (backend+crons live; falta verificar UI en device) |
+| 3.5 | Ajuste por inflación / rendimiento real (regla #5) | ✅ (tabla `inflation` + Edge `fetch-inflation` + cron + `useInflation` + `PnLBadge` real; falta verificar en device) |
 | 4 | Mercado Pago + import CSV | 🚧 CSV ✅; MP OAuth bloqueado por credenciales del user |
 | 5 | Asesor financiero IA | ✅ (Edge `financial-advisor` + chat; falta `ANTHROPIC_API_KEY` + probar en device) |
 | 6 | Deudas, metas y presupuestos avanzados | ✅ deudas + presupuestos vivos + metas de ahorro + recordatorios de vencimiento (in-app + notif locales) |
 
-*Última actualización: 2026-05-29 (sesión 3): asesor IA, edit CRUD completo, metas de ahorro, recordatorios de vencimiento, ícono de app + íconos de tabs, APK rebuildeado. Historial detallado por sprint en el git log.*
+*Última actualización: 2026-05-29 (sesión 4): rendimiento real / ajuste por inflación (Sprint 3.5) — tabla `inflation` + Edge `fetch-inflation` + cron + `useInflation` + `PnLBadge` con "real +Y%". Historial detallado por sprint en el git log.*

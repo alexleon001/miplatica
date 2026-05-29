@@ -10,31 +10,65 @@ import { PortfolioDistribution } from "../../components/PortfolioDistribution";
 import { RowsSkeleton } from "../../components/Skeleton";
 import { StateMessage } from "../../components/StateMessage";
 import { useDeleteInvestment, useInvestments } from "../../lib/hooks/use-investments";
+import { useInflation } from "../../lib/hooks/use-inflation";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
 import { confirmDelete } from "../../lib/confirm";
+import { realReturnForPosition } from "../../lib/inflation";
 import { colors } from "../../lib/colors";
 
 export default function InvestmentsScreen() {
   const router = useRouter();
   const { data: investments, isLoading, isError, refetch } = useInvestments();
+  const { data: inflationRows } = useInflation();
   const { refreshing, onRefresh } = usePullRefresh();
   const del = useDeleteInvestment();
 
-  const summary = useMemo(() => {
+  // Rendimiento real (ajustado por inflación, regla #5) por posición + agregado.
+  // El agregado compone el costo de cada posición por su inflación acumulada
+  // desde la compra y lo compara contra el valor actual en pesos.
+  const { realByInvestment, summary } = useMemo(() => {
     const list = investments ?? [];
+    const rows = inflationRows ?? [];
+    const today = new Date().toISOString().slice(0, 10);
+    const realMap = new Map<string, number>();
+
     let valueArs = 0;
     let valueUsd = 0;
     let plArs = 0;
     let costArs = 0;
+    let realGainArs = 0;     // suma de (valor − costo ajustado por inflación)
+    let adjCostArs = 0;      // suma de costos ajustados por inflación (posiciones con dato)
+    let hasReal = false;
+
     for (const inv of list) {
       valueArs += inv.current_value_ars ?? 0;
       valueUsd += inv.current_value_usd ?? 0;
       plArs += inv.profit_loss_ars ?? 0;
       costArs += (inv.current_value_ars ?? 0) - (inv.profit_loss_ars ?? 0);
+
+      const r = realReturnForPosition(
+        {
+          currentValueArs: inv.current_value_ars,
+          profitLossArs: inv.profit_loss_ars,
+          since: inv.purchase_date ?? inv.created_at,
+        },
+        rows,
+        today,
+      );
+      if (r) {
+        realMap.set(inv.id, r.realPct);
+        const cost = (inv.current_value_ars ?? 0) - (inv.profit_loss_ars ?? 0);
+        const adjusted = cost * (1 + r.inflationPct / 100);
+        adjCostArs += adjusted;
+        realGainArs += (inv.current_value_ars ?? 0) - adjusted;
+        hasReal = true;
+      }
     }
+
     const plPct = costArs > 0 ? (plArs / costArs) * 100 : null;
-    return { valueArs, valueUsd, plArs, plPct };
-  }, [investments]);
+    const realPct = hasReal && adjCostArs > 0 ? (realGainArs / adjCostArs) * 100 : null;
+    return { realByInvestment: realMap, summary: { valueArs, valueUsd, plArs, plPct, realPct } };
+  }, [investments, inflationRows]);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -44,6 +78,7 @@ export default function InvestmentsScreen() {
         renderItem={({ item }) => (
           <InvestmentRow
             inv={item}
+            realPct={realByInvestment.get(item.id)}
             onPress={() => router.push(`/modals/add-investment?id=${item.id}`)}
             onLongPress={() => confirmDelete(item.name, () => del.mutate(item.id))}
           />
@@ -63,7 +98,7 @@ export default function InvestmentsScreen() {
               <MoneyAmount ars={summary.valueArs} usd={summary.valueUsd} size="lg" />
               <View style={styles.summaryPnl}>
                 <Text style={styles.summaryPnlLabel}>Resultado</Text>
-                <PnLBadge pct={summary.plPct} size="md" />
+                <PnLBadge pct={summary.plPct} realPct={summary.realPct} size="md" />
               </View>
             </View>
 
