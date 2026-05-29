@@ -70,8 +70,8 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 4. **🔌 Resiliencia de fuentes de precios.** `update-asset-prices` depende solo de data912 (sin SLA). Fallback CAFCI (FCI) + criptoya (cripto), loguear cobertura por fuente, marcar precios stale en la UI.
 
 **Mejoras chicas (si sobra tiempo):**
-- Acción "Aportar" en metas y "Registrar pago" en deudas (descuenta del saldo) — hoy hay que editar a mano.
-- Deep-link al tocar una notificación de recordatorio (abrir Deudas/Metas).
+- ~~Acción "Aportar" en metas y "Registrar pago" en deudas~~ ✅ **HECHO sesión 4** (`useRegisterDebtPayment`/`useAddGoalContribution` + modal `quick-amount` + píldoras "Pagar"/"+ Aportar"). Falta verificar en device.
+- ~~Deep-link al tocar una notificación de recordatorio~~ ✅ **HECHO sesión 4** (listener en `useRemindersSync`: deuda→tab Deudas, meta→Más; cubre app cerrada vía `getLastNotificationResponseAsync`). Falta verificar en device.
 - Vista SQL `v_portfolio_by_type` (mover la agregación client-side de `PortfolioDistribution`).
 - Auth social (Google/Apple) para bajar fricción de signup.
 
