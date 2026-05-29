@@ -31,7 +31,7 @@
 
 Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP OAuth bloqueado por credenciales del user). Todo en `main`.
 **Verificado en device (Expo Go):** Sprints 0 → 1 (auth, onboarding, dashboard, toggles, tasas). El resto **no se validó en device aún**.
-**APK preview:** build `2a8ddb8c` (sesión 3, con ícono nuevo + íconos de tabs + recordatorios + asesor + edit CRUD) — verificar estado/descarga en https://expo.dev/accounts/alexleon001/projects/mi-platica/builds. Build previo OK fue `11dda3ab` (anon key cargada).
+**APK preview:** build `ad6d2dee` (sesión 4 — inflación/real, acciones rápidas, deep-link, resiliencia de precios, plazo fijo fresco, asesor inflation-aware) **corriendo/recién buildeado** — estado/descarga en https://expo.dev/accounts/alexleon001/projects/mi-platica/builds. Previos: `2a8ddb8c` (sesión 3), `11dda3ab` (primer OK con anon key).
 
 **Qué existe hoy (features):**
 - **Dashboard** multi-moneda: `NetWorthCard`, `AccountsList`, `ExchangeRatesBar`, `CurrencyToggle`, pull-refresh, skeletons, estados de error con reintento.
@@ -55,15 +55,13 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 
 ## Próxima sesión (sesión 5) — plan
 
-**🚚 Cola de deploy de sesión 4:**
-1. ✅ **2 Edge Functions deployadas** (v2+): `update-asset-prices` (v4, cripto+coverage; verificado: coverage stocks 91/cedears 907/bonds 161/corp 537/**crypto 21**/mep 1) + `financial-advisor` (v2, inflación + real por posición).
-2. ⏳ **`ANTHROPIC_API_KEY`** — el user la está seteando (dashboard o `supabase secrets set`). Sin esto el asesor y "sugerir categoría" devuelven 500. **Verificar que la IA responda una vez seteada.**
-3. ⏳ **Push** de los commits de sesión 4 a `origin/main` (pendiente).
-4. ⏳ **Rebuild APK** (`eas build -p android --profile preview`) y **validar en device** toda la UI nueva.
+**🚚 Cola de deploy de sesión 4 — COMPLETADA:**
+1. ✅ **2 Edge Functions deployadas**: `update-asset-prices` (v4, cripto+coverage; verificado: stocks 91/cedears 907/bonds 161/corp 537/**crypto 21**/mep 1) + `financial-advisor` (v2, inflación + real por posición).
+2. ✅ **`ANTHROPIC_API_KEY`** seteada por el user en secrets → IA desbloqueada (asesor + "sugerir categoría"). Falta validar respuesta real en device.
+3. ✅ **Push** a `origin/main` (HEAD == origin/main).
+4. 🛠️ **Rebuild APK disparado**: build `ad6d2dee-0cae-4d27-b67e-5c9673412d30` (perfil preview, commit `7fde477`) corriendo en EAS → seguir/descargar en https://expo.dev/accounts/alexleon001/projects/mi-platica/builds. **Pendiente: instalar y validar en device toda la UI de sesión 4.**
 
-**Bloqueos del user (hacer primero, desbloquean lo demás):**
-- ⚠️ **Setear `ANTHROPIC_API_KEY`** (ver paso 2 arriba).
-- Instalar el **APK nuevo** (rebuild pendiente; el `2a8ddb8c` es previo a sesión 4) para validar en device.
+**Único pendiente real: validación en device del APK `ad6d2dee`** (camino feliz completo + IA con la key ya seteada).
 
 **Opciones priorizadas (elegir al arrancar):**
 
