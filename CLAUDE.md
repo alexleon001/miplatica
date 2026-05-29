@@ -90,6 +90,8 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 
 **Estado (2026-05-29):** `eas init` ya corrido — `app.json` tiene `projectId`, `owner`, `updates.url` y `runtimeVersion`; `expo-updates ~29` reinstalado. **APK preview buildeado y verificado** (build `11dda3ab`). El blocker que impedía un APK funcional era que faltaba `EXPO_PUBLIC_SUPABASE_ANON_KEY` en el environment `preview` de EAS (el `eas.json/env` solo tenía URL + APP_ENV) → sin ella el APK compila pero no conecta a Supabase. **Ya seteada** (publishable, `eas env`). Perfil `preview` → `buildType: apk`. Build corre en servidores EAS (no requiere Android SDK local).
 
+**Sesión 5 (2026-05-29):** el rebuild de APK se **rechazó por cuota** (plan Free EAS agotó los builds Android del mes; resetea **2026-06-01**). Como los cambios de sesión 5 (proyección, fixes MP, etc.) son **JS/RN puro sin módulos nativos nuevos**, se entregaron por **EAS Update (OTA)** al canal `preview` (runtime `0.1.0`, update group `d7913cc0`, commit `cca8bf7`) → el APK `fa3d3965` instalado los levanta al reabrir. **Rebuild de APK pendiente para después del 1/6** (o upgrade de plan). EAS auth: sesión guardada de `alexleon001` (no hay `EXPO_TOKEN` en el entorno; `eas whoami` OK).
+
 Para rebuildear (con `EXPO_TOKEN` en el entorno corre no-interactivo):
 ```bash
 pnpm dlx eas-cli build -p android --profile preview --non-interactive
