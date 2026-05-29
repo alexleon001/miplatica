@@ -82,6 +82,12 @@ export default function MoreScreen() {
           </Text>
           <Text style={styles.kvLabel}>Dólar preferido</Text>
           <Text style={styles.kvValue}>{profile?.preferred_usd_type?.toUpperCase() ?? "—"}</Text>
+          <Pressable
+            style={({ pressed }) => [styles.linkBtn, pressed && { opacity: 0.85 }, { marginTop: 12 }]}
+            onPress={() => router.push("/modals/edit-profile")}
+          >
+            <Text style={styles.linkBtnText}>Editar perfil</Text>
+          </Pressable>
         </View>
 
         <View style={styles.section}>

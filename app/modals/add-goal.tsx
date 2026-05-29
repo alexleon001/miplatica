@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCreateGoal, useSavingsGoals, useUpdateGoal } from "../../lib/hooks/use-savings-goals";
 import { colors } from "../../lib/colors";
@@ -92,8 +93,7 @@ export default function AddGoalModal() {
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <Stack.Screen options={{ title: editing ? "Editar meta" : "Nueva meta de ahorro" }} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
           <Field label="Nombre">
             <TextInput
               style={styles.input}
@@ -182,8 +182,7 @@ export default function AddGoalModal() {
               {busy ? "Guardando…" : editing ? "Guardar cambios" : "Guardar meta"}
             </Text>
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

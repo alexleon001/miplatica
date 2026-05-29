@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
 import { Stack, useRouter } from "expo-router";
 import { categoriesByGroup } from "../../lib/categories";
 import { useCreateBudget } from "../../lib/hooks/use-budgets";
@@ -49,8 +50,7 @@ export default function AddBudgetModal() {
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <Stack.Screen options={{ title: "Nuevo presupuesto" }} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
           <Text style={styles.help}>
             Límite mensual para {monthFmt.format(new Date())}. El gasto se actualiza solo con tus movimientos.
           </Text>
@@ -89,8 +89,7 @@ export default function AddBudgetModal() {
           >
             <Text style={styles.submitText}>{create.isPending ? "Guardando…" : "Guardar presupuesto"}</Text>
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

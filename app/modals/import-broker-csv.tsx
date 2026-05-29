@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
 import { Stack, useRouter } from "expo-router";
 import {
   parseBrokerCsv,
@@ -75,8 +76,7 @@ export default function ImportBrokerCsvModal() {
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <Stack.Screen options={{ title: "Importar CSV" }} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
           <Text style={styles.help}>
             Pegá el CSV de movimientos de tu broker o banco (Cocos, PPI, IOL…). Detecto fecha,
             tipo, descripción, importe y nro de operación. Reimportar el mismo archivo no duplica.
@@ -170,8 +170,7 @@ export default function ImportBrokerCsvModal() {
               </Text>
             </Pressable>
           ) : null}
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

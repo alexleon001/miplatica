@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
   useCreateProjectionItem,
@@ -117,8 +118,7 @@ export default function AddProjectionItemModal() {
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <Stack.Screen options={{ title: editing ? "Editar gasto" : "Nuevo gasto proyectado" }} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
           <Field label="Nombre">
             <TextInput
               style={styles.input}
@@ -208,8 +208,7 @@ export default function AddProjectionItemModal() {
           >
             <Text style={styles.submitText}>{pending ? "Guardando…" : editing ? "Guardar cambios" : "Guardar gasto"}</Text>
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

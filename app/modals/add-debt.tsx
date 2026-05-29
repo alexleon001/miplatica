@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
 import { useCreateDebt, useDebts, useUpdateDebt } from "../../lib/hooks/use-debts";
 import { colors } from "../../lib/colors";
 
@@ -102,8 +103,7 @@ export default function AddDebtModal() {
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <Stack.Screen options={{ title: editing ? "Editar deuda" : "Nueva deuda" }} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
           <Field label="Nombre">
             <TextInput
               style={styles.input}
@@ -210,8 +210,7 @@ export default function AddDebtModal() {
               {create.isPending || update.isPending ? "Guardando…" : editing ? "Guardar cambios" : "Guardar deuda"}
             </Text>
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

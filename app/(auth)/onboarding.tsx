@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
 import { useUpdateProfile } from "../../lib/hooks/use-profile";
 import { colors } from "../../lib/colors";
 
@@ -66,11 +67,7 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
           <Text style={styles.title}>Bienvenido a Mi Platica</Text>
           <Text style={styles.subtitle}>
             Configurá tus preferencias en 30 segundos. Después podés cambiarlas en cualquier
@@ -143,8 +140,7 @@ export default function OnboardingScreen() {
               {updateProfile.isPending ? "Guardando…" : "Empezar"}
             </Text>
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

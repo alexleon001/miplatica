@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
   INSTRUMENTS,
@@ -147,8 +148,7 @@ export default function AddInvestmentModal() {
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <Stack.Screen options={{ title: editing ? "Editar inversión" : "Nueva inversión" }} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
           <Field label="Tipo de instrumento">
             <View style={styles.row}>
               {INSTRUMENTS.map((ins) => (
@@ -315,8 +315,7 @@ export default function AddInvestmentModal() {
                   : "Guardar inversión"}
             </Text>
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

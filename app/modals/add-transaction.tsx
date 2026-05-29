@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { categoriesByGroup, categoryById } from "../../lib/categories";
 import { useAccounts } from "../../lib/hooks/use-accounts";
@@ -150,11 +151,7 @@ export default function AddTransactionModal() {
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <Stack.Screen options={{ title: editing ? "Editar movimiento" : "Nuevo movimiento" }} />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
           <Field label="Tipo">
             <View style={styles.row}>
               {TYPES.map((t) => (
@@ -258,8 +255,7 @@ export default function AddTransactionModal() {
                   : "Guardar movimiento"}
             </Text>
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
