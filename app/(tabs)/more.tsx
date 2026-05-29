@@ -36,6 +36,18 @@ export default function MoreScreen() {
           <Text style={styles.advisorChevron}>›</Text>
         </Pressable>
 
+        <Pressable
+          style={({ pressed }) => [styles.advisorBtn, pressed && { opacity: 0.9 }]}
+          onPress={() => router.push("/projection")}
+        >
+          <Text style={styles.advisorIcon}>📅</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.advisorTitle}>Proyección de pagos</Text>
+            <Text style={styles.advisorSubtitle}>Tu flujo de caja mes a mes, como el Excel pero solo</Text>
+          </View>
+          <Text style={styles.advisorChevron}>›</Text>
+        </Pressable>
+
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Presupuestos del mes</Text>
           <BudgetsList />

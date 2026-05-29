@@ -406,6 +406,81 @@ export type Database = {
         }
         Relationships: []
       }
+      projection_items: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          currency: string
+          id: string
+          installments_total: number | null
+          is_active: boolean
+          name: string
+          notes: string | null
+          owner_id: string
+          payment_method: string
+          recurrence: string
+          start_month: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          installments_total?: number | null
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          owner_id: string
+          payment_method?: string
+          recurrence?: string
+          start_month: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          installments_total?: number | null
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          payment_method?: string
+          recurrence?: string
+          start_month?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      projection_income: {
+        Row: {
+          amount_ars: number
+          created_at: string
+          month: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_ars: number
+          created_at?: string
+          month: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_ars?: number
+          created_at?: string
+          month?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       savings_goals: {
         Row: {
           created_at: string

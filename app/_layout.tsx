@@ -74,6 +74,7 @@ function AuthGate() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="advisor" />
+      <Stack.Screen name="projection" />
       <Stack.Screen name="modals" options={{ presentation: "modal" }} />
     </Stack>
   );
