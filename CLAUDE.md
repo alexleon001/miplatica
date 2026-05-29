@@ -47,7 +47,7 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 - **Asesor financiero IA (Sprint 5)**: chat `app/advisor.tsx` (entry en `more.tsx`) → Edge `financial-advisor` (persona AR + prompt caching + contexto financiero vía RLS) → `use-advisor`.
 - **CRUD completo**: borrar las 4 entidades (long-press); editar las 4 (tap = editar, reusan su modal de alta en modo edición; investments re-deriva con `deriveInvestmentValues`).
 - **Branding/UI**: ícono de app + adaptive + splash (gradiente indigo→cyan + "$", generados con `scripts/gen-icons.py` vía PIL → `assets/`). Tabs con íconos Ionicons (`@expo/vector-icons`), sin header redundante; todas las tabs con safe-area `top`; wordmark "Mi Platica" en el dashboard.
-- **Calidad**: 27 tests `bun test` (verde) sobre `csv.ts`, `broker-import.ts`, `instruments.ts`, `reminders.ts`, `inflation.ts`. `type-check:app` con errores **pre-existentes ajenos a la app** (KATA `api/`/`cli/` + tuple `segments[1]` en `app/_layout.tsx:50`); la feature de inflación compila limpia.
+- **Calidad**: 27 tests `bun test` (verde) sobre `csv.ts`, `broker-import.ts`, `instruments.ts`, `reminders.ts`, `inflation.ts`. `type-check:app` **limpio** (sesión 4: arreglado tuple `segments[1]` en `_layout.tsx` + excluidos del tsconfig de la app los dirs KATA `api/`/`cli/`/`config/`/`scripts/`, ya cubiertos por `tsconfig.test.json`). `type-check:test` tiene errores KATA pre-existentes (falta dep `allure-js-commons`), ajenos a la app.
 
 **Backend live:** ver "Integraciones activas". Migraciones aplicadas hasta `0005`. Crons activos.
 

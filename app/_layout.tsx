@@ -27,7 +27,7 @@ function AuthGate() {
   const { session, loading } = useAuth();
   const profileQuery = useProfile();
   const router = useRouter();
-  const segments = useSegments();
+  const segments = useSegments() as string[];
 
   // Sincroniza el currency store con las preferencias del profile al cargar.
   // El profile gana al default del store; el toggle local sigue funcionando.
