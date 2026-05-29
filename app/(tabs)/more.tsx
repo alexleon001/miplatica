@@ -2,6 +2,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { BudgetsList } from "../../components/BudgetsList";
+import { SavingsGoalsList } from "../../components/SavingsGoalsList";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth";
 import { useProfile } from "../../lib/hooks/use-profile";
@@ -37,6 +38,11 @@ export default function MoreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Presupuestos del mes</Text>
           <BudgetsList />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Metas de ahorro</Text>
+          <SavingsGoalsList />
         </View>
 
         <View style={styles.section}>
