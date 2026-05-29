@@ -39,10 +39,12 @@ Sprints 0 → 3 y 5 completos; 4 parcial (CSV ✅, MP OAuth bloqueado); 6 parcia
 - **Movimientos**: lista + resumen mensual + filtros + FAB; alta con flujo IA ("✨ Sugerir categoría"); optimistic insert con rollback.
 - **Inversiones**: 10 instrumentos tipados (`lib/instruments.ts` + `deriveInvestmentValues`), distribución, P&L, cotización live por ticker.
 - **Deudas**: alta/edición/borrado, resta al patrimonio neto.
+- **Metas de ahorro (Sprint 6)**: `savings_goals` CRUD (`SavingsGoalsList` en `more.tsx` + modal `add-goal`), barra de progreso + ETA por aporte mensual. No entra al patrimonio neto.
 - **Presupuestos vivos**: `budgets.spent_ars` mantenido por triggers; modal de alta.
 - **Import CSV de brokers** (pegar texto): parser sin deps + dedup por `external_id`.
 - **Asesor financiero IA (Sprint 5)**: chat `app/advisor.tsx` (entry en `more.tsx`) → Edge `financial-advisor` (persona AR + prompt caching + contexto financiero vía RLS) → `use-advisor`.
 - **CRUD completo**: borrar las 4 entidades (long-press); editar las 4 (tap = editar, reusan su modal de alta en modo edición; investments re-deriva con `deriveInvestmentValues`).
+- **Branding/UI**: ícono de app + adaptive + splash (gradiente indigo→cyan + "$", generados con `scripts/gen-icons.py` vía PIL → `assets/`). Tabs con íconos Ionicons (`@expo/vector-icons`), sin header redundante; todas las tabs con safe-area `top`; wordmark "Mi Platica" en el dashboard.
 - **Calidad**: 13 tests `bun test` (verde) sobre `csv.ts`, `broker-import.ts`, `instruments.ts`. `type-check:app` limpio.
 
 **Backend live:** ver "Integraciones activas". Migraciones aplicadas hasta `0005`. Crons activos.
@@ -55,7 +57,7 @@ Sprints 0 → 3 y 5 completos; 4 parcial (CSV ✅, MP OAuth bloqueado); 6 parcia
 
 **2. Validar en device (Expo Go o el APK)** todo lo no probado aún: navegación post expo-router 6, alta/edición/borrado de las 4 entidades, import CSV, presupuestos vivos, portafolio, **chat del asesor IA**.
 
-**3. Sprint 6 (resto):** metas de ahorro (`savings_goals` ya existe en el schema, sin UI); recordatorios de vencimiento de deudas. Sprint 3.5: ajuste por inflación en P&L (IPC argentinadatos), vista `v_portfolio_by_type`, resiliencia de fuentes de precios.
+**3. Sprint 6 (resto):** recordatorios de vencimiento de deudas/metas (push o notificación local). Sprint 3.5: ajuste por inflación en P&L (IPC argentinadatos), vista `v_portfolio_by_type`, resiliencia de fuentes de precios.
 
 **Sprint 4 (resto) — Mercado Pago OAuth:** bloqueado hasta que el user genere `MP_CLIENT_ID`/`MP_CLIENT_SECRET`/`MP_REDIRECT_URI`.
 
@@ -140,7 +142,7 @@ bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 - **`update-asset-prices` depende de data912.com** (gratuita, no oficial, sin SLA). Si cambia el shape, ajustar `SOURCES`/`normalize`. Sin fallback (CAFCI/criptoya) ni Sentry.
 - **Plazo fijo (interés devengado)** solo se actualiza al correr el cron de precios (no al abrir la app) → fuera de horario bursátil puede verse con ~1 día de atraso. Mejora: recalcular client-side al render o cron diario.
 - **Android SDK local no instalado** → `pnpm android` falla. Usar Expo Go (QR) o EAS Build remoto.
-- **`assets/icon.png`/`splash.png`/`adaptive-icon.png`** sin archivos reales (Expo usa defaults). Agregar antes de build de production.
+- **Íconos de app:** `assets/icon.png` + `adaptive-icon.png` + `splash-icon.png` generados con `scripts/gen-icons.py` (PIL, gradiente + "$"). Placeholder de marca decente; reemplazar por un diseño definitivo antes del store si se quiere.
 - **Sin Sentry/observability.** Errores de cliente y Edge Functions no se reportan.
 - **`type-check` corre dos `tsc` en serie** (app+test). Lento en CI eventual.
 - **`CLAUDE.boilerplate.md` + `tests/` (KATA/Playwright)** intactos, no apuntan a la app. Archivar si no se usan, o adaptar para tests web del panel admin futuro.
@@ -174,6 +176,6 @@ bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 | 3 | Portafolio con cotizaciones live | ✅ (backend+crons live; falta verificar UI en device) |
 | 4 | Mercado Pago + import CSV | 🚧 CSV ✅; MP OAuth bloqueado por credenciales del user |
 | 5 | Asesor financiero IA | ✅ (Edge `financial-advisor` + chat; falta `ANTHROPIC_API_KEY` + probar en device) |
-| 6 | Deudas, metas y presupuestos avanzados | 🚧 deudas ✅ + presupuestos vivos ✅; metas (savings_goals) pendiente |
+| 6 | Deudas, metas y presupuestos avanzados | 🚧 deudas ✅ + presupuestos vivos ✅ + metas de ahorro ✅; falta recordatorios de vencimiento |
 
-*Última actualización: 2026-05-29 (sesión 3): asesor IA, edit CRUD completo, APK buildeado. Historial detallado por sprint en el git log.*
+*Última actualización: 2026-05-29 (sesión 3): asesor IA, edit CRUD completo, metas de ahorro, ícono de app + íconos de tabs, APK rebuildeado. Historial detallado por sprint en el git log.*
