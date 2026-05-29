@@ -165,7 +165,7 @@ Gotchas para debug si algo falla en el device:
 
 - [x] Proyecto Supabase `mi-platica` (`sa-east-1`). 9 tablas + RLS + triggers (auto-profile, set_updated_at).
 - [x] Vistas `v_net_worth`, `v_monthly_balance` (`security_invoker=on`).
-- [x] Auth Supabase (email+password) vía `lib/supabase.ts` + `lib/auth.tsx` + `use-profile.ts`.
+- [x] Auth Supabase (email+password) vía `lib/supabase.ts` + `lib/auth.tsx` + `use-profile.ts`. **Cache por sesión (fix sesión 5):** `useProfile` tiene `enabled: !!session` (no cachea `null` sin sesión); `onAuthStateChange` hace `queryClient.clear()` en `SIGNED_IN`/`SIGNED_OUT` (privacidad + evita que un `["profile"]=null` stale re-dispare el onboarding a un user existente); persister con `buster: "v2"` para limpiar el cache envenenado ya existente.
 - [x] Edge `fetch-exchange-rates` (ACTIVE, `verify_jwt=false`) → dolarapi → `exchange_rates`. Self-healing client-side.
 - [x] Edge `categorize-transaction` (ACTIVE, `verify_jwt=true`, prompt caching). ⚠️ Sin `ANTHROPIC_API_KEY` → 500.
 - [x] Edge `financial-advisor` (ACTIVE, `verify_jwt=true`, prompt caching, **v2**). Arma contexto del user vía RLS, ahora con **contexto de inflación** (IPC mensual + acum. 3m/12m) + **rendimiento real por posición en pesos** (consistente con `realReturnForPosition`). ⚠️ Sin `ANTHROPIC_API_KEY` → 500 (el user la está seteando).

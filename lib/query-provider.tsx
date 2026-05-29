@@ -17,6 +17,9 @@ export function QueryProvider({ children }: { children: ReactNode }) {
       persistOptions={{
         persister,
         maxAge: 1000 * 60 * 60 * 24, // 24 h
+        // Subir el buster invalida el cache persistido viejo. v2: limpia el
+        // ["profile"]=null envenenado que re-disparaba el onboarding (sesión 5).
+        buster: "v2",
       }}
     >
       {children}
