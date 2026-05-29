@@ -22,7 +22,7 @@ export default function DashboardScreen() {
   const name = profile?.name?.trim() || session?.user.email?.split("@")[0] || "";
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -31,6 +31,7 @@ export default function DashboardScreen() {
         }
       >
         <View style={styles.header}>
+          <Text style={styles.brand}>Mi Platica</Text>
           <Text style={styles.greeting}>Hola{name ? `, ${name}` : ""} 👋</Text>
           <Text style={styles.date}>{fechaFmt.format(new Date())}</Text>
         </View>
@@ -52,6 +53,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
   container: { padding: 20, gap: 16 },
   header: { gap: 4 },
+  brand: { color: colors.primary, fontSize: 14, fontWeight: "800", letterSpacing: 0.5, marginBottom: 2 },
   greeting: { color: colors.textPrimary, fontSize: 24, fontWeight: "700" },
   date: { color: colors.textMuted, fontSize: 13, textTransform: "capitalize" },
   ratesSection: { gap: 8, marginTop: 4 },

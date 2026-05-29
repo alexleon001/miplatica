@@ -35,7 +35,7 @@ export default function TransactionsScreen() {
   }, [txs, filter]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <View style={styles.header}>
         <Text style={styles.title}>Movimientos</Text>
 

@@ -37,7 +37,7 @@ export default function InvestmentsScreen() {
   }, [investments]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <FlatList
         data={investments ?? []}
         keyExtractor={(i) => i.id}

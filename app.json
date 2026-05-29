@@ -7,12 +7,22 @@
     "scheme": "miplatica",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.alexleon001.miplatica"
     },
     "android": {
-      "package": "com.alexleon001.miplatica"
+      "package": "com.alexleon001.miplatica",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#6366F1"
+      }
     },
     "plugins": [
       "expo-router"
