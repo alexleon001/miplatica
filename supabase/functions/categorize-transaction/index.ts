@@ -29,8 +29,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
 
-const MODEL = "claude-sonnet-4-5-20250929";
-// NOTA: cuando claude-sonnet-4-6 esté disponible público, cambiar este id.
+const MODEL = "claude-sonnet-4-6";
 
 const CATEGORY_IDS = [
   "food", "supermarket", "restaurants", "transport", "entertainment",

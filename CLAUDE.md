@@ -17,7 +17,7 @@
 | Backend | Supabase (Postgres 17 + Auth + Edge Functions + Storage) | proyecto `mi-platica` (`jgszdxqhrbpfjqtqqlpw`) en `sa-east-1` |
 | Estado global | Zustand 5 (`persist` sobre AsyncStorage) | currency display + usdType |
 | Server state | TanStack Query 5 (+ `query-async-storage-persister`) | cache 5 min, persistor 24 h |
-| IA | Claude vía Edge Function — `claude-sonnet-4-5-20250929` | migrar a sonnet-4-6 cuando esté GA |
+| IA | Claude vía Edge Function — `claude-sonnet-4-6` | migrado sesión 5 (ambos edges) |
 | OTA | EAS Update (`expo-updates`) | `runtimeVersion.policy=appVersion`, channels dev/preview/production |
 | Cotizaciones | dolarapi.com + data912.com (BYMA) | sin auth |
 | Tests | `bun test` (lógica) · Playwright/KATA en `tests/` (E2E web futuro, sin tocar) | |
@@ -180,7 +180,7 @@ Gotchas para debug si algo falla en el device:
 
 - **`expo-updates` reactivado** (post `eas init`): `app.json` tiene `updates.url` + `runtimeVersion`, dep `~29` instalada (cambios sin commitear). Expo Go ignora expo-updates, pero un dev/preview build sí lo usa. Antes causaba crash al boot (`IOException`) cuando `updates.url` apuntaba a endpoint inexistente; **ahora la URL es real**, así que debería estar OK — **verificar el boot del APK en device**.
 - **Validación en device incompleta:** solo Sprints 0→1 probados en Expo Go. Resto de sesión 2 sin validar (ojo navegación post expo-router 6).
-- **`claude-sonnet-4-5-20250929`** en `categorize-transaction` (y futuro `financial-advisor`) → migrar a `claude-sonnet-4-6` cuando GA (cambiar const `MODEL` + redeploy).
+- ~~`claude-sonnet-4-5-20250929` → migrar a `claude-sonnet-4-6` cuando GA~~ ✅ **HECHO sesión 5**: ambos edges de IA en `claude-sonnet-4-6` (`categorize-transaction` v7, `financial-advisor` v8).
 - **`update-asset-prices` depende de data912.com** (gratuita, no oficial, sin SLA) para acciones/CEDEARs/bonos/ON; cripto vía CoinGecko; MEP vía dolarapi. Si cambia el shape de data912, ajustar `SOURCES`/`normalize`. **FCI sin fuente** (CAFCI diferido). Sin Sentry. (Edge deployada v4 — cripto + coverage live.)
 - **Plazo fijo (interés devengado):** ✅ resuelto client-side — `freshenPlazoFijo` (en `use-investments.ts`) recalcula `current_value_*`/`profit_loss_*` al vuelo con la fecha de hoy (reusa `deriveInvestmentValues`). Aplicado en Inversiones (lista/resumen) **y en el dashboard** vía `useFreshNetWorth` (la distribución ahora sale de la vista `v_portfolio_by_type` con el valor guardado — atraso despreciable para %) (ajusta el patrimonio por el delta de devengado). El valor guardado en DB se sincroniza recién al correr el cron, pero la UI ya muestra el devengado al día.
 - **Android SDK local no instalado** → `pnpm android` falla. Usar Expo Go (QR) o EAS Build remoto.

@@ -24,8 +24,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
 
-const MODEL = "claude-sonnet-4-5-20250929";
-// NOTA: cuando claude-sonnet-4-6 esté disponible público, cambiar este id.
+const MODEL = "claude-sonnet-4-6";
 
 const PERSONA = `Sos "el asesor de Mi Platica": un asesor financiero argentino, cercano y honesto. Hablás en español rioplatense, tratás de vos al usuario.
 
