@@ -55,13 +55,11 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 
 ## Próxima sesión (sesión 5) — plan
 
-**🚚 Cola de deploy de sesión 4 (código en `main` local, sin deployar/pushear) — hacer al buildear, en orden:**
-1. **Deployar 2 Edge Functions** (`deploy_edge_function`, `verify_jwt=false` para prices / `true` para advisor):
-   - `update-asset-prices` → activa cripto (CoinGecko) + logging de `coverage`.
-   - `financial-advisor` → activa contexto de inflación + rendimiento real por posición.
-2. **Setear `ANTHROPIC_API_KEY`** en secrets → desbloquea IA (asesor + sugerir categoría).
-3. **Push** de los 10 commits de sesión 4 a `origin/main`.
-4. **Rebuild APK** (`eas build -p android --profile preview`) y **validar en device** toda la UI nueva.
+**🚚 Cola de deploy de sesión 4:**
+1. ✅ **2 Edge Functions deployadas** (v2+): `update-asset-prices` (v4, cripto+coverage; verificado: coverage stocks 91/cedears 907/bonds 161/corp 537/**crypto 21**/mep 1) + `financial-advisor` (v2, inflación + real por posición).
+2. ⏳ **`ANTHROPIC_API_KEY`** — el user la está seteando (dashboard o `supabase secrets set`). Sin esto el asesor y "sugerir categoría" devuelven 500. **Verificar que la IA responda una vez seteada.**
+3. ⏳ **Push** de los commits de sesión 4 a `origin/main` (pendiente).
+4. ⏳ **Rebuild APK** (`eas build -p android --profile preview`) y **validar en device** toda la UI nueva.
 
 **Bloqueos del user (hacer primero, desbloquean lo demás):**
 - ⚠️ **Setear `ANTHROPIC_API_KEY`** (ver paso 2 arriba).
@@ -75,7 +73,7 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 
 3. **🛡️ Observabilidad — Sentry (`@sentry/react-native`).** Antes del primer beta real: capturar crashes del cliente + errores de Edge Functions (hoy el scheduling de notifs y los flujos de IA fallan en silencio). ~5k errores/mes gratis.
 
-4. **🔌 Resiliencia de fuentes de precios.** 🚧 **Parcial sesión 4** (código commiteado, ⚠️ **deploy de la Edge pendiente del OK del user**): `update-asset-prices` ahora suma **cripto USD vía CoinGecko** (cerraba un hueco: data912 no trae cripto), **loguea/devuelve `coverage` por fuente**, y la UI **marca precios stale** (`lib/prices.ts` + badge en `InvestmentRow` por `last_updated`). Desvío del plan: CoinGecko en vez de criptoya (criptoya es por-exchange/ARS, no encaja con el modelo USD del app). **Falta:** FCI/CAFCI (API indocumentada/frágil, diferido).
+4. **🔌 Resiliencia de fuentes de precios.** ✅ **HECHO y deployado sesión 4**: `update-asset-prices` (v4) suma **cripto USD vía CoinGecko** (21 tickers; cerraba un hueco — data912 no trae cripto), **loguea/devuelve `coverage` por fuente**, y la UI **marca precios stale** (`lib/prices.ts` + badge en `InvestmentRow` por `last_updated`). Desvío del plan: CoinGecko en vez de criptoya (criptoya es por-exchange/ARS, no encaja con el modelo USD del app). **Falta (diferido):** FCI/CAFCI (API indocumentada/frágil).
 
 **Mejoras chicas (si sobra tiempo):**
 - ~~Acción "Aportar" en metas y "Registrar pago" en deudas~~ ✅ **HECHO sesión 4** (`useRegisterDebtPayment`/`useAddGoalContribution` + modal `quick-amount` + píldoras "Pagar"/"+ Aportar"). Falta verificar en device.
@@ -145,8 +143,8 @@ bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 - [x] Auth Supabase (email+password) vía `lib/supabase.ts` + `lib/auth.tsx` + `use-profile.ts`.
 - [x] Edge `fetch-exchange-rates` (ACTIVE, `verify_jwt=false`) → dolarapi → `exchange_rates`. Self-healing client-side.
 - [x] Edge `categorize-transaction` (ACTIVE, `verify_jwt=true`, prompt caching). ⚠️ Sin `ANTHROPIC_API_KEY` → 500.
-- [x] Edge `financial-advisor` (ACTIVE, `verify_jwt=true`, prompt caching). Arma contexto del user vía RLS. ⚠️ Sin `ANTHROPIC_API_KEY` → 500. **(Sesión 4: el código del repo suma contexto de inflación — IPC mensual + acum. 3m/12m + rendimiento REAL por posición en pesos, consistente con `realReturnForPosition`; ⚠️ falta deployar.)**
-- [x] Edge `update-asset-prices` (ACTIVE, `verify_jwt=false`) → data912 + dolarapi → `asset_prices`. Llama `refresh_positions()` por RPC al final.
+- [x] Edge `financial-advisor` (ACTIVE, `verify_jwt=true`, prompt caching, **v2**). Arma contexto del user vía RLS, ahora con **contexto de inflación** (IPC mensual + acum. 3m/12m) + **rendimiento real por posición en pesos** (consistente con `realReturnForPosition`). ⚠️ Sin `ANTHROPIC_API_KEY` → 500 (el user la está seteando).
+- [x] Edge `update-asset-prices` (ACTIVE, `verify_jwt=false`, **v4**) → data912 + **CoinGecko (cripto, 21 tickers)** + dolarapi → `asset_prices`. Devuelve/loguea `coverage` por fuente. Llama `refresh_positions()` por RPC al final.
 - [x] Edge `fetch-inflation` (ACTIVE, `verify_jwt=false`) → argentinadatos → `inflation` (IPC mensual, upsert idempotente). 998 meses backfilleados.
 - [x] Función SQL `refresh_positions()` (migración `0003`, `security_definer`, revaloriza posiciones).
 - [x] pg_cron: `update-asset-prices` (`*/15 14-20 * * 1-5`) + `fetch-exchange-rates` (`*/30 * * * *`) + `fetch-inflation` (`0 14 4,17 * *`), vía `net.http_post` keyless. Probados.
@@ -164,7 +162,7 @@ bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 - **`expo-updates` reactivado** (post `eas init`): `app.json` tiene `updates.url` + `runtimeVersion`, dep `~29` instalada (cambios sin commitear). Expo Go ignora expo-updates, pero un dev/preview build sí lo usa. Antes causaba crash al boot (`IOException`) cuando `updates.url` apuntaba a endpoint inexistente; **ahora la URL es real**, así que debería estar OK — **verificar el boot del APK en device**.
 - **Validación en device incompleta:** solo Sprints 0→1 probados en Expo Go. Resto de sesión 2 sin validar (ojo navegación post expo-router 6).
 - **`claude-sonnet-4-5-20250929`** en `categorize-transaction` (y futuro `financial-advisor`) → migrar a `claude-sonnet-4-6` cuando GA (cambiar const `MODEL` + redeploy).
-- **`update-asset-prices` depende de data912.com** (gratuita, no oficial, sin SLA) para acciones/CEDEARs/bonos/ON; cripto vía CoinGecko; MEP vía dolarapi. Si cambia el shape de data912, ajustar `SOURCES`/`normalize`. **FCI sin fuente** (CAFCI diferido). Sin Sentry. ⚠️ **El código de la Edge en el repo (cripto + coverage) está adelante de la versión deployada** — falta deployar con OK del user (`deploy_edge_function`, `verify_jwt=false`).
+- **`update-asset-prices` depende de data912.com** (gratuita, no oficial, sin SLA) para acciones/CEDEARs/bonos/ON; cripto vía CoinGecko; MEP vía dolarapi. Si cambia el shape de data912, ajustar `SOURCES`/`normalize`. **FCI sin fuente** (CAFCI diferido). Sin Sentry. (Edge deployada v4 — cripto + coverage live.)
 - **Plazo fijo (interés devengado):** ✅ resuelto client-side — `freshenPlazoFijo` (en `use-investments.ts`) recalcula `current_value_*`/`profit_loss_*` al vuelo con la fecha de hoy (reusa `deriveInvestmentValues`). Aplicado en Inversiones (lista/resumen/distribución) **y en el dashboard** vía `useFreshNetWorth` (ajusta el patrimonio por el delta de devengado). El valor guardado en DB se sincroniza recién al correr el cron, pero la UI ya muestra el devengado al día.
 - **Android SDK local no instalado** → `pnpm android` falla. Usar Expo Go (QR) o EAS Build remoto.
 - **Íconos de app:** `assets/icon.png` + `adaptive-icon.png` + `splash-icon.png` generados con `scripts/gen-icons.py` (PIL, gradiente + "$"). Placeholder de marca decente; reemplazar por un diseño definitivo antes del store si se quiere.
