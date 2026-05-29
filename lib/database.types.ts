@@ -316,6 +316,60 @@ export type Database = {
           },
         ]
       }
+      mp_connections: {
+        Row: {
+          access_token_enc: string
+          connected_at: string
+          expires_at: string | null
+          last_synced_at: string | null
+          mp_user_id: string | null
+          owner_id: string
+          refresh_token_enc: string | null
+          scope: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token_enc: string
+          connected_at?: string
+          expires_at?: string | null
+          last_synced_at?: string | null
+          mp_user_id?: string | null
+          owner_id: string
+          refresh_token_enc?: string | null
+          scope?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token_enc?: string
+          connected_at?: string
+          expires_at?: string | null
+          last_synced_at?: string | null
+          mp_user_id?: string | null
+          owner_id?: string
+          refresh_token_enc?: string | null
+          scope?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mp_oauth_states: {
+        Row: {
+          created_at: string
+          owner_id: string
+          state: string
+        }
+        Insert: {
+          created_at?: string
+          owner_id: string
+          state: string
+        }
+        Update: {
+          created_at?: string
+          owner_id?: string
+          state?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

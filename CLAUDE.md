@@ -106,7 +106,7 @@ Notas: el APK pega a Supabase **productivo**. Ícono/splash por default (cosmét
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | cliente `.env` + EAS env `preview` | ✅ (publishable `sb_publishable_...`) |
 | `EXPO_PUBLIC_APP_ENV` | cliente `.env` + `eas.json/preview env` | ✅ |
 | `ANTHROPIC_API_KEY` | **Edge Functions** (`supabase secrets set`) | ⚠️ **pendiente del user** (bloquea IA) |
-| `MP_CLIENT_ID` / `MP_CLIENT_SECRET` / `MP_REDIRECT_URI` | **Edge Functions** | ⏳ Sprint 4 |
+| `MP_CLIENT_ID` / `MP_CLIENT_SECRET` / `MP_REDIRECT_URI` / `MP_TOKEN_KEY` | **Edge Functions** | ⏳ **código de Sprint 4 listo**, falta que el user cree la app MP + setee estos secrets + se apliquen/deployen migración+edges (ver "Mercado Pago — setup") |
 
 > Regla #2: API keys sensibles **JAMÁS** en el cliente. Solo la anon publishable (diseñada para exponerse) viaja al bundle.
 
@@ -115,6 +115,26 @@ Setear la key de IA (lo corre el user, login interactivo):
 bunx supabase login && bunx supabase link --project-ref jgszdxqhrbpfjqtqqlpw
 bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 ```
+
+---
+
+## Mercado Pago — setup (para activar el código de Sprint 4)
+
+Código completo en el repo; falta esto para activarlo (orden):
+
+1. **Crear app en MP** → https://www.mercadopago.com.ar/developers/panel/app → copiar **Client ID** + **Client Secret**.
+2. **Registrar el Redirect URI** en la app de MP, exactamente:
+   `https://jgszdxqhrbpfjqtqqlpw.supabase.co/functions/v1/mp-oauth-callback`
+3. **Setear 4 secrets** (Dashboard → Edge Functions → Secrets, o `supabase secrets set`):
+   - `MP_CLIENT_ID`, `MP_CLIENT_SECRET`
+   - `MP_REDIRECT_URI` = la URL del paso 2
+   - `MP_TOKEN_KEY` = una passphrase fuerte aleatoria (se usa para cifrar tokens con pgcrypto; guardala, si cambia se invalidan las conexiones).
+4. **Aplicar migración** `0007_mp_connections` (`apply_migration`, requiere OK — regla #7).
+5. **Deployar 3 edges**: `mp-oauth-start` (verify_jwt=true), `mp-oauth-callback` (**verify_jwt=false**), `mp-sync-movements` (verify_jwt=true).
+6. **Rebuild del APK** (se agregó `expo-web-browser`, dep nativa → no anda en el APK previo).
+7. (Opcional) cron diario para `mp-sync-movements` por usuario — hoy el sync es manual (botón "Sincronizar ahora").
+
+> Recordá: trae **pagos recibidos** (cobrador), no la billetera personal completa.
 
 ---
 
@@ -148,10 +168,11 @@ bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 - [x] pg_cron: `update-asset-prices` (`*/15 14-20 * * 1-5`) + `fetch-exchange-rates` (`*/30 * * * *`) + `fetch-inflation` (`0 14 4,17 * *`), vía `net.http_post` keyless. Probados.
 - [x] Import CSV de movimientos (Cocos/PPI/IOL/banco) por alias de columnas + dedup `external_id`.
 - [ ] **`ANTHROPIC_API_KEY`** en secrets — bloquea IA.
-- [ ] Mercado Pago OAuth — Sprint 4.
+- [~] **Mercado Pago OAuth — código completo (Sprint 4), falta setup+deploy.** Migración `0007` (mp_connections cifrada con pgcrypto + mp_oauth_states) + 3 edges (`mp-oauth-start` jwt, `mp-oauth-callback` público, `mp-sync-movements` jwt) + cliente (`use-mp.ts` + `MercadoPagoConnect` en `more.tsx`, `expo-web-browser`). Trae pagos RECIBIDOS (cobrador), no billetera personal. **Necesita rebuild de APK** (dep nativa nueva). Ver "Mercado Pago — setup".
 - [ ] CAFCI (FCI) y cripto: sin fuente de precios aún. Open Banking BCRA — eval Sprint 5+.
 
 **Migraciones aplicadas:** `0001_init_schema`, `0002_helper_views`, `0003_refresh_positions`, `0004_schedule_crons`, `0005_budget_spent_triggers`, `0006_inflation`.
+**Migración escrita pero NO aplicada:** `0007_mp_connections` (tablas `mp_connections`+`mp_oauth_states` + funciones pgcrypto `mp_store_connection`/`mp_get_tokens`). Aplicar cuando se haga el setup de MP.
 
 ---
 

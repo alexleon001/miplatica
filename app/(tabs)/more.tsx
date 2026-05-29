@@ -2,6 +2,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { BudgetsList } from "../../components/BudgetsList";
+import { MercadoPagoConnect } from "../../components/MercadoPagoConnect";
 import { SavingsGoalsList } from "../../components/SavingsGoalsList";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth";
@@ -47,6 +48,8 @@ export default function MoreScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Datos</Text>
+          <MercadoPagoConnect />
+          <View style={styles.dataDivider} />
           <Pressable
             style={({ pressed }) => [styles.linkBtn, pressed && { opacity: 0.85 }]}
             onPress={() => router.push("/modals/import-broker-csv")}
@@ -117,6 +120,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   linkBtnText: { color: colors.primary, fontWeight: "600" },
+  dataDivider: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
   advisorBtn: {
     flexDirection: "row",
     alignItems: "center",
