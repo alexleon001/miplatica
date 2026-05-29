@@ -1,11 +1,12 @@
 // ============================================
 // Mi Platica — Edge Function: update-asset-prices
 // ============================================
-// Levanta cotizaciones de mercado argentino (acciones, CEDEARs, bonos) desde
-// data912.com (público, sin auth) + el dólar MEP desde dolarapi.com, y las
-// upserta en public.asset_prices. Pensada para pg_cron cada 15 min en horario
-// bursátil. Mismo patrón best-effort que fetch-exchange-rates: si una fuente
-// falla, las demás siguen (no se rompe todo el batch).
+// Levanta cotizaciones de mercado argentino (acciones, CEDEARs, bonos, ON) desde
+// data912.com + cripto (USD spot) desde CoinGecko + el dólar MEP desde
+// dolarapi.com (todas públicas, sin auth), y las upserta en public.asset_prices.
+// Pensada para pg_cron cada 15 min en horario bursátil. Best-effort: si una
+// fuente falla, las demás siguen (no se rompe todo el batch). Devuelve y loguea
+// `coverage` (filas por fuente) para diagnóstico.
 //
 // Endpoint: POST /functions/v1/update-asset-prices
 // Auth: verify_jwt = false (cron interno + Authorization: Bearer <ANON_KEY>)
@@ -33,15 +34,27 @@ type AssetPriceRow = {
 // Forma flexible de lo que devuelve data912 (campos varían por endpoint).
 type RawQuote = Record<string, unknown>;
 
-type Source = { url: string; market: "ARS" | "USD" };
+type Source = { label: string; url: string; market: "ARS" | "USD" };
 
 // Mercado local cotiza en ARS; las ON suelen estar en USD.
 const SOURCES: Source[] = [
-  { url: "https://data912.com/live/arg_stocks", market: "ARS" },
-  { url: "https://data912.com/live/arg_cedears", market: "ARS" },
-  { url: "https://data912.com/live/arg_bonds", market: "ARS" },
-  { url: "https://data912.com/live/arg_corp", market: "USD" },
+  { label: "arg_stocks", url: "https://data912.com/live/arg_stocks", market: "ARS" },
+  { label: "arg_cedears", url: "https://data912.com/live/arg_cedears", market: "ARS" },
+  { label: "arg_bonds", url: "https://data912.com/live/arg_bonds", market: "ARS" },
+  { label: "arg_corp", url: "https://data912.com/live/arg_corp", market: "USD" },
 ];
+
+// Cripto: precio USD spot vía CoinGecko (los instrumentos `crypto` del app son
+// USD-denominados; deriveInvestmentValues/refresh_positions convierten a ARS por
+// MEP). Mapea el ticker del usuario → id de CoinGecko. (data912 no cubre cripto;
+// esto cierra ese hueco de cobertura, no es un fallback de otra fuente.)
+const CRYPTO_IDS: Record<string, string> = {
+  BTC: "bitcoin", ETH: "ethereum", USDT: "tether", USDC: "usd-coin",
+  BNB: "binancecoin", SOL: "solana", XRP: "ripple", ADA: "cardano",
+  DOGE: "dogecoin", DOT: "polkadot", MATIC: "matic-network", LTC: "litecoin",
+  AVAX: "avalanche-2", LINK: "chainlink", ARB: "arbitrum", OP: "optimism",
+  DAI: "dai", TRX: "tron", SHIB: "shiba-inu", ATOM: "cosmos",
+};
 
 function num(v: unknown): number | null {
   const n = typeof v === "string" ? Number(v) : typeof v === "number" ? v : NaN;
@@ -91,6 +104,34 @@ async function fetchSource(src: Source, now: string): Promise<AssetPriceRow[]> {
   }
 }
 
+// Cripto desde CoinGecko: una sola llamada con todos los ids mapeados.
+async function fetchCrypto(now: string): Promise<AssetPriceRow[]> {
+  const ids = [...new Set(Object.values(CRYPTO_IDS))].join(",");
+  const idToTicker = new Map(Object.entries(CRYPTO_IDS).map(([t, id]) => [id, t]));
+  try {
+    const res = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`,
+      { headers: { Accept: "application/json" } },
+    );
+    if (!res.ok) {
+      console.warn(`[update-asset-prices] coingecko → ${res.status}`);
+      return [];
+    }
+    const body = (await res.json()) as Record<string, { usd?: number }>;
+    const rows: AssetPriceRow[] = [];
+    for (const [id, obj] of Object.entries(body)) {
+      const ticker = idToTicker.get(id);
+      const price = num(obj?.usd);
+      if (!ticker || price == null) continue;
+      rows.push({ ticker, name: null, price_ars: null, price_usd: price, variation_pct: null, fetched_at: now });
+    }
+    return rows;
+  } catch (e) {
+    console.warn("[update-asset-prices] coingecko falló:", e);
+    return [];
+  }
+}
+
 // MEP desde dolarapi (la app lo trata como instrumento dolar_mep / usd_cash).
 async function fetchMep(now: string): Promise<AssetPriceRow | null> {
   try {
@@ -116,17 +157,31 @@ Deno.serve(async (_req: Request) => {
 
   const now = new Date().toISOString();
 
+  // Cobertura por fuente: cuántas filas devolvió cada una (0 = caída/sin datos).
+  // Sirve para diagnóstico (logs / futura observabilidad) sin romper el batch.
+  const coverage: Record<string, number> = {};
+
   const results = await Promise.all(SOURCES.map((s) => fetchSource(s, now)));
+  SOURCES.forEach((s, i) => (coverage[s.label] = results[i].length));
+
+  const crypto = await fetchCrypto(now);
+  coverage["crypto"] = crypto.length;
+
   const mep = await fetchMep(now);
+  coverage["mep"] = mep ? 1 : 0;
 
   // Dedup por ticker (último gana). Distintos endpoints pueden repetir símbolos.
   const byTicker = new Map<string, AssetPriceRow>();
-  for (const row of results.flat()) byTicker.set(row.ticker, row);
+  for (const row of [...results.flat(), ...crypto]) byTicker.set(row.ticker, row);
   if (mep) byTicker.set(mep.ticker, mep);
+
+  const down = Object.entries(coverage).filter(([, n]) => n === 0).map(([k]) => k);
+  if (down.length) console.warn(`[update-asset-prices] fuentes sin datos: ${down.join(", ")}`);
+  console.log(`[update-asset-prices] cobertura: ${JSON.stringify(coverage)}`);
 
   const rows = [...byTicker.values()];
   if (rows.length === 0) {
-    return json({ ok: false, error: "Ninguna fuente devolvió cotizaciones", updated: 0 }, 502);
+    return json({ ok: false, error: "Ninguna fuente devolvió cotizaciones", updated: 0, coverage }, 502);
   }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
@@ -145,7 +200,7 @@ Deno.serve(async (_req: Request) => {
     console.warn("[update-asset-prices] refresh_positions falló:", e);
   }
 
-  return json({ ok: true, updated: rows.length, refreshed, sources: SOURCES.length + (mep ? 1 : 0) });
+  return json({ ok: true, updated: rows.length, refreshed, coverage });
 });
 
 function json(body: unknown, status = 200): Response {

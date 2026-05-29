@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { instrumentById } from "../lib/instruments";
 import type { Investment } from "../lib/hooks/use-investments";
+import { isPriceStale, staleLabel } from "../lib/prices";
 import { MoneyAmount } from "./MoneyAmount";
 import { PnLBadge } from "./PnLBadge";
 import { colors } from "../lib/colors";
@@ -19,6 +20,9 @@ export function InvestmentRow({
   onLongPress?: () => void;
 }) {
   const instrument = instrumentById(inv.type);
+
+  // Solo instrumentos con cotización live pueden quedar "desactualizados".
+  const stale = !!instrument?.hasLivePrice && isPriceStale(inv.last_updated);
 
   const subtitle = [
     inv.ticker ?? instrument?.label ?? inv.type,
@@ -44,6 +48,11 @@ export function InvestmentRow({
         <Text style={styles.sub} numberOfLines={1}>
           {subtitle}
         </Text>
+        {stale ? (
+          <Text style={styles.stale} numberOfLines={1}>
+            ⚠ {staleLabel(inv.last_updated)}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.right}>
@@ -73,5 +82,6 @@ const styles = StyleSheet.create({
   middle: { flex: 1, gap: 2 },
   title: { color: colors.textPrimary, fontWeight: "600", fontSize: 15 },
   sub: { color: colors.textMuted, fontSize: 12 },
+  stale: { color: colors.warning, fontSize: 11, fontWeight: "600" },
   right: { alignItems: "flex-end", gap: 4 },
 });
