@@ -64,6 +64,31 @@ export function useUpdateDebt() {
   });
 }
 
+// Registrar un pago: descuenta `amount` del saldo restante (clamp a 0). Lee el
+// saldo fresco del server para no depender de data en cache potencialmente stale.
+export function useRegisterDebtPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, amount }: { id: string; amount: number }) => {
+      const { data: row, error: readErr } = await supabase
+        .from("debts")
+        .select("remaining_amount")
+        .eq("id", id)
+        .single();
+      if (readErr) throw readErr;
+
+      const next = Math.max(0, Number(row.remaining_amount) - amount);
+      const { error } = await supabase.from("debts").update({ remaining_amount: next }).eq("id", id);
+      if (error) throw error;
+      return next;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["debts"] });
+      qc.invalidateQueries({ queryKey: ["net_worth"] });
+    },
+  });
+}
+
 // Soft-delete: marca is_active=false.
 export function useDeleteDebt() {
   const qc = useQueryClient();

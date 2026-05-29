@@ -38,6 +38,12 @@ export default function DebtsScreen() {
             debt={item}
             onPress={() => router.push({ pathname: "/modals/add-debt", params: { id: item.id } })}
             onLongPress={() => confirmDelete(item.name, () => del.mutate(item.id))}
+            onRegisterPayment={() =>
+              router.push({
+                pathname: "/modals/quick-amount",
+                params: { kind: "payment", id: item.id, name: item.name, currency: item.currency },
+              })
+            }
           />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}

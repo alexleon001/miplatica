@@ -55,6 +55,28 @@ export function useUpdateGoal() {
   });
 }
 
+// Aportar a una meta: suma `amount` a lo ahorrado. Lee el valor fresco del
+// server para no pisar otros aportes con data stale.
+export function useAddGoalContribution() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, amount }: { id: string; amount: number }) => {
+      const { data: row, error: readErr } = await supabase
+        .from("savings_goals")
+        .select("current_amount")
+        .eq("id", id)
+        .single();
+      if (readErr) throw readErr;
+
+      const next = Number(row.current_amount) + amount;
+      const { error } = await supabase.from("savings_goals").update({ current_amount: next }).eq("id", id);
+      if (error) throw error;
+      return next;
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["savings_goals"] }),
+  });
+}
+
 export function useDeleteGoal() {
   const qc = useQueryClient();
   return useMutation({

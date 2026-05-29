@@ -16,10 +16,12 @@ export function DebtItem({
   debt,
   onPress,
   onLongPress,
+  onRegisterPayment,
 }: {
   debt: Debt;
   onPress?: () => void;
   onLongPress?: () => void;
+  onRegisterPayment?: () => void;
 }) {
   const meta = TYPE_META[debt.type] ?? { label: debt.type, icon: "💸" };
 
@@ -52,7 +54,20 @@ export function DebtItem({
         </Text>
       </View>
 
-      <MoneyAmount ars={remainingArs} usd={remainingUsd} size="sm" tone="negative" />
+      <View style={styles.right}>
+        <MoneyAmount ars={remainingArs} usd={remainingUsd} size="sm" tone="negative" />
+        {onRegisterPayment && debt.remaining_amount > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Registrar pago de ${debt.name}`}
+            onPress={onRegisterPayment}
+            hitSlop={6}
+            style={({ pressed }) => [styles.payPill, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={styles.payPillText}>Pagar</Text>
+          </Pressable>
+        ) : null}
+      </View>
     </Pressable>
   );
 }
@@ -71,4 +86,13 @@ const styles = StyleSheet.create({
   middle: { flex: 1, gap: 2 },
   title: { color: colors.textPrimary, fontWeight: "600", fontSize: 15 },
   sub: { color: colors.textMuted, fontSize: 12 },
+  right: { alignItems: "flex-end", gap: 6 },
+  payPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  payPillText: { color: colors.primary, fontSize: 12, fontWeight: "700" },
 });

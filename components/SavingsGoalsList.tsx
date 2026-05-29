@@ -60,10 +60,26 @@ export function SavingsGoalsList() {
                 {done ? "✅ " : "🎯 "}
                 {g.name}
               </Text>
-              <Text style={styles.amounts}>
-                ${fmt.format(g.current_amount)} / ${fmt.format(g.target_amount)} {g.target_currency}
-              </Text>
+              {!done && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Aportar a ${g.name}`}
+                  hitSlop={6}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/modals/quick-amount",
+                      params: { kind: "contribution", id: g.id, name: g.name, currency: g.target_currency },
+                    })
+                  }
+                  style={({ pressed }) => [styles.contribPill, pressed && { opacity: 0.7 }]}
+                >
+                  <Text style={styles.contribPillText}>+ Aportar</Text>
+                </Pressable>
+              )}
             </View>
+            <Text style={styles.amounts}>
+              ${fmt.format(g.current_amount)} / ${fmt.format(g.target_amount)} {g.target_currency}
+            </Text>
             <View style={styles.barBg}>
               <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: barColor }]} />
             </View>
@@ -96,6 +112,14 @@ const styles = StyleSheet.create({
   head: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 },
   label: { color: colors.textPrimary, fontSize: 14, fontWeight: "600", flex: 1 },
   amounts: { color: colors.textMuted, fontSize: 12, fontVariant: ["tabular-nums"] },
+  contribPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  contribPillText: { color: colors.primary, fontSize: 12, fontWeight: "700" },
   barBg: { height: 6, backgroundColor: colors.border, borderRadius: 999, overflow: "hidden" },
   barFill: { height: "100%", borderRadius: 999 },
   sub: { color: colors.textMuted, fontSize: 11 },
