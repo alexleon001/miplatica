@@ -47,7 +47,7 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 - **Asesor financiero IA (Sprint 5)**: chat `app/advisor.tsx` (entry en `more.tsx`) → Edge `financial-advisor` (persona AR + prompt caching + contexto financiero vía RLS) → `use-advisor`.
 - **CRUD completo**: borrar las 4 entidades (long-press); editar las 4 (tap = editar, reusan su modal de alta en modo edición; investments re-deriva con `deriveInvestmentValues`).
 - **Branding/UI**: ícono de app + adaptive + splash (gradiente indigo→cyan + "$", generados con `scripts/gen-icons.py` vía PIL → `assets/`). Tabs con íconos Ionicons (`@expo/vector-icons`), sin header redundante; todas las tabs con safe-area `top`; wordmark "Mi Platica" en el dashboard.
-- **Calidad**: 27 tests `bun test` (verde) sobre `csv.ts`, `broker-import.ts`, `instruments.ts`, `reminders.ts`, `inflation.ts`. `type-check:app` **limpio** (sesión 4: arreglado tuple `segments[1]` en `_layout.tsx` + excluidos del tsconfig de la app los dirs KATA `api/`/`cli/`/`config/`/`scripts/`, ya cubiertos por `tsconfig.test.json`). `type-check:test` tiene errores KATA pre-existentes (falta dep `allure-js-commons`), ajenos a la app.
+- **Calidad**: 31 tests `bun test` (verde) sobre `csv.ts`, `broker-import.ts`, `instruments.ts`, `reminders.ts`, `inflation.ts`, `prices.ts`. `type-check:app` **limpio** (sesión 4: arreglado tuple `segments[1]` en `_layout.tsx` + excluidos del tsconfig de la app los dirs KATA `api/`/`cli/`/`config/`/`scripts/`, ya cubiertos por `tsconfig.test.json`). `type-check:test` tiene errores KATA pre-existentes (falta dep `allure-js-commons`), ajenos a la app.
 
 **Backend live:** ver "Integraciones activas". Migraciones aplicadas hasta `0005`. Crons activos.
 
@@ -67,7 +67,7 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 
 3. **🛡️ Observabilidad — Sentry (`@sentry/react-native`).** Antes del primer beta real: capturar crashes del cliente + errores de Edge Functions (hoy el scheduling de notifs y los flujos de IA fallan en silencio). ~5k errores/mes gratis.
 
-4. **🔌 Resiliencia de fuentes de precios.** `update-asset-prices` depende solo de data912 (sin SLA). Fallback CAFCI (FCI) + criptoya (cripto), loguear cobertura por fuente, marcar precios stale en la UI.
+4. **🔌 Resiliencia de fuentes de precios.** 🚧 **Parcial sesión 4** (código commiteado, ⚠️ **deploy de la Edge pendiente del OK del user**): `update-asset-prices` ahora suma **cripto USD vía CoinGecko** (cerraba un hueco: data912 no trae cripto), **loguea/devuelve `coverage` por fuente**, y la UI **marca precios stale** (`lib/prices.ts` + badge en `InvestmentRow` por `last_updated`). Desvío del plan: CoinGecko en vez de criptoya (criptoya es por-exchange/ARS, no encaja con el modelo USD del app). **Falta:** FCI/CAFCI (API indocumentada/frágil, diferido).
 
 **Mejoras chicas (si sobra tiempo):**
 - ~~Acción "Aportar" en metas y "Registrar pago" en deudas~~ ✅ **HECHO sesión 4** (`useRegisterDebtPayment`/`useAddGoalContribution` + modal `quick-amount` + píldoras "Pagar"/"+ Aportar"). Falta verificar en device.
@@ -156,7 +156,7 @@ bunx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 - **`expo-updates` reactivado** (post `eas init`): `app.json` tiene `updates.url` + `runtimeVersion`, dep `~29` instalada (cambios sin commitear). Expo Go ignora expo-updates, pero un dev/preview build sí lo usa. Antes causaba crash al boot (`IOException`) cuando `updates.url` apuntaba a endpoint inexistente; **ahora la URL es real**, así que debería estar OK — **verificar el boot del APK en device**.
 - **Validación en device incompleta:** solo Sprints 0→1 probados en Expo Go. Resto de sesión 2 sin validar (ojo navegación post expo-router 6).
 - **`claude-sonnet-4-5-20250929`** en `categorize-transaction` (y futuro `financial-advisor`) → migrar a `claude-sonnet-4-6` cuando GA (cambiar const `MODEL` + redeploy).
-- **`update-asset-prices` depende de data912.com** (gratuita, no oficial, sin SLA). Si cambia el shape, ajustar `SOURCES`/`normalize`. Sin fallback (CAFCI/criptoya) ni Sentry.
+- **`update-asset-prices` depende de data912.com** (gratuita, no oficial, sin SLA) para acciones/CEDEARs/bonos/ON; cripto vía CoinGecko; MEP vía dolarapi. Si cambia el shape de data912, ajustar `SOURCES`/`normalize`. **FCI sin fuente** (CAFCI diferido). Sin Sentry. ⚠️ **El código de la Edge en el repo (cripto + coverage) está adelante de la versión deployada** — falta deployar con OK del user (`deploy_edge_function`, `verify_jwt=false`).
 - **Plazo fijo (interés devengado)** solo se actualiza al correr el cron de precios (no al abrir la app) → fuera de horario bursátil puede verse con ~1 día de atraso. Mejora: recalcular client-side al render o cron diario.
 - **Android SDK local no instalado** → `pnpm android` falla. Usar Expo Go (QR) o EAS Build remoto.
 - **Íconos de app:** `assets/icon.png` + `adaptive-icon.png` + `splash-icon.png` generados con `scripts/gen-icons.py` (PIL, gradiente + "$"). Placeholder de marca decente; reemplazar por un diseño definitivo antes del store si se quiere.
