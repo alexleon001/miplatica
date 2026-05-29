@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useRemindersSync } from "../../lib/hooks/use-reminders-sync";
 import { colors } from "../../lib/colors";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -12,6 +13,9 @@ function tabIcon(focused: string, unfocused: string) {
 }
 
 export default function TabsLayout() {
+  // Programa/reprograma notificaciones locales de vencimientos al entrar a la app.
+  useRemindersSync();
+
   return (
     <Tabs
       screenOptions={{

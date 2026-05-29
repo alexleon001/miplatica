@@ -4,6 +4,7 @@ import { AccountsList } from "../../components/AccountsList";
 import { CurrencyToggle } from "../../components/CurrencyToggle";
 import { ExchangeRatesBar } from "../../components/ExchangeRatesBar";
 import { NetWorthCard } from "../../components/NetWorthCard";
+import { UpcomingReminders } from "../../components/UpcomingReminders";
 import { useAuth } from "../../lib/auth";
 import { useProfile } from "../../lib/hooks/use-profile";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
@@ -37,6 +38,7 @@ export default function DashboardScreen() {
         </View>
 
         <CurrencyToggle />
+        <UpcomingReminders />
         <NetWorthCard />
         <AccountsList />
 
