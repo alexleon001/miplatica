@@ -27,9 +27,16 @@
 
 ---
 
-## Estado actual (sesión 4, 2026-05-29)
+## Estado actual (sesión 5, 2026-05-29 — cierre)
 
-Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP OAuth bloqueado por credenciales del user). Todo en `main`.
+> **Cierre sesión 5 / arranque sesión 6:**
+> - **10 commits locales SIN PUSHEAR** (`5f1f7dc` → `75aa9d1`). El push a `main` lo bloquea el clasificador → **lo corre el user**: `git push origin main`.
+> - **Todo entregado por OTA** al APK `fa3d3965` (canal `preview`, runtime `0.1.0`) — la **cuota de builds EAS Free está agotada hasta el 1/6**, así que NO hay APK nuevo; los cambios JS van por `eas update`. Rebuild de APK pendiente para el **1/6** (comando en la sección Build).
+> - **Hecho sesión 5:** MP saldo (→ imposible por API, queda **manual**) + dedup cuenta MP; vista `v_portfolio_by_type`; modelo IA → `claude-sonnet-4-6` (ambos edges); **proyección de pagos** (Sprint 5); **cron de MP** (`mp-sync-cron` + migración 0010); **editar perfil** (ingreso → proyección); **fix re-onboarding al re-loguear** (cache por sesión); **fix teclado tapa input** (v3, anda en device, scroll a afinar).
+> - **Validado en device (OTA):** edit-profile ✅, re-onboarding fix ✅ (implícito), teclado v3 ✅ (scroll flojo). **Falta validar en device:** proyección de pagos (camino completo), saldo MP manual, asesor IA, camino feliz general.
+> - **Pendiente menor mañana:** afinar el scroll del teclado (`KeyboardAwareScrollView`, `extraOffset`/reintentos).
+
+Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP OAuth ✅ live — saldo manual). Todo en `main` (local).
 **Verificado en device (Expo Go):** Sprints 0 → 1 (auth, onboarding, dashboard, toggles, tasas). El resto **no se validó en device aún**.
 **APK preview:** build `fa3d3965` (sesión 4 completa + **Mercado Pago**; incluye `expo-web-browser`) **corriendo/recién buildeado** — estado/descarga en https://expo.dev/accounts/alexleon001/projects/mi-platica/builds. Previos: `ad6d2dee` (sesión 4 sin MP), `2a8ddb8c` (sesión 3), `11dda3ab` (primer OK con anon key).
 
@@ -48,7 +55,7 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 - **Asesor financiero IA (Sprint 5)**: chat `app/advisor.tsx` (entry en `more.tsx`) → Edge `financial-advisor` (persona AR + prompt caching + contexto financiero vía RLS) → `use-advisor`.
 - **CRUD completo**: borrar las 4 entidades (long-press); editar las 4 (tap = editar, reusan su modal de alta en modo edición; investments re-deriva con `deriveInvestmentValues`).
 - **Editar perfil**: modal `edit-profile` (nombre, ingreso mensual ARS, dólar preferido, vista) desde *Más → Perfil → Editar perfil* (`useUpdateProfile`). El ingreso editado se refleja como sueldo neto default en la **proyección de pagos**.
-- **Fix teclado tapa input (global)**: componente `components/KeyboardAwareScrollView.tsx` (puro JS, OTA-safe) reemplaza el patrón `KeyboardAvoidingView+ScrollView` en los 9 forms (modales + onboarding). Al abrir el teclado mide el input enfocado vs viewport y scrollea para dejarlo visible. (`set-income`/`quick-amount` quedan con `View` simple — input arriba, no los tapa.)
+- **Fix teclado tapa input (global)** ✅ **FUNCIONA en device (v3)**: componente `components/KeyboardAwareScrollView.tsx` (puro JS, OTA-safe) en los 9 forms (modales + onboarding). v3 (la que anda): NO usa `KeyboardAvoidingView` ni `findNodeHandle`/`measureLayout`/`currentlyFocusedInput+measureLayout` (frágiles en New Arch/Fabric); usa la posición real del teclado (`keyboardDidShow` → `endCoordinates.screenY`) + `measureInWindow` del input enfocado + un **espaciador** del alto del teclado + 3 reintentos (60/180/350 ms). v1 (measureLayout) y v2 (container measureInWindow + adjustResize) NO funcionaban bajo Fabric. (`set-income`/`quick-amount` quedan con `View` simple.) **Pendiente menor (mañana):** el scroll queda "flojo" (a veces no deja el input del todo arriba) → afinar `extraOffset` (hoy 28) y/o los tiempos de reintento.
 - **Branding/UI**: ícono de app + adaptive + splash (gradiente indigo→cyan + "$", generados con `scripts/gen-icons.py` vía PIL → `assets/`). Tabs con íconos Ionicons (`@expo/vector-icons`), sin header redundante; todas las tabs con safe-area `top`; wordmark "Mi Platica" en el dashboard.
 - **Calidad**: 42 tests `bun test` (verde) sobre `csv.ts`, `broker-import.ts`, `instruments.ts`, `reminders.ts`, `inflation.ts`, `prices.ts`, `projection.ts`. `type-check:app` **limpio** (sesión 4: arreglado tuple `segments[1]` en `_layout.tsx` + excluidos del tsconfig de la app los dirs KATA `api/`/`cli/`/`config/`/`scripts/`, ya cubiertos por `tsconfig.test.json`). `type-check:test` tiene errores KATA pre-existentes (falta dep `allure-js-commons`), ajenos a la app.
 
