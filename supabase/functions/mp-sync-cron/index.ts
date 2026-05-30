@@ -2,16 +2,17 @@
 // Mi Platica — Edge Function: mp-sync-cron
 // ============================================
 // Versión scheduleable de mp-sync-movements: corre con service_role e itera
-// TODAS las conexiones de Mercado Pago, sincronizando saldo + pagos recibidos de
-// cada usuario. La pensada para pg_cron (verify_jwt=false, keyless).
+// TODAS las conexiones de Mercado Pago, sincronizando los pagos recibidos de
+// cada usuario. Pensada para pg_cron (verify_jwt=false, keyless).
 //
-// Anti-abuso / dedup: saltea conexiones sincronizadas hace < SKIP_RECENT_MIN
-// minutos (así golpear el endpoint público repetido no martilla la API de MP ni
-// re-sincroniza lo que el botón manual ya trajo).
+// Anti-abuso / dedup: saltea conexiones sincronizadas hace < SKIP_RECENT_MIN min.
+//
+// NOTA: el saldo de la billetera MP NO se puede leer por OAuth (el endpoint de
+// balance da 403 forbidden para cuentas personales) → la cuenta MP lleva saldo
+// manual. Acá solo sincronizamos pagos recibidos (cobrador).
 //
 // La lógica por-usuario es la misma que mp-sync-movements (duplicada a propósito:
-// son deploys independientes y no comparten módulos). Si cambia una, cambiar la
-// otra.
+// son deploys independientes y no comparten módulos). Si cambia una, cambiar la otra.
 //
 // Endpoint: POST /functions/v1/mp-sync-cron
 // Auth: verify_jwt = false (lo llama pg_cron)
@@ -24,8 +25,6 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const MP_TOKEN_URL = "https://api.mercadopago.com/oauth/token";
 const MP_PAYMENTS_URL = "https://api.mercadopago.com/v1/payments/search";
-const MP_BALANCE_URL = (mpUserId: string) =>
-  `https://api.mercadopago.com/users/${mpUserId}/mercadopago_account/balance`;
 const PAGE_LIMIT = 100;
 const SKIP_RECENT_MIN = 30;
 
@@ -54,7 +53,7 @@ Deno.serve(async (req: Request) => {
   if (error) return json({ error: error.message }, 500);
 
   const now = Date.now();
-  const results: { owner: string; inserted?: number; balance?: number | null; error?: string }[] = [];
+  const results: { owner: string; inserted?: number; error?: string }[] = [];
   let synced = 0;
   let skipped = 0;
   let errors = 0;
@@ -68,7 +67,7 @@ Deno.serve(async (req: Request) => {
     }
     try {
       const r = await syncOwner(admin, c.owner_id, tokenKey, clientId, clientSecret);
-      results.push({ owner: c.owner_id, inserted: r.inserted, balance: r.balance });
+      results.push({ owner: c.owner_id, inserted: r.inserted });
       synced++;
     } catch (e) {
       errors++;
@@ -85,7 +84,7 @@ async function syncOwner(
   tokenKey: string,
   clientId: string,
   clientSecret: string,
-): Promise<{ inserted: number; balance: number | null }> {
+): Promise<{ inserted: number }> {
   const { data: tokRows, error: tokErr } = await admin.rpc("mp_get_tokens", {
     p_owner: ownerId,
     p_key: tokenKey,
@@ -102,19 +101,6 @@ async function syncOwner(
   }
 
   const accountId = await ensureMpAccount(admin, ownerId);
-
-  let balance: number | null = null;
-  try {
-    balance = await fetchBalance(accessToken, tok.mp_user_id);
-    if (balance != null) {
-      await admin
-        .from("accounts")
-        .update({ balance_amount: balance, balance_updated_at: new Date().toISOString() })
-        .eq("id", accountId);
-    }
-  } catch (e) {
-    console.warn("[mp-sync-cron] balance fetch falló:", ownerId, e instanceof Error ? e.message : e);
-  }
 
   const payments = await fetchPayments(accessToken);
   const rows = payments
@@ -143,12 +129,11 @@ async function syncOwner(
   }
 
   await admin.from("mp_connections").update({ last_synced_at: new Date().toISOString() }).eq("owner_id", ownerId);
-  return { inserted, balance };
+  return { inserted };
 }
 
 type MpPayment = {
   id?: number | string;
-  status?: string;
   transaction_amount?: number;
   description?: string | null;
   payment_method_id?: string | null;
@@ -168,18 +153,6 @@ async function fetchPayments(accessToken: string): Promise<MpPayment[]> {
   if (!res.ok) throw new Error(`MP payments ${res.status}`);
   const body = (await res.json()) as { results?: MpPayment[] };
   return body.results ?? [];
-}
-
-async function fetchBalance(accessToken: string, mpUserId: string | null): Promise<number | null> {
-  if (!mpUserId) return null;
-  const res = await fetch(MP_BALANCE_URL(mpUserId), {
-    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
-  });
-  if (!res.ok) throw new Error(`MP balance ${res.status}`);
-  const b = (await res.json()) as Record<string, unknown>;
-  const candidate = b.available_balance ?? b.total_amount ?? b.balance ?? b.unwithdrawn_balance ?? null;
-  const n = typeof candidate === "string" ? Number(candidate) : candidate;
-  return typeof n === "number" && Number.isFinite(n) ? n : null;
 }
 
 async function refreshToken(

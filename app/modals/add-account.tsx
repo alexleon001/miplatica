@@ -47,6 +47,12 @@ export default function AddAccountModal() {
   const [balance, setBalance] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // Cuenta de Mercado Pago (API): su saldo se carga a mano (MP no expone el saldo
+  // de billetera por OAuth). Mostramos un hint en ese caso.
+  const editingAccount = editing ? accounts.data?.find((a) => a.id === id) : undefined;
+  const isMpAccount =
+    editingAccount?.integration_type === "api" || /mercado\s*pago/i.test(editingAccount?.name ?? "");
+
   // Modo edición: precargar desde la cache de cuentas.
   useEffect(() => {
     if (!editing) return;
@@ -164,6 +170,12 @@ export default function AddAccountModal() {
               value={balance}
               onChangeText={setBalance}
             />
+            {isMpAccount && (
+              <Text style={styles.hint}>
+                El saldo de Mercado Pago no se puede leer por la API (MP no lo permite para cuentas
+                personales). Actualizalo a mano acá; los pagos recibidos se sincronizan solos.
+              </Text>
+            )}
           </Field>
 
           <Pressable
@@ -192,6 +204,7 @@ const styles = StyleSheet.create({
   container: { padding: 20, gap: 18 },
   field: { gap: 8 },
   fieldLabel: { color: colors.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 },
+  hint: { color: colors.textMuted, fontSize: 12, lineHeight: 16 },
   input: {
     backgroundColor: colors.surfaceDark,
     color: colors.textPrimary,
