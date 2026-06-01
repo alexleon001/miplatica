@@ -26,14 +26,14 @@ type Props = ScrollViewProps & {
   children: React.ReactNode;
   /** Margen extra (px) entre el input y el borde del teclado. */
   extraOffset?: number;
-};
+};;
 
 type Measurable = { measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => void };
 
 export function KeyboardAwareScrollView({
   children,
   contentContainerStyle,
-  extraOffset = 28,
+  extraOffset = 56,
   onScroll,
   ...rest
 }: Props) {
@@ -45,8 +45,9 @@ export function KeyboardAwareScrollView({
     const show = Keyboard.addListener("keyboardDidShow", (e: KeyboardEvent) => {
       setKbHeight(e.endCoordinates.height);
       const keyboardTopY = e.endCoordinates.screenY;
-      // Reintentos: el espaciador/layout puede tardar un par de frames.
-      [60, 180, 350].forEach((ms) => setTimeout(() => scrollFocusedIntoView(keyboardTopY), ms));
+      // Reintentos: el espaciador/layout puede tardar varios frames en
+      // asentarse bajo Fabric; el último (550 ms) cubre los layouts lentos.
+      [50, 150, 300, 550].forEach((ms) => setTimeout(() => scrollFocusedIntoView(keyboardTopY), ms));
     });
     const hide = Keyboard.addListener("keyboardDidHide", () => setKbHeight(0));
     return () => {
