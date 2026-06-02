@@ -103,8 +103,15 @@ async function syncOwner(
   const accountId = await ensureMpAccount(admin, ownerId);
 
   const payments = await fetchPayments(accessToken);
+
+  // Solo cobros reales aprobados (ventas a clientes). El token de cobrador trae
+  // además money_transfer (transferencias entre cuentas propias / espejos
+  // duplicados), investment (cuenta remunerada/rendimientos) y account_fund
+  // (carga de saldo desde el banco por CVU): todos son plata propia moviéndose,
+  // NO ingresos → se excluyen para no inflar el patrimonio ni duplicar montos.
   const rows = payments
     .filter((p) => p && p.id != null && typeof p.transaction_amount === "number")
+    .filter((p) => p.status === "approved" && p.operation_type === "regular_payment")
     .map((p) => ({
       owner_id: ownerId,
       account_id: accountId,
@@ -134,12 +141,15 @@ async function syncOwner(
 
 type MpPayment = {
   id?: number | string;
+  status?: string | null;
+  operation_type?: string | null;
+  collector_id?: number | string | null;
   transaction_amount?: number;
   description?: string | null;
   payment_method_id?: string | null;
   date_approved?: string | null;
   date_created?: string | null;
-  payer?: { email?: string | null } | null;
+  payer?: { id?: number | string | null; email?: string | null } | null;
 };
 
 async function fetchPayments(accessToken: string): Promise<MpPayment[]> {
