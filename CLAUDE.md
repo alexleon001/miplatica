@@ -29,16 +29,21 @@
 
 ## Estado actual (sesión 6, 2026-06-01 — cierre)
 
-> **Cierre sesión 6:**
-> - **Todo pusheado a `main`** (último commit `da4cb90`). El push lo bloquea el clasificador → **lo corre el user**: `git push origin main`.
-> - **APK nuevo `de26cdb7`** (canal `preview`, runtime `0.1.0`) buildeado con la cuota EAS reseteada el 1/6 — trae todo sesión 5 + el fix del teclado, baked-in. Reemplaza a `fa3d3965`. Descarga: https://expo.dev/accounts/alexleon001/projects/mi-platica/builds/de26cdb7-489e-43c2-9c2c-abac54cd0685
-> - **Validado en device (sesión 6):** **asesor IA ✅** (la `ANTHROPIC_API_KEY` está seteada y responde) — fue clave para detectar el bug de MP.
-> - **🔴 BUG GORDO DE MP RESUELTO:** el sync metía TODOS los pagos como `income`, inflando el patrimonio ~33x ($23,4M falsos) con duplicados/transferencias internas/rendimientos. Diagnóstico vía `?debug=1` en `mp-sync-cron` (disparado por SQL `net.http_post`). **Fix (2 commits):** (1) solo `regular_payment` aprobados (excluye `money_transfer`/`investment`/`account_fund`); (2) clasifica por dirección (`collector_id == mp_user_id` → ingreso; si no → **gasto**) + **paginación** (antes traía solo 100). Resultado real del user: **187 gastos / 15 ingresos** (la cuenta MP conectada se usa para PAGAR; las ventas del negocio van por otra cuenta). Datos viejos borrados + re-sync limpio. **mp-sync-cron v7, mp-sync-movements v6.**
-> - **Hecho sesión 6:** afinar scroll teclado (`extraOffset` 28→56 + reintento 550ms); rebuild APK; fix clasificación MP income/expense + paginación.
-> - **Falta validar en device:** los 187 gastos MP en rojo (pull-refresh), proyección de pagos, saldo MP manual, camino feliz general.
+> **Cierre sesión 6 (2026-06-01):**
+> - **Todo pusheado a `main`** (último commit `983ab28`). El push lo bloquea el clasificador → **lo corre el user**.
+> - **APK `de26cdb7`** (canal `preview`, runtime `0.1.0`) buildeado con la cuota EAS reseteada el 1/6 — trae sesión 5 + fix teclado, baked-in. Reemplaza a `fa3d3965`. Descarga: https://expo.dev/accounts/alexleon001/projects/mi-platica/builds/de26cdb7-489e-43c2-9c2c-abac54cd0685
+> - **2 OTA al canal `preview` post-APK** (cambios solo-JS): `ac1ba8cb` (asesor persistente) + `a718f78b` (botón categorizar). Se bajan al reabrir la app.
+> - **Validado en device:** **asesor IA ✅** (`ANTHROPIC_API_KEY` seteada y responde) — clave para detectar el bug de MP.
+> - **🔴 BUG GORDO DE MP RESUELTO:** el sync metía TODOS los pagos como `income`, inflando el patrimonio ~33x ($23,4M falsos) con duplicados/transferencias internas/rendimientos. Diagnóstico vía `?debug=1` en `mp-sync-cron` (disparado por SQL `net.http_post` + leer `net._http_response`). **Fix:** (1) solo `regular_payment` aprobados (excluye `money_transfer`/`investment`/`account_fund`); (2) clasifica por dirección (`collector_id == mp_user_id` → ingreso; si no → **gasto**) + **paginación** (antes solo 100). Resultado real: **187 gastos / 15 ingresos** (la cuenta MP conectada se usa para PAGAR; las ventas del negocio van por otra cuenta que NO está conectada). Datos viejos borrados + re-sync limpio. **mp-sync-cron v7, mp-sync-movements v6.**
+> - **Asesor IA — chat persistente:** historial en AsyncStorage (`lib/store/advisor.ts`, store Zustand) → ya no se pierde al salir; botón "Limpiar" para nueva conversación. (v1: una conversación, local por dispositivo.)
+> - **Auto-categorización IA (nuevo):** edge **`categorize-batch` v1** (verify_jwt) categoriza en lote los movimientos `category IS NULL` — 1 llamada a Claude por tanda de 50, valida grupo (gasto/ingreso), fallback seguro. UI: banner "N sin categoría · Categorizar con IA" en tab Movimientos (`useCategorizeBatch`). **Falta que el user lo toque** (202 movimientos sin categoría a la fecha) y verificar resultado.
 > - **Confirmado:** dólar se actualiza solo (cron `fetch-exchange-rates` cada 30 min + self-healing). Vista USD ya disponible (toggle dashboard + editar perfil) — el user la usa, sin cambios pedidos.
 > - **Descartado por el user:** Sentry.
-> - **Pendiente con input del user:** FCI/CAFCI (elegir fuente de precios), auth social Google/Apple (credenciales OAuth + provider Supabase).
+>
+> **Para arrancar sesión 7:**
+> - **Validar en device** (tras reabrir app para bajar OTAs): tocar botón "Categorizar con IA" (verificar reparto desde la base), chat del asesor persiste, gastos MP en rojo, proyección de pagos, saldo MP manual, camino feliz general.
+> - **FCI/CAFCI:** fuente confirmada = argentinadatos `/v1/finanzas/fci/{mercadoDinero|rentaFija|rentaVariable|rentaMixta}/ultimo` (campos `fondo`/`vcp`/`fecha`). **Bloqueo de diseño:** los FCI no tienen ticker (el sistema de precios matchea por `ticker`); requiere un **selector de fondos** en `add-investment` (no alcanza texto libre). Decisión pendiente del user de si vale (tabla `investments` vacía → sin payoff inmediato).
+> - **Auth social Google/Apple:** bloqueado hasta que el user consiga credenciales OAuth + configuremos el provider en Supabase.
 
 Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP OAuth ✅ live — saldo manual). Todo en `main` (local).
 **Verificado en device (Expo Go):** Sprints 0 → 1 (auth, onboarding, dashboard, toggles, tasas). El resto **no se validó en device aún**.
@@ -56,7 +61,8 @@ Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP O
 - **Proyección de pagos / cash-flow (Sprint 5)**: el "Excel de proyección" mejorado. Tablas `projection_items` (gasto cargado 1 vez con recurrencia: `monthly`/`installments`/`once` + `payment_method` como grupo) + `projection_income` (override de ingreso por mes; default = `profile.monthly_income_ars`). Lógica pura `lib/projection.ts` (`buildProjection` arma la grilla mes×ítem agrupada por medio de pago con subtotales + TOTAL + neto Deuda/Ganancia; `debtToProjItem` inyecta las deudas activas con cuota — `installments` = ceil(saldo/cuota) — sin recargarlas). UI `app/projection.tsx` (entry en `more.tsx` → ruta `projection`): tira horizontal de meses con el neto (rojo/verde) + detalle del mes (grupos, cuotas `k/N`, ingreso editable). Modales `add-projection-item` + `set-income`. Multi-moneda vía MEP (regla #1). **No validado en device.**
 - **Presupuestos vivos**: `budgets.spent_ars` mantenido por triggers; modal de alta.
 - **Import CSV de brokers** (pegar texto): parser sin deps + dedup por `external_id`.
-- **Asesor financiero IA (Sprint 5)**: chat `app/advisor.tsx` (entry en `more.tsx`) → Edge `financial-advisor` (persona AR + prompt caching + contexto financiero vía RLS) → `use-advisor`.
+- **Asesor financiero IA (Sprint 5)**: chat `app/advisor.tsx` (entry en `more.tsx`) → Edge `financial-advisor` (persona AR + prompt caching + contexto financiero vía RLS) → `use-advisor`. **Historial persistido** en AsyncStorage (`lib/store/advisor.ts`) + botón "Limpiar".
+- **Categorización IA en lote**: banner "N sin categoría · Categorizar con IA" en tab Movimientos → Edge `categorize-batch` → categoriza los movimientos importados (MP/CSV) que entran sin categoría.
 - **CRUD completo**: borrar las 4 entidades (long-press); editar las 4 (tap = editar, reusan su modal de alta en modo edición; investments re-deriva con `deriveInvestmentValues`).
 - **Editar perfil**: modal `edit-profile` (nombre, ingreso mensual ARS, dólar preferido, vista) desde *Más → Perfil → Editar perfil* (`useUpdateProfile`). El ingreso editado se refleja como sueldo neto default en la **proyección de pagos**.
 - **Fix teclado tapa input (global)** ✅ **FUNCIONA en device (v3)**: componente `components/KeyboardAwareScrollView.tsx` (puro JS, OTA-safe) en los 9 forms (modales + onboarding). v3 (la que anda): NO usa `KeyboardAvoidingView` ni `findNodeHandle`/`measureLayout`/`currentlyFocusedInput+measureLayout` (frágiles en New Arch/Fabric); usa la posición real del teclado (`keyboardDidShow` → `endCoordinates.screenY`) + `measureInWindow` del input enfocado + un **espaciador** del alto del teclado + 3 reintentos (60/180/350 ms). v1 (measureLayout) y v2 (container measureInWindow + adjustResize) NO funcionaban bajo Fabric. (`set-income`/`quick-amount` quedan con `View` simple.) **Pendiente menor (mañana):** el scroll queda "flojo" (a veces no deja el input del todo arriba) → afinar `extraOffset` (hoy 28) y/o los tiempos de reintento.
@@ -177,8 +183,9 @@ Gotchas para debug si algo falla en el device:
 - [x] Vistas `v_net_worth`, `v_monthly_balance` (`security_invoker=on`).
 - [x] Auth Supabase (email+password) vía `lib/supabase.ts` + `lib/auth.tsx` + `use-profile.ts`. **Cache por sesión (fix sesión 5):** `useProfile` tiene `enabled: !!session` (no cachea `null` sin sesión); `onAuthStateChange` hace `queryClient.clear()` en `SIGNED_IN`/`SIGNED_OUT` (privacidad + evita que un `["profile"]=null` stale re-dispare el onboarding a un user existente); persister con `buster: "v2"` para limpiar el cache envenenado ya existente.
 - [x] Edge `fetch-exchange-rates` (ACTIVE, `verify_jwt=false`) → dolarapi → `exchange_rates`. Self-healing client-side.
-- [x] Edge `categorize-transaction` (ACTIVE, `verify_jwt=true`, prompt caching). ⚠️ Sin `ANTHROPIC_API_KEY` → 500.
-- [x] Edge `financial-advisor` (ACTIVE, `verify_jwt=true`, prompt caching, **v2**). Arma contexto del user vía RLS, ahora con **contexto de inflación** (IPC mensual + acum. 3m/12m) + **rendimiento real por posición en pesos** (consistente con `realReturnForPosition`). ⚠️ Sin `ANTHROPIC_API_KEY` → 500 (el user la está seteando).
+- [x] Edge `categorize-transaction` (ACTIVE, `verify_jwt=true`, prompt caching). Categoriza UNA transacción (flujo "✨ Sugerir categoría" del alta).
+- [x] Edge `categorize-batch` (ACTIVE, `verify_jwt=true`, **v1**, prompt caching) → categoriza en LOTE los movimientos `category IS NULL` del user (1 llamada a Claude por tanda de 50, valida grupo gasto/ingreso, fallback seguro). Cliente: `useCategorizeBatch` + banner en tab Movimientos.
+- [x] Edge `financial-advisor` (ACTIVE, `verify_jwt=true`, prompt caching, **v2**). Arma contexto del user vía RLS, con **contexto de inflación** (IPC mensual + acum. 3m/12m) + **rendimiento real por posición en pesos**. ✅ `ANTHROPIC_API_KEY` seteada, verificado en device. Chat persistido client-side (`lib/store/advisor.ts`).
 - [x] Edge `update-asset-prices` (ACTIVE, `verify_jwt=false`, **v4**) → data912 + **CoinGecko (cripto, 21 tickers)** + dolarapi → `asset_prices`. Devuelve/loguea `coverage` por fuente. Llama `refresh_positions()` por RPC al final.
 - [x] Edge `fetch-inflation` (ACTIVE, `verify_jwt=false`) → argentinadatos → `inflation` (IPC mensual, upsert idempotente). 998 meses backfilleados.
 - [x] Función SQL `refresh_positions()` (migración `0003`, `security_definer`, revaloriza posiciones).
@@ -235,7 +242,7 @@ Gotchas para debug si algo falla en el device:
 | 3 | Portafolio con cotizaciones live | ✅ (backend+crons live; falta verificar UI en device) |
 | 3.5 | Ajuste por inflación / rendimiento real (regla #5) | ✅ (tabla `inflation` + Edge `fetch-inflation` + cron + `useInflation` + `PnLBadge` real; falta verificar en device) |
 | 4 | Mercado Pago + import CSV | ✅ CSV + MP OAuth (backend live: migración 0007 + 3 edges + secrets; falta validar flujo en device en APK `fa3d3965`) |
-| 5 | Asesor financiero IA | ✅ (Edge `financial-advisor` + chat; `ANTHROPIC_API_KEY` ✅, verificado en device sesión 6). Pendiente: persistir historial de chat (hoy es efímero). |
+| 5 | Asesor financiero IA | ✅ (Edge `financial-advisor` + chat; `ANTHROPIC_API_KEY` ✅, verificado en device sesión 6; **historial persistido** + botón Limpiar). |
 | 6 | Deudas, metas y presupuestos avanzados | ✅ deudas + presupuestos vivos + metas de ahorro + recordatorios de vencimiento (in-app + notif locales) |
 
-*Última actualización: 2026-05-29 (sesión 4): rendimiento real / ajuste por inflación (Sprint 3.5) — tabla `inflation` + Edge `fetch-inflation` + cron + `useInflation` + `PnLBadge` con "real +Y%". Historial detallado por sprint en el git log.*
+*Última actualización: 2026-06-01 (sesión 6): fix gordo de MP (income/expense por dirección + paginación, solo regular_payment aprobados) + APK `de26cdb7` + asesor IA verificado y con chat persistente + auto-categorización IA en lote (`categorize-batch`). Historial detallado por sprint en el git log.*
