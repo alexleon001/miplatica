@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MoneyAmount } from "../../components/MoneyAmount";
@@ -8,7 +8,7 @@ import { StateMessage } from "../../components/StateMessage";
 import { TransactionItem } from "../../components/TransactionItem";
 import { useMonthlyBalance } from "../../lib/hooks/use-monthly-balance";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
-import { useDeleteTransaction, useTransactions } from "../../lib/hooks/use-transactions";
+import { useCategorizeBatch, useDeleteTransaction, useTransactions } from "../../lib/hooks/use-transactions";
 import { confirmDelete } from "../../lib/confirm";
 import { colors } from "../../lib/colors";
 
@@ -27,12 +27,29 @@ export default function TransactionsScreen() {
   const monthly = useMonthlyBalance();
   const { refreshing, onRefresh } = usePullRefresh();
   const del = useDeleteTransaction();
+  const categorize = useCategorizeBatch();
 
   const filtered = useMemo(() => {
     if (!txs) return [];
     if (filter === "all") return txs;
     return txs.filter((t) => t.type === filter);
   }, [txs, filter]);
+
+  const uncategorized = useMemo(() => (txs ?? []).filter((t) => !t.category).length, [txs]);
+
+  function runCategorize() {
+    if (categorize.isPending) return;
+    categorize.mutate(undefined, {
+      onSuccess: (r) =>
+        Alert.alert(
+          "Listo",
+          `Categoricé ${r.categorized} movimiento${r.categorized === 1 ? "" : "s"} con IA.` +
+            (r.remaining > 0 ? ` Quedan ${r.remaining}, tocá de nuevo para seguir.` : ""),
+        ),
+      onError: (e) =>
+        Alert.alert("Ups", e instanceof Error ? e.message : "No pude categorizar ahora."),
+    });
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -58,6 +75,26 @@ export default function TransactionsScreen() {
             </Pressable>
           ))}
         </View>
+
+        {uncategorized > 0 ? (
+          <Pressable
+            style={({ pressed }) => [styles.aiBanner, (pressed || categorize.isPending) && { opacity: 0.7 }]}
+            onPress={runCategorize}
+            disabled={categorize.isPending}
+            accessibilityLabel="Categorizar movimientos con IA"
+          >
+            {categorize.isPending ? (
+              <ActivityIndicator color={colors.primary} size="small" />
+            ) : (
+              <Text style={styles.aiBannerIcon}>✨</Text>
+            )}
+            <Text style={styles.aiBannerText}>
+              {categorize.isPending
+                ? "Categorizando con IA…"
+                : `${uncategorized} sin categoría · Categorizar con IA`}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <FlatList
@@ -133,6 +170,19 @@ const styles = StyleSheet.create({
   summaryItem: { flex: 1, gap: 4 },
   summaryLabel: { color: colors.textMuted, fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase" },
   filters: { flexDirection: "row", gap: 6 },
+  aiBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: colors.surfaceDark,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  aiBannerIcon: { fontSize: 15 },
+  aiBannerText: { color: colors.primary, fontSize: 13, fontWeight: "600" },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 6,

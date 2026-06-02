@@ -40,6 +40,23 @@ export function useUpdateTransaction() {
   });
 }
 
+// Categoriza en lote los movimientos sin categoría (Edge categorize-batch, IA).
+export function useCategorizeBatch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (): Promise<{ categorized: number; remaining: number; chunks: number }> => {
+      const { data, error } = await supabase.functions.invoke("categorize-batch", { body: {} });
+      if (error) throw error;
+      return data as { categorized: number; remaining: number; chunks: number };
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["monthly_balance"] });
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+    },
+  });
+}
+
 export function useDeleteTransaction() {
   const qc = useQueryClient();
   return useMutation({
