@@ -147,6 +147,7 @@ export default function ProjectionScreen() {
             {current && (
               <View style={styles.detail}>
                 <Text style={styles.detailMonth}>{monthLabel(current.month)}</Text>
+                <Text style={styles.detailHint}>Tocá un gasto para editarlo · mantenelo apretado para borrarlo.</Text>
 
                 {/* Ingreso (editable) */}
                 <Pressable
@@ -180,7 +181,7 @@ export default function ProjectionScreen() {
                       return (
                         <Pressable
                           key={l.id}
-                          style={styles.line}
+                          style={({ pressed }) => [styles.line, pressed && !isDebt && styles.linePressed]}
                           disabled={isDebt}
                           onPress={() => router.push(`/modals/add-projection-item?id=${l.id}`)}
                           onLongPress={() =>
@@ -190,9 +191,10 @@ export default function ProjectionScreen() {
                           <Text style={styles.lineName} numberOfLines={1}>
                             {l.name}
                             {l.installmentLabel ? <Text style={styles.lineCuota}>  cuota {l.installmentLabel}</Text> : null}
-                            {isDebt ? <Text style={styles.lineTag}>  · deuda</Text> : null}
+                            {isDebt ? <Text style={styles.lineTag}>  · deuda (editás en Deudas)</Text> : null}
                           </Text>
                           <Text style={styles.lineAmount}>{Math.round(l.amountArs).toLocaleString("es-AR")}</Text>
+                          {!isDebt ? <Text style={styles.lineEdit}>✎</Text> : null}
                         </Pressable>
                       );
                     })}
@@ -260,6 +262,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, gap: 10, marginTop: 4,
   },
   detailMonth: { color: colors.textPrimary, fontSize: 18, fontWeight: "700" },
+  detailHint: { color: colors.textMuted, fontSize: 12, marginTop: -4 },
   incomeRow: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border,
@@ -276,10 +279,12 @@ const styles = StyleSheet.create({
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     paddingVertical: 7,
   },
+  linePressed: { opacity: 0.55 },
   lineName: { color: colors.textPrimary, fontSize: 14, flex: 1, marginRight: 8 },
   lineCuota: { color: colors.warning, fontSize: 12 },
   lineTag: { color: colors.textMuted, fontSize: 12 },
   lineAmount: { color: colors.textPrimary, fontSize: 14, fontWeight: "600" },
+  lineEdit: { color: colors.primary, fontSize: 15, marginLeft: 10 },
   totalRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border,
