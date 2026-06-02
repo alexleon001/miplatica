@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
+import { DateField } from "../../components/DateField";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
   INSTRUMENTS,
@@ -255,28 +256,14 @@ export default function AddInvestmentModal() {
           ) : null}
 
           {has("purchase_date") ? (
-            <Field label="Fecha de inicio (AAAA-MM-DD)">
-              <TextInput
-                style={styles.input}
-                placeholder="2026-05-01"
-                placeholderTextColor={colors.textMuted}
-                autoCapitalize="none"
-                value={purchaseDate}
-                onChangeText={setPurchaseDate}
-              />
+            <Field label="Fecha de inicio">
+              <DateField value={purchaseDate} onChange={setPurchaseDate} placeholder="Elegí la fecha de inicio" />
             </Field>
           ) : null}
 
           {has("maturity_date") ? (
-            <Field label="Vencimiento (AAAA-MM-DD)">
-              <TextInput
-                style={styles.input}
-                placeholder="2026-08-01"
-                placeholderTextColor={colors.textMuted}
-                autoCapitalize="none"
-                value={maturityDate}
-                onChangeText={setMaturityDate}
-              />
+            <Field label="Vencimiento">
+              <DateField value={maturityDate} onChange={setMaturityDate} placeholder="Elegí el vencimiento" />
             </Field>
           ) : null}
 

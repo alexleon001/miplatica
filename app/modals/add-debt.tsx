@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
+import { DateField } from "../../components/DateField";
 import { useCreateDebt, useDebts, useUpdateDebt } from "../../lib/hooks/use-debts";
 import { colors } from "../../lib/colors";
 
@@ -186,15 +187,8 @@ export default function AddDebtModal() {
             />
           </Field>
 
-          <Field label="Próximo vencimiento (AAAA-MM-DD, opcional)">
-            <TextInput
-              style={styles.input}
-              placeholder="2026-06-10"
-              placeholderTextColor={colors.textMuted}
-              autoCapitalize="none"
-              value={nextPayment}
-              onChangeText={setNextPayment}
-            />
+          <Field label="Próximo vencimiento (opcional)">
+            <DateField value={nextPayment} onChange={setNextPayment} placeholder="Elegí la fecha de vencimiento" />
           </Field>
 
           <Pressable

@@ -3,6 +3,7 @@ import {
   addMonths,
   buildProjection,
   debtToProjItem,
+  frenchPayment,
   monthKey,
   monthLabel,
   monthsBetween,
@@ -119,6 +120,47 @@ test("buildProjection: agrupa, subtotaliza y calcula neto vs ingreso", () => {
   expect(ago.totalArs).toBe(950000);
   expect(ago.incomeArs).toBe(3000000);
   expect(ago.netArs).toBe(3000000 - 950000);
+});
+
+test("frenchPayment: tasa 0 → capital / n", () => {
+  expect(frenchPayment(120000, 0, 12)).toBe(10000);
+});
+
+test("frenchPayment: cuota fija con interés", () => {
+  // 100.000 a 60% TNA (5% mensual) en 12 cuotas → ~11.282,54
+  expect(frenchPayment(100000, 60, 12)).toBeCloseTo(11282.54, 2);
+});
+
+test("buildProjection: cuotas con interés → amount es capital, proyecta la cuota", () => {
+  const item: ProjItem = {
+    id: "tv", name: "TV", paymentMethod: "TDC VISA", amount: 100000, currency: "ARS",
+    recurrence: "installments", startMonth: "2026-06-01", installmentsTotal: 12, interestRate: 60,
+  };
+  const proj = buildProjection({
+    items: [item],
+    window: monthsWindow("2026-06-01", 1),
+    defaultIncomeArs: 0,
+    incomeOverrides: {},
+    mep: null,
+  });
+  const line = proj.months[0].groups[0].lines[0];
+  expect(line.amountArs).toBeCloseTo(11282.54, 2);
+  expect(line.installmentLabel).toBe("1/12");
+});
+
+test("buildProjection: cuotas sin interés → amount se usa directo (no rompe)", () => {
+  const item: ProjItem = {
+    id: "c", name: "Concierto", paymentMethod: "g", amount: 43333, currency: "ARS",
+    recurrence: "installments", startMonth: "2026-06-01", installmentsTotal: 2,
+  };
+  const proj = buildProjection({
+    items: [item],
+    window: monthsWindow("2026-06-01", 1),
+    defaultIncomeArs: 0,
+    incomeOverrides: {},
+    mep: null,
+  });
+  expect(proj.months[0].groups[0].lines[0].amountArs).toBe(43333);
 });
 
 test("buildProjection: sin mep → montos USD null", () => {

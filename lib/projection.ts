@@ -19,6 +19,10 @@ export type ProjItem = {
   recurrence: Recurrence;
   startMonth: string; // "YYYY-MM-01"
   installmentsTotal: number | null;
+  // TNA % anual. Si está seteado (en cuotas), `amount` es el CAPITAL a financiar
+  // y la cuota mensual se calcula con sistema francés. Si es null/undefined,
+  // `amount` se usa directo (monto por ocurrencia).
+  interestRate?: number | null;
 };
 
 export type ProjLine = {
@@ -114,6 +118,30 @@ export function occurrenceIndex(item: ProjItem, month: string): number | null {
   }
 }
 
+// Cuota fija (sistema francés) de un préstamo: capital amortizado en n cuotas
+// a una tasa nominal anual (TNA %). Con tasa 0 → capital / n. Pura y testeable.
+export function frenchPayment(principal: number, annualRatePct: number, n: number): number {
+  if (n <= 0) return 0;
+  const r = annualRatePct / 100 / 12; // tasa mensual
+  if (r <= 0) return principal / n;
+  return (principal * r) / (1 - Math.pow(1 + r, -n));
+}
+
+// Monto que aporta un ítem en CADA mes que aplica. Para cuotas con interés,
+// `amount` es el capital y se devuelve la cuota fija (francés); en el resto,
+// `amount` es el monto directo.
+export function itemMonthlyAmount(item: ProjItem): number {
+  if (
+    item.recurrence === "installments" &&
+    item.interestRate != null &&
+    item.installmentsTotal != null &&
+    item.installmentsTotal > 0
+  ) {
+    return frenchPayment(item.amount, item.interestRate, item.installmentsTotal);
+  }
+  return item.amount;
+}
+
 // Convierte un ítem (tabla debts) a ProjItem para inyectarlo a la proyección.
 // Devuelve null si la deuda no tiene cuota mensual (no proyecta nada).
 export function debtToProjItem(
@@ -169,8 +197,9 @@ export function buildProjection(args: BuildProjectionArgs): Projection {
       const idx = occurrenceIndex(item, month);
       if (idx == null) continue;
 
-      const amountArs = arsOf(item.amount, item.currency);
-      const amountUsd = usdOf(item.amount, item.currency);
+      const monthly = itemMonthlyAmount(item);
+      const amountArs = arsOf(monthly, item.currency);
+      const amountUsd = usdOf(monthly, item.currency);
       const installmentLabel =
         item.recurrence === "installments" && item.installmentsTotal
           ? `${idx + 1}/${item.installmentsTotal}`

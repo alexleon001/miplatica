@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
+import { DateField } from "../../components/DateField";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCreateGoal, useSavingsGoals, useUpdateGoal } from "../../lib/hooks/use-savings-goals";
 import { colors } from "../../lib/colors";
@@ -151,15 +152,8 @@ export default function AddGoalModal() {
             />
           </Field>
 
-          <Field label="Fecha objetivo (AAAA-MM-DD, opcional)">
-            <TextInput
-              style={styles.input}
-              placeholder="2026-12-31"
-              placeholderTextColor={colors.textMuted}
-              autoCapitalize="none"
-              value={targetDate}
-              onChangeText={setTargetDate}
-            />
+          <Field label="Fecha objetivo (opcional)">
+            <DateField value={targetDate} onChange={setTargetDate} placeholder="Elegí la fecha objetivo" />
           </Field>
 
           <Field label="Notas (opcional)">

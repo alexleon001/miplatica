@@ -414,6 +414,7 @@ export type Database = {
           currency: string
           id: string
           installments_total: number | null
+          interest_rate: number | null
           is_active: boolean
           name: string
           notes: string | null
@@ -430,6 +431,7 @@ export type Database = {
           currency?: string
           id?: string
           installments_total?: number | null
+          interest_rate?: number | null
           is_active?: boolean
           name: string
           notes?: string | null
@@ -446,6 +448,7 @@ export type Database = {
           currency?: string
           id?: string
           installments_total?: number | null
+          interest_rate?: number | null
           is_active?: boolean
           name?: string
           notes?: string | null

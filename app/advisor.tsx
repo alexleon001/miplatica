@@ -1,10 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -15,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { type AdvisorMessage, useAdvisor } from "../lib/hooks/use-advisor";
 import { useAdvisorChatStore } from "../lib/store/advisor";
+import { useKeyboardHeight } from "../lib/hooks/use-keyboard-height";
 import { colors } from "../lib/colors";
 
 const SUGGESTIONS = [
@@ -33,6 +32,16 @@ export default function AdvisorScreen() {
   const clearChat = useAdvisorChatStore((s) => s.clear);
   const [input, setInput] = useState("");
   const listRef = useRef<FlatList<AdvisorMessage>>(null);
+  // KeyboardAvoidingView no es confiable bajo Fabric (ver CLAUDE.md): subimos la
+  // barra de input a mano con la altura real del teclado.
+  const kbHeight = useKeyboardHeight();
+
+  // Al abrir el teclado, dejamos visible el final del chat.
+  useEffect(() => {
+    if (kbHeight > 0 && messages.length > 0) {
+      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+    }
+  }, [kbHeight, messages.length]);
 
   async function send(text: string) {
     const content = text.trim();
@@ -91,11 +100,7 @@ export default function AdvisorScreen() {
         )}
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
-      >
+      <View style={{ flex: 1, marginBottom: kbHeight }}>
         {messages.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>🧉</Text>
@@ -158,7 +163,7 @@ export default function AdvisorScreen() {
             <Text style={styles.sendBtnText}>➤</Text>
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
