@@ -27,18 +27,22 @@
 
 ---
 
-## Estado actual (sesión 5, 2026-05-29 — cierre)
+## Estado actual (sesión 6, 2026-06-01 — cierre)
 
-> **Cierre sesión 5 / arranque sesión 6:**
-> - **10 commits locales SIN PUSHEAR** (`5f1f7dc` → `75aa9d1`). El push a `main` lo bloquea el clasificador → **lo corre el user**: `git push origin main`.
-> - **Todo entregado por OTA** al APK `fa3d3965` (canal `preview`, runtime `0.1.0`) — la **cuota de builds EAS Free está agotada hasta el 1/6**, así que NO hay APK nuevo; los cambios JS van por `eas update`. Rebuild de APK pendiente para el **1/6** (comando en la sección Build).
-> - **Hecho sesión 5:** MP saldo (→ imposible por API, queda **manual**) + dedup cuenta MP; vista `v_portfolio_by_type`; modelo IA → `claude-sonnet-4-6` (ambos edges); **proyección de pagos** (Sprint 5); **cron de MP** (`mp-sync-cron` + migración 0010); **editar perfil** (ingreso → proyección); **fix re-onboarding al re-loguear** (cache por sesión); **fix teclado tapa input** (v3, anda en device, scroll a afinar).
-> - **Validado en device (OTA):** edit-profile ✅, re-onboarding fix ✅ (implícito), teclado v3 ✅ (scroll flojo). **Falta validar en device:** proyección de pagos (camino completo), saldo MP manual, asesor IA, camino feliz general.
-> - **Pendiente menor mañana:** afinar el scroll del teclado (`KeyboardAwareScrollView`, `extraOffset`/reintentos).
+> **Cierre sesión 6:**
+> - **Todo pusheado a `main`** (último commit `da4cb90`). El push lo bloquea el clasificador → **lo corre el user**: `git push origin main`.
+> - **APK nuevo `de26cdb7`** (canal `preview`, runtime `0.1.0`) buildeado con la cuota EAS reseteada el 1/6 — trae todo sesión 5 + el fix del teclado, baked-in. Reemplaza a `fa3d3965`. Descarga: https://expo.dev/accounts/alexleon001/projects/mi-platica/builds/de26cdb7-489e-43c2-9c2c-abac54cd0685
+> - **Validado en device (sesión 6):** **asesor IA ✅** (la `ANTHROPIC_API_KEY` está seteada y responde) — fue clave para detectar el bug de MP.
+> - **🔴 BUG GORDO DE MP RESUELTO:** el sync metía TODOS los pagos como `income`, inflando el patrimonio ~33x ($23,4M falsos) con duplicados/transferencias internas/rendimientos. Diagnóstico vía `?debug=1` en `mp-sync-cron` (disparado por SQL `net.http_post`). **Fix (2 commits):** (1) solo `regular_payment` aprobados (excluye `money_transfer`/`investment`/`account_fund`); (2) clasifica por dirección (`collector_id == mp_user_id` → ingreso; si no → **gasto**) + **paginación** (antes traía solo 100). Resultado real del user: **187 gastos / 15 ingresos** (la cuenta MP conectada se usa para PAGAR; las ventas del negocio van por otra cuenta). Datos viejos borrados + re-sync limpio. **mp-sync-cron v7, mp-sync-movements v6.**
+> - **Hecho sesión 6:** afinar scroll teclado (`extraOffset` 28→56 + reintento 550ms); rebuild APK; fix clasificación MP income/expense + paginación.
+> - **Falta validar en device:** los 187 gastos MP en rojo (pull-refresh), proyección de pagos, saldo MP manual, camino feliz general.
+> - **Confirmado:** dólar se actualiza solo (cron `fetch-exchange-rates` cada 30 min + self-healing). Vista USD ya disponible (toggle dashboard + editar perfil) — el user la usa, sin cambios pedidos.
+> - **Descartado por el user:** Sentry.
+> - **Pendiente con input del user:** FCI/CAFCI (elegir fuente de precios), auth social Google/Apple (credenciales OAuth + provider Supabase).
 
 Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP OAuth ✅ live — saldo manual). Todo en `main` (local).
 **Verificado en device (Expo Go):** Sprints 0 → 1 (auth, onboarding, dashboard, toggles, tasas). El resto **no se validó en device aún**.
-**APK preview:** build `fa3d3965` (sesión 4 completa + **Mercado Pago**; incluye `expo-web-browser`) **corriendo/recién buildeado** — estado/descarga en https://expo.dev/accounts/alexleon001/projects/mi-platica/builds. Previos: `ad6d2dee` (sesión 4 sin MP), `2a8ddb8c` (sesión 3), `11dda3ab` (primer OK con anon key).
+**APK preview:** build `de26cdb7` (sesión 5 completa + fix teclado, baked-in) — descarga en https://expo.dev/accounts/alexleon001/projects/mi-platica/builds. Previos: `fa3d3965` (sesión 4 + MP), `ad6d2dee` (sesión 4 sin MP), `2a8ddb8c` (sesión 3), `11dda3ab` (primer OK con anon key).
 
 **Qué existe hoy (features):**
 - **Dashboard** multi-moneda: `NetWorthCard`, `AccountsList`, `ExchangeRatesBar`, `CurrencyToggle`, pull-refresh, skeletons, estados de error con reintento.
@@ -118,7 +122,7 @@ Notas: el APK pega a Supabase **productivo**. Ícono/splash por default (cosmét
 | `EXPO_PUBLIC_SUPABASE_URL` | cliente `.env` + `eas.json/preview env` | ✅ |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | cliente `.env` + EAS env `preview` | ✅ (publishable `sb_publishable_...`) |
 | `EXPO_PUBLIC_APP_ENV` | cliente `.env` + `eas.json/preview env` | ✅ |
-| `ANTHROPIC_API_KEY` | **Edge Functions** (`supabase secrets set`) | ⚠️ **pendiente del user** (bloquea IA) |
+| `ANTHROPIC_API_KEY` | **Edge Functions** (`supabase secrets set`) | ✅ seteada y verificada en device (sesión 6) |
 | `MP_CLIENT_ID` / `MP_CLIENT_SECRET` / `MP_REDIRECT_URI` / `MP_TOKEN_KEY` | **Edge Functions** | ✅ seteados; migración + 3 edges live. Falta validar el flujo en device (APK `fa3d3965`) |
 
 > Regla #2: API keys sensibles **JAMÁS** en el cliente. Solo la anon publishable (diseñada para exponerse) viaja al bundle.
@@ -147,7 +151,7 @@ Gotchas para debug si algo falla en el device:
 - Si `MP_TOKEN_KEY` cambia, las conexiones guardadas dejan de descifrarse (hay que reconectar).
 - (Opcional a futuro) cron para `mp-sync-movements` — hoy el sync es manual (botón).
 
-> Recordá: trae **pagos recibidos** (cobrador), no la billetera personal completa.
+> Recordá: trae los **`regular_payment` aprobados** en los que el user participa, **clasificados por dirección** (`collector_id == mp_user_id` → ingreso; si no → gasto). Excluye `money_transfer`/`investment`/`account_fund` (plata propia moviéndose). Pagina hasta `MAX_PAGES`. NO trae el saldo de billetera (403 por OAuth → manual).
 
 ---
 
@@ -179,10 +183,10 @@ Gotchas para debug si algo falla en el device:
 - [x] Edge `fetch-inflation` (ACTIVE, `verify_jwt=false`) → argentinadatos → `inflation` (IPC mensual, upsert idempotente). 998 meses backfilleados.
 - [x] Función SQL `refresh_positions()` (migración `0003`, `security_definer`, revaloriza posiciones).
 - [x] pg_cron: `update-asset-prices` (`*/15 14-20 * * 1-5`) + `fetch-exchange-rates` (`*/30 * * * *`) + `fetch-inflation` (`0 14 4,17 * *`) + **`mp-sync-cron` (`0 */6 * * *`)**, vía `net.http_post` keyless. Probados.
-- [x] Edge `mp-sync-cron` (ACTIVE, `verify_jwt=false`, **v1**) → itera todas las `mp_connections` con service_role y sincroniza saldo+pagos de cada una (misma lógica que `mp-sync-movements`, duplicada a propósito). Anti-abuso: saltea conexiones sincronizadas hace < 30 min. Smoke-test OK (1 conexión, 1 pago insertado).
+- [x] Edge `mp-sync-cron` (ACTIVE, `verify_jwt=false`, **v7**) → itera todas las `mp_connections` con service_role y sincroniza los pagos de cada una (misma lógica que `mp-sync-movements`, duplicada a propósito). Anti-abuso: saltea conexiones sincronizadas hace < 30 min. Disparable a mano por SQL: `select net.http_post('…/functions/v1/mp-sync-cron', '{"Content-Type":"application/json"}'::jsonb, '{}'::jsonb)` (resetear `last_synced_at` antes para saltear el anti-abuso).
 - [x] Import CSV de movimientos (Cocos/PPI/IOL/banco) por alias de columnas + dedup `external_id`.
-- [ ] **`ANTHROPIC_API_KEY`** en secrets — bloquea IA.
-- [x] **Mercado Pago OAuth — backend LIVE (Sprint 4).** Migración `0007` aplicada + 3 edges ACTIVE (`mp-oauth-start` v1 jwt, `mp-oauth-callback` v1 público, `mp-sync-movements` v1 jwt) + 4 secrets seteados (CLIENT_ID/SECRET/REDIRECT_URI/TOKEN_KEY). Verificado: callback 302 OK, pgcrypto round-trip OK. Cliente: `use-mp.ts` + `MercadoPagoConnect` en `more.tsx` (`expo-web-browser`). Trae pagos RECIBIDOS (cobrador), no billetera personal. **Falta: validar el flujo completo en device** (APK `fa3d3965`, que ya incluye `expo-web-browser`). Sync manual (botón); cron opcional a futuro.
+- [x] **`ANTHROPIC_API_KEY`** en secrets — ✅ seteada y verificada en device (sesión 6: asesor IA responde OK, `categorize-transaction`/`financial-advisor` operativos).
+- [x] **Mercado Pago OAuth — backend LIVE (Sprint 4).** Migración `0007` aplicada + edges ACTIVE (`mp-oauth-start` v1 jwt, `mp-oauth-callback` v1 público, `mp-sync-movements` **v6** jwt) + 4 secrets seteados (CLIENT_ID/SECRET/REDIRECT_URI/TOKEN_KEY). Cliente: `use-mp.ts` + `MercadoPagoConnect` en `more.tsx` (`expo-web-browser`). **Sesión 6:** sincroniza `regular_payment` aprobados **clasificados por dirección** (collector → ingreso; si no → gasto) + paginación; excluye transferencias/rendimientos/cargas. Verificado en device del user: 187 gastos / 15 ingresos. Sync manual (botón) + cron cada 6 h.
 - [ ] CAFCI (FCI) y cripto: sin fuente de precios aún. Open Banking BCRA — eval Sprint 5+.
 
 **Migraciones aplicadas:** `0001_init_schema`, `0002_helper_views`, `0003_refresh_positions`, `0004_schedule_crons`, `0005_budget_spent_triggers`, `0006_inflation`, `0007_mp_connections` (mp_connections cifrada con pgcrypto + mp_oauth_states + funciones `mp_store_connection`/`mp_get_tokens` con `search_path = public, extensions` — pgcrypto vive en `extensions` en Supabase), `0008_portfolio_by_type` (vista `v_portfolio_by_type` con `security_invoker=on` — agrega valor/% por tipo de instrumento), `0009_payment_projection` (`projection_items` + `projection_income` con RLS owner-only + triggers updated_at — proyección de cash-flow), `0010_schedule_mp_sync_cron` (pg_cron `mp-sync-cron` cada 6 h).
@@ -231,7 +235,7 @@ Gotchas para debug si algo falla en el device:
 | 3 | Portafolio con cotizaciones live | ✅ (backend+crons live; falta verificar UI en device) |
 | 3.5 | Ajuste por inflación / rendimiento real (regla #5) | ✅ (tabla `inflation` + Edge `fetch-inflation` + cron + `useInflation` + `PnLBadge` real; falta verificar en device) |
 | 4 | Mercado Pago + import CSV | ✅ CSV + MP OAuth (backend live: migración 0007 + 3 edges + secrets; falta validar flujo en device en APK `fa3d3965`) |
-| 5 | Asesor financiero IA | ✅ (Edge `financial-advisor` + chat; falta `ANTHROPIC_API_KEY` + probar en device) |
+| 5 | Asesor financiero IA | ✅ (Edge `financial-advisor` + chat; `ANTHROPIC_API_KEY` ✅, verificado en device sesión 6). Pendiente: persistir historial de chat (hoy es efímero). |
 | 6 | Deudas, metas y presupuestos avanzados | ✅ deudas + presupuestos vivos + metas de ahorro + recordatorios de vencimiento (in-app + notif locales) |
 
 *Última actualización: 2026-05-29 (sesión 4): rendimiento real / ajuste por inflación (Sprint 3.5) — tabla `inflation` + Edge `fetch-inflation` + cron + `useInflation` + `PnLBadge` con "real +Y%". Historial detallado por sprint en el git log.*
