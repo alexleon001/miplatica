@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { type AdvisorMessage, useAdvisor } from "../lib/hooks/use-advisor";
+import { useAdvisorChatStore } from "../lib/store/advisor";
 import { colors } from "../lib/colors";
 
 const SUGGESTIONS = [
@@ -25,7 +27,10 @@ const SUGGESTIONS = [
 export default function AdvisorScreen() {
   const router = useRouter();
   const advisor = useAdvisor();
-  const [messages, setMessages] = useState<AdvisorMessage[]>([]);
+  // Historial persistido (sobrevive al cierre de la app). Ver lib/store/advisor.
+  const messages = useAdvisorChatStore((s) => s.messages);
+  const setMessages = useAdvisorChatStore((s) => s.setMessages);
+  const clearChat = useAdvisorChatStore((s) => s.clear);
   const [input, setInput] = useState("");
   const listRef = useRef<FlatList<AdvisorMessage>>(null);
 
@@ -40,10 +45,10 @@ export default function AdvisorScreen() {
 
     try {
       const reply = await advisor.mutateAsync(next);
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      setMessages([...next, { role: "assistant", content: reply }]);
     } catch (e) {
-      setMessages((prev) => [
-        ...prev,
+      setMessages([
+        ...next,
         {
           role: "assistant",
           content:
@@ -54,6 +59,14 @@ export default function AdvisorScreen() {
     } finally {
       requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
     }
+  }
+
+  function confirmClear() {
+    if (advisor.isPending) return;
+    Alert.alert("Nueva conversación", "¿Borrar el historial del chat?", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Borrar", style: "destructive", onPress: () => clearChat() },
+    ]);
   }
 
   return (
@@ -69,7 +82,13 @@ export default function AdvisorScreen() {
           <Text style={styles.back}>‹ Volver</Text>
         </Pressable>
         <Text style={styles.title}>Asesor IA</Text>
-        <View style={{ width: 56 }} />
+        {messages.length > 0 ? (
+          <Pressable onPress={confirmClear} hitSlop={12} accessibilityLabel="Nueva conversación">
+            <Text style={styles.clear}>Limpiar</Text>
+          </Pressable>
+        ) : (
+          <View style={{ width: 56 }} />
+        )}
       </View>
 
       <KeyboardAvoidingView
@@ -172,6 +191,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   back: { color: colors.primary, fontSize: 16, fontWeight: "600", width: 56 },
+  clear: { color: colors.textMuted, fontSize: 14, fontWeight: "600", width: 56, textAlign: "right" },
   title: { color: colors.textPrimary, fontSize: 18, fontWeight: "700" },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28, gap: 12 },
   emptyIcon: { fontSize: 44 },
