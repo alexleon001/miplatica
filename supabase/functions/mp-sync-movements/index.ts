@@ -69,6 +69,14 @@ Deno.serve(async (req: Request) => {
   const tok = Array.isArray(tokRows) ? tokRows[0] : tokRows;
   if (!tok?.access_token) return json({ error: "Mercado Pago no está conectado" }, 400);
 
+  // ID de MP del usuario → para clasificar dirección (cobra = ingreso, paga = gasto).
+  const { data: conn } = await admin
+    .from("mp_connections")
+    .select("mp_user_id")
+    .eq("owner_id", ownerId)
+    .single();
+  const mpUserId = conn?.mp_user_id != null ? String(conn.mp_user_id) : null;
+
   // Refrescar si vence en < 5 min y tenemos refresh_token.
   let accessToken: string = tok.access_token;
   const expMs = tok.expires_at ? new Date(tok.expires_at).getTime() : 0;
@@ -93,18 +101,20 @@ Deno.serve(async (req: Request) => {
     return json({ error: "MP payments search falló", detail: e instanceof Error ? e.message : String(e) }, 502);
   }
 
-  // Solo cobros reales aprobados (ventas a clientes). El token de cobrador trae
-  // además money_transfer (transferencias entre cuentas propias / espejos
-  // duplicados), investment (cuenta remunerada/rendimientos) y account_fund
-  // (carga de saldo desde el banco por CVU): todos son plata propia moviéndose,
-  // NO ingresos → se excluyen para no inflar el patrimonio ni duplicar montos.
+  // Solo pagos reales aprobados. Se excluye money_transfer (transferencias entre
+  // cuentas propias / espejos duplicados), investment (cuenta remunerada) y
+  // account_fund (carga de saldo desde el banco por CVU): plata propia moviéndose.
+  // Dirección: si el usuario es el cobrador (collector_id == su mp_user_id) es un
+  // INGRESO (le pagan); si no, es un GASTO (él paga — compras, servicios, cobros).
   const rows = payments
     .filter((p) => p && p.id != null && typeof p.transaction_amount === "number")
     .filter((p) => p.status === "approved" && p.operation_type === "regular_payment")
     .map((p) => ({
       owner_id: ownerId,
       account_id: accountId,
-      type: "income",
+      type: mpUserId != null && p.collector_id != null && String(p.collector_id) === mpUserId
+        ? "income"
+        : "expense",
       category: null,
       amount_ars: p.transaction_amount,
       description: p.description ?? p.payment_method_id ?? "Pago Mercado Pago",
@@ -134,6 +144,7 @@ type MpPayment = {
   id?: number | string;
   status?: string;
   operation_type?: string | null;
+  collector_id?: number | string | null;
   transaction_amount?: number;
   description?: string | null;
   payment_method_id?: string | null;
@@ -142,17 +153,29 @@ type MpPayment = {
   payer?: { email?: string | null } | null;
 };
 
+// Trae TODOS los pagos paginando (MP devuelve de a 100 + un paging.total).
+// Cap de seguridad de MAX_PAGES para no colgarse en cuentas con mucho volumen.
 async function fetchPayments(accessToken: string): Promise<MpPayment[]> {
-  const url = new URL(MP_PAYMENTS_URL);
-  url.searchParams.set("sort", "date_created");
-  url.searchParams.set("criteria", "desc");
-  url.searchParams.set("limit", String(PAGE_LIMIT));
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
-  });
-  if (!res.ok) throw new Error(`MP ${res.status}`);
-  const body = (await res.json()) as { results?: MpPayment[] };
-  return body.results ?? [];
+  const MAX_PAGES = 20;
+  const all: MpPayment[] = [];
+  let offset = 0;
+  for (let i = 0; i < MAX_PAGES; i++) {
+    const url = new URL(MP_PAYMENTS_URL);
+    url.searchParams.set("sort", "date_created");
+    url.searchParams.set("criteria", "desc");
+    url.searchParams.set("limit", String(PAGE_LIMIT));
+    url.searchParams.set("offset", String(offset));
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+    });
+    if (!res.ok) throw new Error(`MP ${res.status}`);
+    const body = (await res.json()) as { results?: MpPayment[]; paging?: { total?: number } };
+    const batch = body.results ?? [];
+    all.push(...batch);
+    offset += PAGE_LIMIT;
+    if (batch.length < PAGE_LIMIT || offset >= (body.paging?.total ?? all.length)) break;
+  }
+  return all;
 }
 
 async function refreshToken(
