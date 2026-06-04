@@ -56,8 +56,8 @@
 
 > **Cierre sesión 8 (2026-06-04):**
 > - **Commits en `main` local (sin pushear — push lo corre el user):** `8673a64` (proyección: botones editar/borrar visibles + auto-split de cuotas), `512ad69` (alertas de presupuesto 80/100%), `f47bd88` (proyección: checklist pagado + compartir + duplicar), `5e3723e` (resumen mensual IA), `649accb` (sparkline de patrimonio). **Falta `git push`.**
-> - **Todo OTA-safe (JS puro, sin deps nativas nuevas)** → se puede OTA-ear al canal `preview` sobre el APK `c368dc3e` sin rebuild.
-> - **✅ Pusheado a `main` (`b2ce4f8`) + edge `monthly-summary` DEPLOYADO (ACTIVE v1, vía MCP).** Falta solo el **OTA** al canal `preview` para que el celular levante los cambios JS: `pnpm dlx eas-cli update --branch preview -m "sesion 8"`.
+> - **Todo OTA-safe (JS puro, sin deps nativas nuevas)** → se levanta sobre el APK `c368dc3e` sin rebuild.
+> - **✅ TODO ENTREGADO:** pusheado a `main` (`5f2665b`) + edge `monthly-summary` DEPLOYADO (ACTIVE v1, vía MCP) + **OTA publicado** al canal `preview` (update group `956c74b6-ac8e-44f4-919e-2b23171c3e80`, runtime `0.1.0`, android+ios, commit `5f2665b`). El celular lo levanta reabriendo la app 2 veces (1ª baja, 2ª aplica).
 > - **Features de la sesión (las 4 que pidió el user):**
 >   1. **Proyección — cuotas sin interés por total:** al cargar un gasto en cuotas sin interés, ahora se tipea el **total de la compra** + N cuotas y la app reparte (`total/N`); en DB se sigue guardando el **por-cuota** (cero cambios en `lib/projection.ts`). Editar reconstruye el total. Preview "N cuotas de $X c/u". Con interés sigue igual (capital + TNA → francés).
 >   2. **Proyección — editar/borrar visible:** botones lápiz/tacho por línea (antes era long-press oculto) + botón limpiar ajuste de ingreso. **Checklist "pagado" por mes** (`lib/store/projection-paid.ts`, local): tap al círculo tacha la línea + fila "Te falta pagar" (el TOTAL queda completo). **Compartir** la proyección como texto (`projectionToText` en `lib/projection.ts` + `Share` nativo). **Duplicar** ítem (ícono copy → modal con `?dup=id`).
@@ -75,7 +75,8 @@
 > - **Decisión transversal:** todas las features nuevas que necesitaban persistencia van **local-first** (Zustand+AsyncStorage), evitando migraciones/crons a prod (consistente con asesor/alertas). El único backend nuevo es el edge `monthly-summary`.
 >
 > **Para arrancar sesión 9:**
-> - **🔴 User:** falta solo el **OTA** al canal `preview` (`pnpm dlx eas-cli update --branch preview`). Ya está pusheado a `main` y el edge `monthly-summary` deployado. Después validar en device las 11 features de la sesión.
+> - **🔴 Validar en device** (todo entregado, OTA `956c74b6` aplicado) las 11 features de la sesión 8: proyección (auto-split cuotas, editar/borrar visible, checklist pagado, compartir, duplicar), alertas de presupuesto (80/100% + banner dashboard), resumen mensual IA (¡probar que el edge responda!), sparkline de patrimonio (necesita ≥2 días de aperturas), desglose por categoría, preferencias de notif, búsqueda, export CSV, recurrentes.
+> - **Gotcha recurrentes:** el mes que los creás no aparecen en el banner (ya quedan registrados); el banner los ofrece a partir del mes siguiente. **Gotcha sparkline:** arranca vacío hasta tener 2 días de snapshots. **Gotcha export CSV:** va como texto por el share sheet (archivo real = dep nativa futura).
 > - Pendientes de sesión 7 siguen abiertos (validación en device del refresh visual, FCI, proyección saldo acumulado, categorizar IA).
 
 Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP OAuth ✅ live — saldo manual); 7 = refresh visual + proyección + FCI + gradiente. Todo en `main` (pusheado hasta `ff5c1ff`).
