@@ -54,6 +54,23 @@
 > - **Validar en device el resto** (nunca probado): selector de FCI con un fondo real, proyección con saldo acumulado + aviso "te quedás sin efectivo en X", fix del gasto puntual que ya no se repite, botón "Categorizar con IA" (202 mov. sin categoría), camino feliz general.
 > - **Auth social Google/Apple:** bloqueado hasta credenciales OAuth del user.
 
+> **Cierre sesión 8 (2026-06-04):**
+> - **Commits en `main` local (sin pushear — push lo corre el user):** `8673a64` (proyección: botones editar/borrar visibles + auto-split de cuotas), `512ad69` (alertas de presupuesto 80/100%), `f47bd88` (proyección: checklist pagado + compartir + duplicar), `5e3723e` (resumen mensual IA), `649accb` (sparkline de patrimonio). **Falta `git push`.**
+> - **Todo OTA-safe (JS puro, sin deps nativas nuevas)** → se puede OTA-ear al canal `preview` sobre el APK `c368dc3e` sin rebuild. **EXCEPCIÓN:** el resumen mensual IA necesita el **edge `monthly-summary` deployado** (ver abajo).
+> - **🔴 PENDIENTE deploy del user:** el edge **`monthly-summary` NO está deployado** (lo bloqueó el clasificador: es deploy productivo). Está en `supabase/functions/monthly-summary/index.ts`. Deployar con: `bunx supabase functions deploy monthly-summary` (verify_jwt on; usa `ANTHROPIC_API_KEY` ya seteada). Hasta entonces la pantalla "Resumen del mes" da error al generar.
+> - **Features de la sesión (las 4 que pidió el user):**
+>   1. **Proyección — cuotas sin interés por total:** al cargar un gasto en cuotas sin interés, ahora se tipea el **total de la compra** + N cuotas y la app reparte (`total/N`); en DB se sigue guardando el **por-cuota** (cero cambios en `lib/projection.ts`). Editar reconstruye el total. Preview "N cuotas de $X c/u". Con interés sigue igual (capital + TNA → francés).
+>   2. **Proyección — editar/borrar visible:** botones lápiz/tacho por línea (antes era long-press oculto) + botón limpiar ajuste de ingreso. **Checklist "pagado" por mes** (`lib/store/projection-paid.ts`, local): tap al círculo tacha la línea + fila "Te falta pagar" (el TOTAL queda completo). **Compartir** la proyección como texto (`projectionToText` en `lib/projection.ts` + `Share` nativo). **Duplicar** ítem (ícono copy → modal con `?dup=id`).
+>   3. **Alertas de presupuesto:** notificación local al cruzar 80%/100% (`lib/budget-alerts.ts` puro + `lib/hooks/use-budget-alerts.ts`, montado en el layout de tabs). Dedup por `id:level:YYYY-MM` en AsyncStorage; notif inmediata (no la pisa el `cancelAll` de reminders).
+>   4. **Resumen mensual IA:** edge `monthly-summary` (agrega gasto por categoría mes actual vs anterior + ingreso + inflación server-side, Claude `claude-sonnet-4-6`, prompt caching) + `use-monthly-summary` (cache 6h) + pantalla `app/monthly-summary.tsx` (entry en `more.tsx`). **Necesita deploy (ver arriba).**
+>   5. **Sparkline de patrimonio:** `lib/networth-history.ts` (puro) + `lib/store/networth-history.ts` (snapshot diario local) + `components/NetWorthChart.tsx` (barras con Views puras, **sin react-native-svg → OTA-safe**), bajo el `NetWorthCard`. Respeta el CurrencyToggle; se llena a medida que se abre la app día a día (mín. 2 días).
+> - **Tests:** 71 `bun test` verdes (+19 en la sesión: budget-alerts, projectionToText, networth-history). `type-check:app` limpio.
+> - **Decisión transversal:** todas las features nuevas que necesitaban persistencia van **local-first** (Zustand+AsyncStorage), evitando migraciones/crons a prod (consistente con asesor/alertas). El único backend nuevo es el edge `monthly-summary`.
+>
+> **Para arrancar sesión 9:**
+> - **🔴 User:** (a) `git push`; (b) deploy `monthly-summary`; (c) OTA al canal `preview` (todo lo demás es JS). Después validar en device las 5 features.
+> - Pendientes de sesión 7 siguen abiertos (validación en device del refresh visual, FCI, proyección saldo acumulado, categorizar IA).
+
 Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP OAuth ✅ live — saldo manual); 7 = refresh visual + proyección + FCI + gradiente. Todo en `main` (pusheado hasta `ff5c1ff`).
 **Verificado en device (Expo Go):** Sprints 0 → 1. **Sesión 7 (APK `c368dc3e` + OTAs): pendiente de validar** (user confirma 4/6).
 **APK preview:** build `c368dc3e` (sesión 7 baked-in + gradiente nativo). Previos: `de26cdb7` (sesión 5 + fix teclado), `fa3d3965` (sesión 4 + MP), `2a8ddb8c` (sesión 3), `11dda3ab` (primer OK con anon key).
@@ -200,6 +217,7 @@ Gotchas para debug si algo falla en el device:
 - [x] Edge `fetch-exchange-rates` (ACTIVE, `verify_jwt=false`) → dolarapi → `exchange_rates`. Self-healing client-side.
 - [x] Edge `categorize-transaction` (ACTIVE, `verify_jwt=true`, prompt caching). Categoriza UNA transacción (flujo "✨ Sugerir categoría" del alta).
 - [x] Edge `categorize-batch` (ACTIVE, `verify_jwt=true`, **v1**, prompt caching) → categoriza en LOTE los movimientos `category IS NULL` del user (1 llamada a Claude por tanda de 50, valida grupo gasto/ingreso, fallback seguro). Cliente: `useCategorizeBatch` + banner en tab Movimientos.
+- [ ] Edge `monthly-summary` (**CÓDIGO LISTO, NO DEPLOYADO** — sesión 8). `verify_jwt=true`, prompt caching, Claude `claude-sonnet-4-6`. Resumen mensual en lenguaje natural: agrega gasto por categoría (mes actual vs anterior) + ingreso + inflación server-side (RLS) y pide a Claude un recap corto. Cliente: `use-monthly-summary` + `app/monthly-summary.tsx`. **Deployar:** `bunx supabase functions deploy monthly-summary`.
 - [x] Edge `financial-advisor` (ACTIVE, `verify_jwt=true`, prompt caching, **v2**). Arma contexto del user vía RLS, con **contexto de inflación** (IPC mensual + acum. 3m/12m) + **rendimiento real por posición en pesos**. ✅ `ANTHROPIC_API_KEY` seteada, verificado en device. Chat persistido client-side (`lib/store/advisor.ts`).
 - [x] Edge `update-asset-prices` (ACTIVE, `verify_jwt=false`, **v4**) → data912 + **CoinGecko (cripto, 21 tickers)** + dolarapi → `asset_prices`. Devuelve/loguea `coverage` por fuente. Llama `refresh_positions()` por RPC al final.
 - [x] Edge `fetch-inflation` (ACTIVE, `verify_jwt=false`) → argentinadatos → `inflation` (IPC mensual, upsert idempotente). 998 meses backfilleados.
