@@ -56,8 +56,8 @@
 
 > **Cierre sesión 8 (2026-06-04):**
 > - **Commits en `main` local (sin pushear — push lo corre el user):** `8673a64` (proyección: botones editar/borrar visibles + auto-split de cuotas), `512ad69` (alertas de presupuesto 80/100%), `f47bd88` (proyección: checklist pagado + compartir + duplicar), `5e3723e` (resumen mensual IA), `649accb` (sparkline de patrimonio). **Falta `git push`.**
-> - **Todo OTA-safe (JS puro, sin deps nativas nuevas)** → se puede OTA-ear al canal `preview` sobre el APK `c368dc3e` sin rebuild. **EXCEPCIÓN:** el resumen mensual IA necesita el **edge `monthly-summary` deployado** (ver abajo).
-> - **🔴 PENDIENTE deploy del user:** el edge **`monthly-summary` NO está deployado** (lo bloqueó el clasificador: es deploy productivo). Está en `supabase/functions/monthly-summary/index.ts`. Deployar con: `bunx supabase functions deploy monthly-summary` (verify_jwt on; usa `ANTHROPIC_API_KEY` ya seteada). Hasta entonces la pantalla "Resumen del mes" da error al generar.
+> - **Todo OTA-safe (JS puro, sin deps nativas nuevas)** → se puede OTA-ear al canal `preview` sobre el APK `c368dc3e` sin rebuild.
+> - **✅ Pusheado a `main` (`b2ce4f8`) + edge `monthly-summary` DEPLOYADO (ACTIVE v1, vía MCP).** Falta solo el **OTA** al canal `preview` para que el celular levante los cambios JS: `pnpm dlx eas-cli update --branch preview -m "sesion 8"`.
 > - **Features de la sesión (las 4 que pidió el user):**
 >   1. **Proyección — cuotas sin interés por total:** al cargar un gasto en cuotas sin interés, ahora se tipea el **total de la compra** + N cuotas y la app reparte (`total/N`); en DB se sigue guardando el **por-cuota** (cero cambios en `lib/projection.ts`). Editar reconstruye el total. Preview "N cuotas de $X c/u". Con interés sigue igual (capital + TNA → francés).
 >   2. **Proyección — editar/borrar visible:** botones lápiz/tacho por línea (antes era long-press oculto) + botón limpiar ajuste de ingreso. **Checklist "pagado" por mes** (`lib/store/projection-paid.ts`, local): tap al círculo tacha la línea + fila "Te falta pagar" (el TOTAL queda completo). **Compartir** la proyección como texto (`projectionToText` en `lib/projection.ts` + `Share` nativo). **Duplicar** ítem (ícono copy → modal con `?dup=id`).
@@ -75,7 +75,7 @@
 > - **Decisión transversal:** todas las features nuevas que necesitaban persistencia van **local-first** (Zustand+AsyncStorage), evitando migraciones/crons a prod (consistente con asesor/alertas). El único backend nuevo es el edge `monthly-summary`.
 >
 > **Para arrancar sesión 9:**
-> - **🔴 User:** (a) `git push`; (b) deploy `monthly-summary`; (c) OTA al canal `preview` (todo lo demás es JS). Después validar en device las 5 features.
+> - **🔴 User:** falta solo el **OTA** al canal `preview` (`pnpm dlx eas-cli update --branch preview`). Ya está pusheado a `main` y el edge `monthly-summary` deployado. Después validar en device las 11 features de la sesión.
 > - Pendientes de sesión 7 siguen abiertos (validación en device del refresh visual, FCI, proyección saldo acumulado, categorizar IA).
 
 Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP OAuth ✅ live — saldo manual); 7 = refresh visual + proyección + FCI + gradiente. Todo en `main` (pusheado hasta `ff5c1ff`).
@@ -224,7 +224,7 @@ Gotchas para debug si algo falla en el device:
 - [x] Edge `fetch-exchange-rates` (ACTIVE, `verify_jwt=false`) → dolarapi → `exchange_rates`. Self-healing client-side.
 - [x] Edge `categorize-transaction` (ACTIVE, `verify_jwt=true`, prompt caching). Categoriza UNA transacción (flujo "✨ Sugerir categoría" del alta).
 - [x] Edge `categorize-batch` (ACTIVE, `verify_jwt=true`, **v1**, prompt caching) → categoriza en LOTE los movimientos `category IS NULL` del user (1 llamada a Claude por tanda de 50, valida grupo gasto/ingreso, fallback seguro). Cliente: `useCategorizeBatch` + banner en tab Movimientos.
-- [ ] Edge `monthly-summary` (**CÓDIGO LISTO, NO DEPLOYADO** — sesión 8). `verify_jwt=true`, prompt caching, Claude `claude-sonnet-4-6`. Resumen mensual en lenguaje natural: agrega gasto por categoría (mes actual vs anterior) + ingreso + inflación server-side (RLS) y pide a Claude un recap corto. Cliente: `use-monthly-summary` + `app/monthly-summary.tsx`. **Deployar:** `bunx supabase functions deploy monthly-summary`.
+- [x] Edge `monthly-summary` (ACTIVE, **v1**, `verify_jwt=true`, prompt caching, Claude `claude-sonnet-4-6` — sesión 8, deployado vía MCP). Resumen mensual en lenguaje natural: agrega gasto por categoría (mes actual vs anterior) + ingreso + inflación server-side (RLS) y pide a Claude un recap corto. Cliente: `use-monthly-summary` + `app/monthly-summary.tsx`.
 - [x] Edge `financial-advisor` (ACTIVE, `verify_jwt=true`, prompt caching, **v2**). Arma contexto del user vía RLS, con **contexto de inflación** (IPC mensual + acum. 3m/12m) + **rendimiento real por posición en pesos**. ✅ `ANTHROPIC_API_KEY` seteada, verificado en device. Chat persistido client-side (`lib/store/advisor.ts`).
 - [x] Edge `update-asset-prices` (ACTIVE, `verify_jwt=false`, **v4**) → data912 + **CoinGecko (cripto, 21 tickers)** + dolarapi → `asset_prices`. Devuelve/loguea `coverage` por fuente. Llama `refresh_positions()` por RPC al final.
 - [x] Edge `fetch-inflation` (ACTIVE, `verify_jwt=false`) → argentinadatos → `inflation` (IPC mensual, upsert idempotente). 998 meses backfilleados.
