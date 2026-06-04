@@ -2,6 +2,7 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRemindersSync } from "../../lib/hooks/use-reminders-sync";
+import { useBudgetAlerts } from "../../lib/hooks/use-budget-alerts";
 import { colors } from "../../lib/colors";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -16,6 +17,8 @@ function tabIcon(focused: string, unfocused: string) {
 export default function TabsLayout() {
   // Programa/reprograma notificaciones locales de vencimientos al entrar a la app.
   useRemindersSync();
+  // Avisa al cruzar 80%/100% de un presupuesto (notificación inmediata, con dedup).
+  useBudgetAlerts();
   // Respeta la barra de gestos/botones del sistema (Android/iOS): sin esto el
   // tab bar se solapa con los botones de volver/recientes del celular.
   const insets = useSafeAreaInsets();
