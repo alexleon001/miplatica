@@ -40,14 +40,23 @@
 > - **Confirmado:** dólar se actualiza solo (cron `fetch-exchange-rates` cada 30 min + self-healing). Vista USD ya disponible (toggle dashboard + editar perfil) — el user la usa, sin cambios pedidos.
 > - **Descartado por el user:** Sentry.
 >
-> **Para arrancar sesión 7:**
-> - **Validar en device** (tras reabrir app para bajar OTAs): tocar botón "Categorizar con IA" (verificar reparto desde la base), chat del asesor persiste, gastos MP en rojo, proyección de pagos, saldo MP manual, camino feliz general.
-> - ~~**FCI/CAFCI**~~ ✅ **HECHO (sesión 7, client-side)** — ver "FCI" en features. Sin backend: selector de fondos + VCP en vivo desde argentinadatos + freshening client-side.
-> - **Auth social Google/Apple:** bloqueado hasta que el user consiga credenciales OAuth + configuremos el provider en Supabase.
+---
 
-Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP OAuth ✅ live — saldo manual). Todo en `main` (local).
-**Verificado en device (Expo Go):** Sprints 0 → 1 (auth, onboarding, dashboard, toggles, tasas). El resto **no se validó en device aún**.
-**APK preview:** build `de26cdb7` (sesión 5 completa + fix teclado, baked-in) — descarga en https://expo.dev/accounts/alexleon001/projects/mi-platica/builds. Previos: `fa3d3965` (sesión 4 + MP), `ad6d2dee` (sesión 4 sin MP), `2a8ddb8c` (sesión 3), `11dda3ab` (primer OK con anon key).
+> **Cierre sesión 7 (2026-06-03):**
+> - **Todo pusheado a `main`** (último commit `ff5c1ff`). Commits de la sesión: `361cc02` (design system + refresh visual), `8684b13` (proyección: saldo acumulado + fix bug recurrencia), `aef0290` (FCI), `c82302d` (gradiente real + BrandGradient), `cb19b48` (fix tab bar safe-area + sombras Android), `01bd783` (perf: héroe + gate FCI), `ff5c1ff` (fix banda vacía: edges bottom redundante en tabs).
+> - **🆕 APK `c368dc3e`** (canal `preview`, runtime `0.1.0`) — buildeado de `c82302d`, trae todo lo de sesión 7 baked-in **+ `expo-linear-gradient` nativo** (gradiente real). **Reemplaza a `de26cdb7`.** Descarga: https://expo.dev/accounts/alexleon001/projects/mi-platica/builds/c368dc3e-7034-4cfc-acd4-197c2cda6be7
+> - **3 OTA al canal `preview` post-APK** (solo-JS, encima de `c368dc3e`): `fee9f3d3` (sesión 7 base), `0463f788` (fix tab bar + perf), `4b37dea0` (fix banda). **⚠️ Los fixes de tab bar/banda/perf SOLO viven en estos OTAs** — el APK `c368dc3e` se buildeó de `c82302d` (antes de esos fixes). Para verlos hay que reabrir la app **2 veces** (1ra baja el OTA, 2da lo aplica) y matar la app de verdad (en MIUI/HyperOS bloquearla en recientes).
+> - **Trabajo de la sesión:** (1) **refresh visual completo** (design system `lib/theme.ts`+`components/ui.tsx`+`components/form.tsx`, las 5 tabs + 12 modales + asesor/proyección/login/onboarding); (2) **proyección mejorada** — saldo acumulado proyectado (siembra `accounts_ars`, `accrueFirstMonth=false` deja el mes en curso informativo) + **fix bug**: recurrencia default era `monthly` → gasto puntual se repetía; ahora `once` + preview de alcance; (3) **FCI client-side** (selector de fondos + VCP argentinadatos + freshening); (4) **gradiente real** indigo→cyan (OTA-safe vía `BrandGradient` error boundary).
+> - **🔴 Bugs reportados en device (APK `c368dc3e` sin OTA aplicado) y YA ARREGLADOS en OTA:** (a) tab bar se solapaba con los botones del sistema (faltaba `safe-area inset`); (b) banda vacía entre contenido y tabs (doble inset: tab bar + `SafeAreaView edges bottom` en las tabs → se sacó el `bottom`); (c) lag al scrollear dashboard (héroe con overflow+blobs → gradiente pasa a ser la card) y al cambiar de tab (query FCI disparaba al montar → gateada con `enabled`).
+>
+> **Para arrancar sesión 8:**
+> - **🔴 Esperar confirmación del user** (valida mañana 4/6 con el OTA `4b37dea0` aplicado): tab bar sin solapar, sin banda vacía, scroll/tabs fluidos. Si sigue el lag al cambiar de tab → próximo paso: transición + primer render de cada pantalla (aligerar listas / `lazy`).
+> - **Validar en device el resto** (nunca probado): selector de FCI con un fondo real, proyección con saldo acumulado + aviso "te quedás sin efectivo en X", fix del gasto puntual que ya no se repite, botón "Categorizar con IA" (202 mov. sin categoría), camino feliz general.
+> - **Auth social Google/Apple:** bloqueado hasta credenciales OAuth del user.
+
+Sprints 0 → 3, 5 y 6 completos; 3.5 (inflación) ✅; 4 parcial (CSV ✅, MP OAuth ✅ live — saldo manual); 7 = refresh visual + proyección + FCI + gradiente. Todo en `main` (pusheado hasta `ff5c1ff`).
+**Verificado en device (Expo Go):** Sprints 0 → 1. **Sesión 7 (APK `c368dc3e` + OTAs): pendiente de validar** (user confirma 4/6).
+**APK preview:** build `c368dc3e` (sesión 7 baked-in + gradiente nativo). Previos: `de26cdb7` (sesión 5 + fix teclado), `fa3d3965` (sesión 4 + MP), `2a8ddb8c` (sesión 3), `11dda3ab` (primer OK con anon key).
 
 **Qué existe hoy (features):**
 - **Dashboard** multi-moneda: `NetWorthCard`, `AccountsList`, `ExchangeRatesBar`, `CurrencyToggle`, pull-refresh, skeletons, estados de error con reintento.
