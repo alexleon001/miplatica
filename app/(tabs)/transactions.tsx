@@ -128,14 +128,17 @@ export default function TransactionsScreen() {
             </Text>
           </Pressable>
         ) : null}
-
-        <RecurringBanner />
-        <SpendingBreakdown />
       </View>
 
       <FlatList
         data={filtered}
         keyExtractor={(t) => t.id}
+        ListHeaderComponent={
+          <View style={styles.listHeader}>
+            <RecurringBanner />
+            <SpendingBreakdown />
+          </View>
+        }
         renderItem={({ item }) => (
           <TransactionItem
             tx={item}
@@ -228,6 +231,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
   chipText: { color: colors.textMuted, fontSize: 13, fontWeight: "600" },
   chipTextActive: { color: "#FFFFFF" },
-  list: { paddingHorizontal: spacing.xl, paddingBottom: 100, flexGrow: 1 },
+  list: { paddingHorizontal: spacing.xl, paddingBottom: 120, flexGrow: 1 },
+  listHeader: { gap: spacing.md, paddingBottom: spacing.md },
   separator: { height: 1, backgroundColor: colors.borderSoft, marginVertical: 2 },
 });

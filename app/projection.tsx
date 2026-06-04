@@ -5,7 +5,7 @@
 
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { CurrencyToggle } from "../components/CurrencyToggle";
@@ -39,6 +39,7 @@ const HORIZONS = [6, 12] as const;
 
 export default function ProjectionScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { data: items, isLoading, isError, refetch } = useProjectionItems();
   const { data: debts } = useDebts();
   const { data: incomeOverrides } = useProjectionIncome();
@@ -126,9 +127,9 @@ export default function ProjectionScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
       <Stack.Screen options={{ title: "Proyección", headerShown: false }} />
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: 100 + insets.bottom }]} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Volver">
             <Ionicons name="chevron-back" size={24} color={colors.primaryBright} />
@@ -394,7 +395,7 @@ export default function ProjectionScreen() {
         )}
       </ScrollView>
 
-      <Fab label="Gasto" onPress={() => router.push("/modals/add-projection-item")} />
+      <Fab label="Gasto" bottomInset={insets.bottom} onPress={() => router.push("/modals/add-projection-item")} />
     </SafeAreaView>
   );
 }

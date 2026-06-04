@@ -22,12 +22,29 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
 }
 
 // Botón de acción flotante (esquina inferior derecha de las listas).
-export function Fab({ label, icon = "add", onPress }: { label: string; icon?: IoniconName; onPress: () => void }) {
+// `bottomInset`: separación extra del borde inferior. En pantallas de stack (sin
+// tab bar) pasarle el safe-area inset para que no quede bajo la barra de
+// navegación del sistema; en tabs el tab bar ya da la separación (default 0).
+export function Fab({
+  label,
+  icon = "add",
+  onPress,
+  bottomInset = 0,
+}: {
+  label: string;
+  icon?: IoniconName;
+  onPress: () => void;
+  bottomInset?: number;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.fab, pressed && { opacity: 0.88, transform: [{ scale: 0.97 }] }]}
+      style={({ pressed }) => [
+        styles.fab,
+        { bottom: spacing.xl + bottomInset },
+        pressed && { opacity: 0.88, transform: [{ scale: 0.97 }] },
+      ]}
       onPress={onPress}
     >
       <Ionicons name={icon} size={18} color="#FFFFFF" />
@@ -102,7 +119,6 @@ const styles = StyleSheet.create({
   fab: {
     position: "absolute",
     right: spacing.xl,
-    bottom: spacing.xl,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
