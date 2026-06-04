@@ -28,8 +28,10 @@ export default function InvestmentsScreen() {
   const del = useDeleteInvestment();
 
   // Recalcula al vuelo: interés devengado de plazos fijos + VCP de hoy de los FCI.
+  // La lista de FCI solo se trae si hay alguna posición FCI (evita red al montar).
   const mep = rates?.mep ?? null;
-  const fciFundsBySlug = useFciFundsBySlug();
+  const hasFci = useMemo(() => (investments ?? []).some((i) => i.type === "fci"), [investments]);
+  const fciFundsBySlug = useFciFundsBySlug(hasFci);
   const positions = useMemo(
     () => (investments ?? []).map((inv) => freshenFci(freshenPlazoFijo(inv, mep), fciFundsBySlug, mep)),
     [investments, mep, fciFundsBySlug],

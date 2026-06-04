@@ -18,9 +18,13 @@ async function fetchCategory(category: FciCategory): Promise<FciFund[]> {
   return rows.map((r) => parseFciRow(r, category)).filter((f): f is FciFund => f != null);
 }
 
-export function useFciFunds() {
+// `enabled`: solo dispara el fetch cuando hace falta (hay posiciones FCI, o el
+// usuario está cargando un FCI). Evita el pedido de red + sort al montar pantallas
+// que no lo usan.
+export function useFciFunds(enabled = true) {
   return useQuery({
     queryKey: ["fci_funds"],
+    enabled,
     staleTime: 1000 * 60 * 60 * 6, // 6 h (VCP es diario)
     gcTime: 1000 * 60 * 60 * 24,
     queryFn: async (): Promise<FciFund[]> => {
@@ -37,8 +41,8 @@ export function useFciFunds() {
 }
 
 // Mapa slug → fondo, para resolver el VCP actual de una posición FCI guardada.
-export function useFciFundsBySlug(): Map<string, FciFund> {
-  const { data } = useFciFunds();
+export function useFciFundsBySlug(enabled = true): Map<string, FciFund> {
+  const { data } = useFciFunds(enabled);
   return useMemo(() => {
     const m = new Map<string, FciFund>();
     for (const f of data ?? []) m.set(f.slug, f);

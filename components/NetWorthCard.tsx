@@ -21,12 +21,9 @@ export function NetWorthCard() {
   const netUsd = data?.net_usd ?? 0;
 
   return (
-    <View style={styles.card}>
-      {/* Gradiente de marca indigo→cyan + blobs decorativos para profundidad */}
-      <BrandGradient style={StyleSheet.absoluteFill} pointerEvents="none" />
-      <View style={styles.blobTop} pointerEvents="none" />
-      <View style={styles.blobBottom} pointerEvents="none" />
-
+    // El gradiente ES la card (sin overflow:hidden ni blobs → mucho más liviano al
+    // scrollear; antes forzaba render offscreen cada frame en Android).
+    <BrandGradient style={styles.card}>
       <View style={styles.labelRow}>
         <Ionicons name="sparkles" size={13} color={colors.primaryBright} />
         <Text style={styles.label}>Patrimonio neto</Text>
@@ -50,7 +47,7 @@ export function NetWorthCard() {
           <Row icon="card-outline" tint={colors.negative} label="Deudas" ars={data.debts_ars} usd={data.debts_usd} negative />
         </View>
       ) : null}
-    </View>
+    </BrandGradient>
   );
 }
 
@@ -84,32 +81,12 @@ function Row({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.primaryDeep,
     borderRadius: radius.xl,
     padding: spacing.xl,
     gap: spacing.sm,
-    overflow: "hidden",
     borderWidth: 1,
     borderColor: colors.primaryBright + "33",
     ...shadow.glow,
-  },
-  blobTop: {
-    position: "absolute",
-    top: -60,
-    right: -40,
-    width: 180,
-    height: 180,
-    borderRadius: 999,
-    backgroundColor: colors.accent + "1F",
-  },
-  blobBottom: {
-    position: "absolute",
-    bottom: -70,
-    left: -50,
-    width: 160,
-    height: 160,
-    borderRadius: 999,
-    backgroundColor: colors.primaryBright + "1A",
   },
   labelRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   label: { ...typography.overline, color: colors.primaryBright },

@@ -89,7 +89,8 @@ export default function AddInvestmentModal() {
 
   // FCI: el "ticker" es el slug del fondo y la cotización es el VCP (no vive en
   // asset_prices). Lo resolvemos de la lista de fondos (useFciFunds) por slug.
-  const fciFundsBySlug = useFciFundsBySlug();
+  // Solo se trae la lista si el tipo es FCI (evita red en altas de otros tipos).
+  const fciFundsBySlug = useFciFundsBySlug(isFci);
   const fciVcp = isFci && ticker ? (fciFundsBySlug.get(ticker)?.vcp ?? null) : null;
 
   // Al elegir un fondo: nombre = fondo, ticker = slug, y prellena el costo con el
