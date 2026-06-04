@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { instrumentById } from "../lib/instruments";
 import { usePortfolioByType } from "../lib/hooks/use-portfolio-by-type";
-import { colors } from "../lib/colors";
+import { colors, radius, spacing, typography, shadow } from "../lib/theme";
 
 const pctFmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 1 });
 
@@ -36,8 +36,11 @@ export function PortfolioDistribution() {
       <Text style={styles.label}>Distribución</Text>
 
       <View style={styles.bar}>
-        {slices.map((s) => (
-          <View key={s.type} style={{ flex: s.pct, backgroundColor: s.color }} />
+        {slices.map((s, i) => (
+          <View
+            key={s.type}
+            style={{ flex: s.pct, backgroundColor: s.color, marginLeft: i === 0 ? 0 : 2 }}
+          />
         ))}
       </View>
 
@@ -59,23 +62,24 @@ export function PortfolioDistribution() {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surfaceDark,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: 12,
+    gap: spacing.md,
+    ...shadow.sm,
   },
-  label: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
+  label: { ...typography.overline, color: colors.textMuted },
   bar: {
     flexDirection: "row",
-    height: 12,
-    borderRadius: 6,
+    height: 14,
+    borderRadius: radius.sm,
     overflow: "hidden",
-    backgroundColor: colors.backgroundDark,
+    backgroundColor: colors.surfaceSunken,
   },
-  legend: { gap: 8 },
-  legendRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  legend: { gap: spacing.sm },
+  legendRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  legendLabel: { color: colors.textPrimary, fontSize: 13, flex: 1 },
-  legendPct: { color: colors.textMuted, fontSize: 13, fontWeight: "600" },
+  legendLabel: { ...typography.caption, color: colors.textPrimary, flex: 1 },
+  legendPct: { ...typography.caption, color: colors.textSecondary, fontWeight: "700" },
 });

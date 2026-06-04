@@ -1,24 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ChipRow, FormChip, FormField, FormInput, FormScreen, SubmitButton } from "../../components/form";
 import { categoriesByGroup, categoryById } from "../../lib/categories";
 import { useAccounts } from "../../lib/hooks/use-accounts";
 import { useCategorizeTransaction } from "../../lib/hooks/use-categorize-transaction";
 import { useCreateTransaction } from "../../lib/hooks/use-create-transaction";
 import { useTransactions, useUpdateTransaction } from "../../lib/hooks/use-transactions";
-import { colors } from "../../lib/colors";
+import { colors, radius, spacing } from "../../lib/theme";
 
 type TxType = "income" | "expense" | "transfer" | "investment";
 
@@ -95,7 +85,6 @@ export default function AddTransactionModal() {
       });
       setCategoryId(result.category);
       if (result.merchant_normalized) {
-        // mejor sugerencia para el title de la transacción
         setDescription((prev) => (prev === result.merchant_normalized ? prev : `${result.merchant_normalized}`));
       }
     } catch (e) {
@@ -148,170 +137,88 @@ export default function AddTransactionModal() {
     }
   }
 
+  const busy = create.isPending || update.isPending;
+
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: editing ? "Editar movimiento" : "Nuevo movimiento" }} />
-      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-          <Field label="Tipo">
-            <View style={styles.row}>
-              {TYPES.map((t) => (
-                <Pressable
-                  key={t.value}
-                  style={[styles.chip, type === t.value && styles.chipActive]}
-                  onPress={() => { setType(t.value); setCategoryId(null); }}
-                >
-                  <Text style={[styles.chipText, type === t.value && styles.chipTextActive]}>
-                    {t.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </Field>
-
-          <Field label={`Monto (${selectedAccount?.currency ?? "—"})`}>
-            <TextInput
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="decimal-pad"
-              value={amount}
-              onChangeText={setAmount}
+    <FormScreen title={editing ? "Editar movimiento" : "Nuevo movimiento"}>
+      <FormField label="Tipo">
+        <ChipRow>
+          {TYPES.map((t) => (
+            <FormChip
+              key={t.value}
+              label={t.label}
+              active={type === t.value}
+              onPress={() => { setType(t.value); setCategoryId(null); }}
             />
-          </Field>
+          ))}
+        </ChipRow>
+      </FormField>
 
-          <Field label="Descripción">
-            <TextInput
-              style={styles.input}
-              placeholder='ej: "uber a casa", "carrefour"'
-              placeholderTextColor={colors.textMuted}
-              value={description}
-              onChangeText={setDescription}
+      <FormField label={`Monto (${selectedAccount?.currency ?? "—"})`}>
+        <FormInput placeholder="0" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} />
+      </FormField>
+
+      <FormField label="Descripción">
+        <FormInput
+          placeholder='ej: "uber a casa", "carrefour"'
+          value={description}
+          onChangeText={setDescription}
+        />
+      </FormField>
+
+      <Pressable
+        style={({ pressed }) => [styles.aiBtn, pressed && { opacity: 0.85 }, categorize.isPending && { opacity: 0.5 }]}
+        onPress={suggestWithAI}
+        disabled={categorize.isPending}
+      >
+        <Ionicons name="sparkles" size={16} color={colors.primaryBright} />
+        <Text style={styles.aiBtnText}>{categorize.isPending ? "Pensando…" : "Sugerir categoría con IA"}</Text>
+      </Pressable>
+
+      <FormField label="Cuenta" hint={accounts.data?.length ? undefined : "Agregá una cuenta desde el dashboard."}>
+        <ChipRow>
+          {accounts.data?.map((acc) => (
+            <FormChip key={acc.id} label={acc.name} active={accountId === acc.id} onPress={() => setAccountId(acc.id)} />
+          ))}
+        </ChipRow>
+      </FormField>
+
+      <FormField
+        label="Categoría"
+        hint={categoryId && categoryById(categoryId)?.label ? undefined : "Tocá una para elegir o usá ✨ IA arriba."}
+      >
+        <ChipRow>
+          {availableCategories.map((c) => (
+            <FormChip
+              key={c.id}
+              label={`${c.icon} ${c.label}`}
+              active={categoryId === c.id}
+              onPress={() => setCategoryId(c.id)}
             />
-          </Field>
+          ))}
+        </ChipRow>
+      </FormField>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.aiBtn,
-              pressed && { opacity: 0.85 },
-              categorize.isPending && { opacity: 0.5 },
-            ]}
-            onPress={suggestWithAI}
-            disabled={categorize.isPending}
-          >
-            <Text style={styles.aiBtnText}>
-              {categorize.isPending ? "Pensando…" : "✨ Sugerir categoría con IA"}
-            </Text>
-          </Pressable>
-
-          <Field label="Cuenta">
-            <View style={styles.row}>
-              {accounts.data?.map((acc) => (
-                <Pressable
-                  key={acc.id}
-                  style={[styles.chip, accountId === acc.id && styles.chipActive]}
-                  onPress={() => setAccountId(acc.id)}
-                >
-                  <Text style={[styles.chipText, accountId === acc.id && styles.chipTextActive]}>
-                    {acc.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </Field>
-
-          <Field label="Categoría">
-            <View style={styles.row}>
-              {availableCategories.map((c) => (
-                <Pressable
-                  key={c.id}
-                  style={[styles.chip, categoryId === c.id && styles.chipActive]}
-                  onPress={() => setCategoryId(c.id)}
-                >
-                  <Text style={[styles.chipText, categoryId === c.id && styles.chipTextActive]}>
-                    {c.icon} {c.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-            {categoryId && categoryById(categoryId)?.label ? null : (
-              <Text style={styles.hint}>Tocá una para elegir o usá ✨ IA arriba.</Text>
-            )}
-          </Field>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.submit,
-              pressed && { opacity: 0.85 },
-              (create.isPending || update.isPending) && { opacity: 0.5 },
-            ]}
-            onPress={submit}
-            disabled={create.isPending || update.isPending}
-          >
-            <Text style={styles.submitText}>
-              {create.isPending || update.isPending
-                ? "Guardando…"
-                : editing
-                  ? "Guardar cambios"
-                  : "Guardar movimiento"}
-            </Text>
-          </Pressable>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      {children}
-    </View>
+      <SubmitButton
+        label={busy ? "Guardando…" : editing ? "Guardar cambios" : "Guardar movimiento"}
+        onPress={submit}
+        busy={busy}
+      />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: 20, gap: 16 },
-  field: { gap: 8 },
-  fieldLabel: { color: colors.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 },
-  input: {
-    backgroundColor: colors.surfaceDark,
-    color: colors.textPrimary,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    fontSize: 16,
-  },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  chipTextActive: { color: colors.textPrimary },
   aiBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
     borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: "center",
-    backgroundColor: colors.primary + "22",
+    borderColor: colors.primary + "55",
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.primarySoft,
   },
-  aiBtnText: { color: colors.primary, fontWeight: "700" },
-  hint: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
-  submit: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  submitText: { color: colors.textPrimary, fontWeight: "700", fontSize: 16 },
+  aiBtnText: { color: colors.primaryBright, fontWeight: "700" },
 });

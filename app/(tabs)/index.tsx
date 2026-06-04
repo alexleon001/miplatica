@@ -8,7 +8,7 @@ import { UpcomingReminders } from "../../components/UpcomingReminders";
 import { useAuth } from "../../lib/auth";
 import { useProfile } from "../../lib/hooks/use-profile";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
-import { colors } from "../../lib/colors";
+import { colors, radius, spacing, typography } from "../../lib/theme";
 
 const fechaFmt = new Intl.DateTimeFormat("es-AR", {
   weekday: "long",
@@ -21,6 +21,7 @@ export default function DashboardScreen() {
   const { data: profile } = useProfile();
   const { refreshing, onRefresh } = usePullRefresh();
   const name = profile?.name?.trim() || session?.user.email?.split("@")[0] || "";
+  const initial = (name || "?").charAt(0).toUpperCase();
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -32,9 +33,17 @@ export default function DashboardScreen() {
         }
       >
         <View style={styles.header}>
-          <Text style={styles.brand}>Mi Platica</Text>
-          <Text style={styles.greeting}>Hola{name ? `, ${name}` : ""} 👋</Text>
-          <Text style={styles.date}>{fechaFmt.format(new Date())}</Text>
+          <View style={styles.headerText}>
+            <View style={styles.brandRow}>
+              <Text style={styles.brand}>Mi Platica</Text>
+              <View style={styles.brandDot} />
+            </View>
+            <Text style={styles.greeting}>Hola{name ? `, ${name}` : ""} 👋</Text>
+            <Text style={styles.date}>{fechaFmt.format(new Date())}</Text>
+          </View>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initial}</Text>
+          </View>
         </View>
 
         <CurrencyToggle />
@@ -53,11 +62,25 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: 20, gap: 16 },
-  header: { gap: 4 },
-  brand: { color: colors.primary, fontSize: 14, fontWeight: "800", letterSpacing: 0.5, marginBottom: 2 },
-  greeting: { color: colors.textPrimary, fontSize: 24, fontWeight: "700" },
-  date: { color: colors.textMuted, fontSize: 13, textTransform: "capitalize" },
-  ratesSection: { gap: 8, marginTop: 4 },
-  ratesLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
+  container: { padding: spacing.xl, gap: spacing.lg },
+  header: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
+  headerText: { gap: 2, flex: 1 },
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 },
+  brand: { color: colors.primaryBright, fontSize: 14, fontWeight: "800", letterSpacing: 0.5 },
+  brandDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent },
+  greeting: { ...typography.title, color: colors.textPrimary },
+  date: { ...typography.caption, color: colors.textMuted, textTransform: "capitalize" },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.full,
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderColor: colors.primary + "55",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: { color: colors.primaryBright, fontSize: 18, fontWeight: "800" },
+  ratesSection: { gap: spacing.sm, marginTop: spacing.xs },
+  ratesLabel: { ...typography.overline, color: colors.textMuted },
 });

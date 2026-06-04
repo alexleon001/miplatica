@@ -4,7 +4,7 @@
 // Se usa por posición (InvestmentRow) y en el resumen del portafolio.
 
 import { StyleSheet, Text, View } from "react-native";
-import { colors } from "../lib/colors";
+import { colors, radius } from "../lib/theme";
 
 type Size = "sm" | "md";
 
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     alignSelf: "flex-end",
   },
   mdBadge: { paddingHorizontal: 10, paddingVertical: 5 },

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { MoneyAmount } from "../../components/MoneyAmount";
 import { RowsSkeleton } from "../../components/Skeleton";
 import { StateMessage } from "../../components/StateMessage";
@@ -10,7 +11,8 @@ import { useMonthlyBalance } from "../../lib/hooks/use-monthly-balance";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
 import { useCategorizeBatch, useDeleteTransaction, useTransactions } from "../../lib/hooks/use-transactions";
 import { confirmDelete } from "../../lib/confirm";
-import { colors } from "../../lib/colors";
+import { Card, Fab, ScreenTitle } from "../../components/ui";
+import { colors, radius, spacing, typography } from "../../lib/theme";
 
 type Filter = "all" | "income" | "expense";
 
@@ -54,13 +56,15 @@ export default function TransactionsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Movimientos</Text>
+        <ScreenTitle>Movimientos</ScreenTitle>
 
-        <View style={styles.summary}>
+        <Card style={styles.summary}>
           <SummaryItem label="Ingresos"  amount={monthly.data?.income_ars}  tone="positive" />
+          <View style={styles.summaryDivider} />
           <SummaryItem label="Gastos"    amount={monthly.data?.expense_ars} tone="negative" />
+          <View style={styles.summaryDivider} />
           <SummaryItem label="Balance"   amount={monthly.data?.balance_ars} tone="default" />
-        </View>
+        </Card>
 
         <View style={styles.filters}>
           {FILTERS.map((f) => (
@@ -84,9 +88,9 @@ export default function TransactionsScreen() {
             accessibilityLabel="Categorizar movimientos con IA"
           >
             {categorize.isPending ? (
-              <ActivityIndicator color={colors.primary} size="small" />
+              <ActivityIndicator color={colors.primaryBright} size="small" />
             ) : (
-              <Text style={styles.aiBannerIcon}>✨</Text>
+              <Ionicons name="sparkles" size={16} color={colors.primaryBright} />
             )}
             <Text style={styles.aiBannerText}>
               {categorize.isPending
@@ -125,14 +129,7 @@ export default function TransactionsScreen() {
         }
       />
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Nuevo movimiento"
-        style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}
-        onPress={() => router.push("/modals/add-transaction")}
-      >
-        <Text style={styles.fabText}>+ Nuevo</Text>
-      </Pressable>
+      <Fab label="Nuevo" onPress={() => router.push("/modals/add-transaction")} />
     </SafeAreaView>
   );
 }
@@ -156,59 +153,35 @@ function SummaryItem({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  header: { padding: 20, gap: 14 },
-  title: { color: colors.textPrimary, fontSize: 24, fontWeight: "700" },
-  summary: {
-    flexDirection: "row",
-    backgroundColor: colors.surfaceDark,
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 12,
-  },
-  summaryItem: { flex: 1, gap: 4 },
-  summaryLabel: { color: colors.textMuted, fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase" },
-  filters: { flexDirection: "row", gap: 6 },
+  header: { padding: spacing.xl, gap: spacing.md },
+  summary: { flexDirection: "row", alignItems: "center" },
+  summaryItem: { flex: 1, gap: spacing.xs },
+  summaryDivider: { width: 1, alignSelf: "stretch", backgroundColor: colors.borderSoft, marginHorizontal: spacing.sm },
+  summaryLabel: { ...typography.overline, color: colors.textMuted },
+  filters: { flexDirection: "row", gap: spacing.xs },
   aiBanner: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: colors.surfaceDark,
+    gap: spacing.sm,
+    backgroundColor: colors.primarySoft,
     borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderColor: colors.primary + "55",
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  aiBannerIcon: { fontSize: 15 },
-  aiBannerText: { color: colors.primary, fontSize: 13, fontWeight: "600" },
+  aiBannerText: { color: colors.primaryBright, fontSize: 13, fontWeight: "700" },
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
     backgroundColor: colors.surfaceDark,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
   chipText: { color: colors.textMuted, fontSize: 13, fontWeight: "600" },
-  chipTextActive: { color: colors.textPrimary },
-  list: { paddingHorizontal: 20, paddingBottom: 100, flexGrow: 1 },
-  separator: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
-  fab: {
-    position: "absolute",
-    right: 20,
-    bottom: 20,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 999,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  fabText: { color: colors.textPrimary, fontWeight: "700", fontSize: 15 },
+  chipTextActive: { color: "#FFFFFF" },
+  list: { paddingHorizontal: spacing.xl, paddingBottom: 100, flexGrow: 1 },
+  separator: { height: 1, backgroundColor: colors.borderSoft, marginVertical: 2 },
 });

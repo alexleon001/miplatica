@@ -1,13 +1,17 @@
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { BudgetsList } from "../../components/BudgetsList";
 import { MercadoPagoConnect } from "../../components/MercadoPagoConnect";
 import { SavingsGoalsList } from "../../components/SavingsGoalsList";
+import { CtaButton, IconChip, ScreenTitle, SectionLabel } from "../../components/ui";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth";
 import { useProfile } from "../../lib/hooks/use-profile";
-import { colors } from "../../lib/colors";
+import { colors, radius, spacing, typography, shadow } from "../../lib/theme";
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
 
 export default function MoreScreen() {
   const router = useRouter();
@@ -22,56 +26,47 @@ export default function MoreScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Más</Text>
+        <ScreenTitle>Más</ScreenTitle>
 
-        <Pressable
-          style={({ pressed }) => [styles.advisorBtn, pressed && { opacity: 0.9 }]}
+        <FeatureCard
+          icon="sparkles"
+          tint={colors.primary}
+          title="Asesor financiero IA"
+          subtitle="Chateá sobre tu plata con contexto real"
           onPress={() => router.push("/advisor")}
-        >
-          <Text style={styles.advisorIcon}>🧉</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.advisorTitle}>Asesor financiero IA</Text>
-            <Text style={styles.advisorSubtitle}>Chateá sobre tu plata con contexto real</Text>
-          </View>
-          <Text style={styles.advisorChevron}>›</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [styles.advisorBtn, pressed && { opacity: 0.9 }]}
+        />
+        <FeatureCard
+          icon="calendar-outline"
+          tint={colors.accent}
+          title="Proyección de pagos"
+          subtitle="Tu flujo de caja mes a mes, como el Excel pero solo"
           onPress={() => router.push("/projection")}
-        >
-          <Text style={styles.advisorIcon}>📅</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.advisorTitle}>Proyección de pagos</Text>
-            <Text style={styles.advisorSubtitle}>Tu flujo de caja mes a mes, como el Excel pero solo</Text>
-          </View>
-          <Text style={styles.advisorChevron}>›</Text>
-        </Pressable>
+        />
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Presupuestos del mes</Text>
+          <SectionLabel>Presupuestos del mes</SectionLabel>
           <BudgetsList />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Metas de ahorro</Text>
+          <SectionLabel>Metas de ahorro</SectionLabel>
           <SavingsGoalsList />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Datos</Text>
+          <SectionLabel>Datos</SectionLabel>
           <MercadoPagoConnect />
           <View style={styles.dataDivider} />
-          <Pressable
-            style={({ pressed }) => [styles.linkBtn, pressed && { opacity: 0.85 }]}
+          <CtaButton
+            label="Importar movimientos (CSV de broker)"
+            icon="document-text-outline"
+            variant="outline"
             onPress={() => router.push("/modals/import-broker-csv")}
-          >
-            <Text style={styles.linkBtnText}>Importar movimientos (CSV de broker)</Text>
-          </Pressable>
+          />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Perfil</Text>
+          <SectionLabel>Perfil</SectionLabel>
           <Text style={styles.kvLabel}>Nombre</Text>
           <Text style={styles.kvValue}>{profile?.name ?? "—"}</Text>
           <Text style={styles.kvLabel}>Ingreso mensual</Text>
@@ -82,21 +77,24 @@ export default function MoreScreen() {
           </Text>
           <Text style={styles.kvLabel}>Dólar preferido</Text>
           <Text style={styles.kvValue}>{profile?.preferred_usd_type?.toUpperCase() ?? "—"}</Text>
-          <Pressable
-            style={({ pressed }) => [styles.linkBtn, pressed && { opacity: 0.85 }, { marginTop: 12 }]}
-            onPress={() => router.push("/modals/edit-profile")}
-          >
-            <Text style={styles.linkBtnText}>Editar perfil</Text>
-          </Pressable>
+          <View style={{ marginTop: spacing.sm }}>
+            <CtaButton
+              label="Editar perfil"
+              icon="create-outline"
+              variant="outline"
+              onPress={() => router.push("/modals/edit-profile")}
+            />
+          </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Sesión</Text>
+          <SectionLabel>Sesión</SectionLabel>
           <Text style={styles.email}>{session?.user.email ?? "—"}</Text>
           <Pressable
             style={({ pressed }) => [styles.btn, pressed && { opacity: 0.85 }]}
             onPress={signOut}
           >
+            <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
             <Text style={styles.btnText}>Cerrar sesión</Text>
           </Pressable>
         </View>
@@ -105,53 +103,74 @@ export default function MoreScreen() {
   );
 }
 
+function FeatureCard({
+  icon,
+  tint,
+  title,
+  subtitle,
+  onPress,
+}: {
+  icon: IoniconName;
+  tint: string;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.featureCard, pressed && { opacity: 0.9 }]}
+      onPress={onPress}
+    >
+      <IconChip icon={icon} tint={tint} size={44} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.featureTitle}>{title}</Text>
+        <Text style={styles.featureSubtitle}>{subtitle}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: 20, gap: 12 },
-  title: { color: colors.textPrimary, fontSize: 24, fontWeight: "700" },
+  container: { padding: spacing.xl, gap: spacing.md },
   section: {
     backgroundColor: colors.surfaceDark,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: 8,
-    marginTop: 8,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+    ...shadow.sm,
   },
-  sectionLabel: { color: colors.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 },
-  kvLabel: { color: colors.textMuted, fontSize: 11, marginTop: 6 },
-  kvValue: { color: colors.textPrimary, fontSize: 15 },
-  email: { color: colors.textPrimary, fontSize: 16 },
+  kvLabel: { ...typography.caption, color: colors.textMuted, marginTop: spacing.sm },
+  kvValue: { ...typography.body, color: colors.textPrimary },
+  email: { ...typography.body, color: colors.textPrimary },
   btn: {
-    backgroundColor: colors.negative,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  btnText: { color: colors.textPrimary, fontWeight: "600" },
-  linkBtn: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  linkBtnText: { color: colors.primary, fontWeight: "600" },
-  dataDivider: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
-  advisorBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    backgroundColor: colors.primary + "22",
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 8,
+    justifyContent: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.negative,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    marginTop: spacing.md,
   },
-  advisorIcon: { fontSize: 28 },
-  advisorTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: "700" },
-  advisorSubtitle: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
-  advisorChevron: { color: colors.primary, fontSize: 24, fontWeight: "700" },
+  btnText: { color: "#FFFFFF", fontWeight: "700" },
+  dataDivider: { height: 1, backgroundColor: colors.borderSoft, marginVertical: spacing.xs },
+  featureCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginTop: spacing.xs,
+    ...shadow.sm,
+  },
+  featureTitle: { ...typography.heading, color: colors.textPrimary },
+  featureSubtitle: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
 });

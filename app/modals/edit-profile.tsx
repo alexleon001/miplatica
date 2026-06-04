@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack, useRouter } from "expo-router";
-import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
+import { Alert } from "react-native";
+import { useRouter } from "expo-router";
+import { ChipRow, FormChip, FormField, FormInput, FormScreen, SubmitButton } from "../../components/form";
 import { useProfile, useUpdateProfile } from "../../lib/hooks/use-profile";
 import { useCurrencyStore } from "../../lib/store/currency";
-import { colors } from "../../lib/colors";
 
 type UsdType = "mep" | "blue" | "oficial" | "ccl" | "tarjeta";
 type Display = "ars" | "usd" | "both";
@@ -76,98 +74,37 @@ export default function EditProfileModal() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Editar perfil" }} />
-      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-        <Field label="¿Cómo te llamamos?">
-          <TextInput
-            style={styles.input}
-            placeholder="Alex"
-            placeholderTextColor={colors.textMuted}
-            value={name}
-            onChangeText={setName}
-          />
-        </Field>
+    <FormScreen title="Editar perfil">
+      <FormField label="¿Cómo te llamamos?">
+        <FormInput placeholder="Alex" value={name} onChangeText={setName} />
+      </FormField>
 
-        <Field label="Ingreso mensual (ARS)">
-          <TextInput
-            style={styles.input}
-            placeholder="0"
-            placeholderTextColor={colors.textMuted}
-            keyboardType="decimal-pad"
-            value={income}
-            onChangeText={setIncome}
-          />
-          <Text style={styles.hint}>Se usa como sueldo neto por defecto en la proyección de pagos.</Text>
-        </Field>
+      <FormField label="Ingreso mensual (ARS)" hint="Se usa como sueldo neto por defecto en la proyección de pagos.">
+        <FormInput placeholder="0" keyboardType="decimal-pad" value={income} onChangeText={setIncome} />
+      </FormField>
 
-        <Field label="Dólar preferido">
-          <View style={styles.row}>
-            {USD_OPTIONS.map((opt) => (
-              <Pressable
-                key={opt.value}
-                style={[styles.chip, usdType === opt.value && styles.chipActive]}
-                onPress={() => setUsdType(opt.value)}
-              >
-                <Text style={[styles.chipText, usdType === opt.value && styles.chipTextActive]}>{opt.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </Field>
+      <FormField label="Dólar preferido">
+        <ChipRow>
+          {USD_OPTIONS.map((opt) => (
+            <FormChip key={opt.value} label={opt.label} active={usdType === opt.value} onPress={() => setUsdType(opt.value)} />
+          ))}
+        </ChipRow>
+      </FormField>
 
-        <Field label="¿Cómo querés ver los montos?">
-          <View style={styles.row}>
-            {DISPLAY_OPTIONS.map((opt) => (
-              <Pressable
-                key={opt.value}
-                style={[styles.chip, display === opt.value && styles.chipActive]}
-                onPress={() => setDisplayState(opt.value)}
-              >
-                <Text style={[styles.chipText, display === opt.value && styles.chipTextActive]}>{opt.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </Field>
+      <FormField label="¿Cómo querés ver los montos?">
+        <ChipRow>
+          {DISPLAY_OPTIONS.map((opt) => (
+            <FormChip
+              key={opt.value}
+              label={opt.label}
+              active={display === opt.value}
+              onPress={() => setDisplayState(opt.value)}
+            />
+          ))}
+        </ChipRow>
+      </FormField>
 
-        <Pressable
-          style={({ pressed }) => [styles.submit, pressed && { opacity: 0.85 }, update.isPending && { opacity: 0.5 }]}
-          onPress={submit}
-          disabled={update.isPending}
-        >
-          <Text style={styles.submitText}>{update.isPending ? "Guardando…" : "Guardar cambios"}</Text>
-        </Pressable>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+      <SubmitButton label={update.isPending ? "Guardando…" : "Guardar cambios"} onPress={submit} busy={update.isPending} />
+    </FormScreen>
   );
 }
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: 20, gap: 16 },
-  field: { gap: 8 },
-  fieldLabel: { color: colors.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 },
-  hint: { color: colors.textMuted, fontSize: 12 },
-  input: {
-    backgroundColor: colors.surfaceDark, color: colors.textPrimary, borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: colors.border, fontSize: 16,
-  },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999,
-    backgroundColor: colors.surfaceDark, borderWidth: 1, borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  chipTextActive: { color: colors.textPrimary },
-  submit: { backgroundColor: colors.primary, paddingVertical: 14, borderRadius: 12, alignItems: "center", marginTop: 8 },
-  submitText: { color: colors.textPrimary, fontWeight: "700", fontSize: 16 },
-});

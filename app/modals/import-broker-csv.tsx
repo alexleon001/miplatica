@@ -1,18 +1,7 @@
 import { useMemo, useState } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
-import { Stack, useRouter } from "expo-router";
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { ChipRow, form, FormChip, FormField, FormInput, FormScreen, SubmitButton } from "../../components/form";
 import {
   parseBrokerCsv,
   summarizeByType,
@@ -20,7 +9,7 @@ import {
 } from "../../lib/broker-import";
 import { useAccounts } from "../../lib/hooks/use-accounts";
 import { useImportTransactions } from "../../lib/hooks/use-import-transactions";
-import { colors } from "../../lib/colors";
+import { colors, radius, spacing, typography } from "../../lib/theme";
 
 const TYPE_LABELS: Record<string, string> = {
   income: "Ingresos",
@@ -74,172 +63,109 @@ export default function ImportBrokerCsvModal() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Importar CSV" }} />
-      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.help}>
-            Pegá el CSV de movimientos de tu broker o banco (Cocos, PPI, IOL…). Detecto fecha,
-            tipo, descripción, importe y nro de operación. Reimportar el mismo archivo no duplica.
-          </Text>
+    <FormScreen title="Importar CSV">
+      <Text style={styles.help}>
+        Pegá el CSV de movimientos de tu broker o banco (Cocos, PPI, IOL…). Detecto fecha,
+        tipo, descripción, importe y nro de operación. Reimportar el mismo archivo no duplica.
+      </Text>
 
-          <Field label="CSV">
-            <TextInput
-              style={[styles.input, styles.textarea]}
-              placeholder={"Fecha;Tipo;Especie;Importe;Nro\n01/05/2026;Compra;AAPL;-150000,50;1001"}
-              placeholderTextColor={colors.textMuted}
-              multiline
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={raw}
-              onChangeText={setRaw}
-            />
-          </Field>
+      <FormField label="CSV">
+        <FormInput
+          style={styles.textarea}
+          placeholder={"Fecha;Tipo;Especie;Importe;Nro\n01/05/2026;Compra;AAPL;-150000,50;1001"}
+          multiline
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={raw}
+          onChangeText={setRaw}
+        />
+      </FormField>
 
-          <Pressable
-            style={({ pressed }) => [styles.analyzeBtn, pressed && { opacity: 0.85 }]}
-            onPress={analyze}
-          >
-            <Text style={styles.analyzeBtnText}>Analizar</Text>
-          </Pressable>
+      <Pressable style={({ pressed }) => [styles.analyzeBtn, pressed && { opacity: 0.85 }]} onPress={analyze}>
+        <Text style={styles.analyzeBtnText}>Analizar</Text>
+      </Pressable>
 
-          {result ? (
-            <View style={styles.preview}>
-              {result.missingColumns.length > 0 ? (
-                <Text style={styles.error}>
-                  No encontré las columnas: {result.missingColumns.join(", ")}. Revisá que el CSV
-                  tenga encabezados (ej: Fecha, Importe).
-                </Text>
-              ) : (
-                <>
-                  <Text style={styles.previewTitle}>
-                    {result.movements.length} movimientos detectados
-                  </Text>
-                  {byType
-                    ? (Object.keys(TYPE_LABELS) as (keyof typeof TYPE_LABELS)[])
-                        .filter((k) => byType[k as keyof typeof byType] > 0)
-                        .map((k) => (
-                          <Text key={k} style={styles.previewRow}>
-                            · {TYPE_LABELS[k]}: {byType[k as keyof typeof byType]}
-                          </Text>
-                        ))
-                    : null}
-                  {result.skippedRows > 0 ? (
-                    <Text style={styles.muted}>{result.skippedRows} filas ignoradas (sin fecha/importe válido).</Text>
-                  ) : null}
-                  {result.duplicatesInFile > 0 ? (
-                    <Text style={styles.muted}>{result.duplicatesInFile} duplicados dentro del archivo.</Text>
-                  ) : null}
-                </>
-              )}
-            </View>
-          ) : null}
-
-          {result && result.movements.length > 0 ? (
-            <Field label="Importar a la cuenta">
-              <View style={styles.row}>
-                {accounts.data?.map((acc) => (
-                  <Pressable
-                    key={acc.id}
-                    style={[styles.chip, accountId === acc.id && styles.chipActive]}
-                    onPress={() => setAccountId(acc.id)}
-                  >
-                    <Text style={[styles.chipText, accountId === acc.id && styles.chipTextActive]}>
-                      {acc.name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-              {(!accounts.data || accounts.data.length === 0) ? (
-                <Text style={styles.muted}>Agregá una cuenta primero (Patrimonio → +).</Text>
+      {result ? (
+        <View style={styles.preview}>
+          {result.missingColumns.length > 0 ? (
+            <Text style={styles.error}>
+              No encontré las columnas: {result.missingColumns.join(", ")}. Revisá que el CSV
+              tenga encabezados (ej: Fecha, Importe).
+            </Text>
+          ) : (
+            <>
+              <Text style={styles.previewTitle}>{result.movements.length} movimientos detectados</Text>
+              {byType
+                ? (Object.keys(TYPE_LABELS) as (keyof typeof TYPE_LABELS)[])
+                    .filter((k) => byType[k as keyof typeof byType] > 0)
+                    .map((k) => (
+                      <Text key={k} style={styles.previewRow}>
+                        · {TYPE_LABELS[k]}: {byType[k as keyof typeof byType]}
+                      </Text>
+                    ))
+                : null}
+              {result.skippedRows > 0 ? (
+                <Text style={styles.muted}>{result.skippedRows} filas ignoradas (sin fecha/importe válido).</Text>
               ) : null}
-            </Field>
-          ) : null}
+              {result.duplicatesInFile > 0 ? (
+                <Text style={styles.muted}>{result.duplicatesInFile} duplicados dentro del archivo.</Text>
+              ) : null}
+            </>
+          )}
+        </View>
+      ) : null}
 
-          {result && result.movements.length > 0 ? (
-            <Pressable
-              style={({ pressed }) => [
-                styles.submit,
-                pressed && { opacity: 0.85 },
-                importTx.isPending && { opacity: 0.5 },
-              ]}
-              onPress={doImport}
-              disabled={importTx.isPending}
-            >
-              <Text style={styles.submitText}>
-                {importTx.isPending ? "Importando…" : `Importar ${result.movements.length} movimientos`}
-              </Text>
-            </Pressable>
-          ) : null}
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
-  );
-}
+      {result && result.movements.length > 0 ? (
+        <FormField
+          label="Importar a la cuenta"
+          hint={!accounts.data || accounts.data.length === 0 ? "Agregá una cuenta primero (Patrimonio → +)." : undefined}
+        >
+          <ChipRow>
+            {accounts.data?.map((acc) => (
+              <FormChip key={acc.id} label={acc.name} active={accountId === acc.id} onPress={() => setAccountId(acc.id)} />
+            ))}
+          </ChipRow>
+        </FormField>
+      ) : null}
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      {children}
-    </View>
+      {result && result.movements.length > 0 ? (
+        <SubmitButton
+          label={importTx.isPending ? "Importando…" : `Importar ${result.movements.length} movimientos`}
+          onPress={doImport}
+          busy={importTx.isPending}
+        />
+      ) : null}
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: 20, gap: 16 },
-  help: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
-  field: { gap: 8 },
-  fieldLabel: { color: colors.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 },
-  input: {
-    backgroundColor: colors.surfaceDark,
-    color: colors.textPrimary,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
+  help: { ...typography.caption, color: colors.textMuted, lineHeight: 18 },
+  textarea: {
+    ...form.multiline,
+    minHeight: 140,
     fontSize: 14,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
-  textarea: { minHeight: 140, textAlignVertical: "top", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
   analyzeBtn: {
     borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderColor: colors.primary + "55",
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
     alignItems: "center",
-    backgroundColor: colors.primary + "22",
+    backgroundColor: colors.primarySoft,
   },
-  analyzeBtnText: { color: colors.primary, fontWeight: "700" },
+  analyzeBtnText: { color: colors.primaryBright, fontWeight: "700" },
   preview: {
     backgroundColor: colors.surfaceDark,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: radius.md,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: 4,
+    gap: spacing.xs,
   },
-  previewTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: "700", marginBottom: 4 },
-  previewRow: { color: colors.textPrimary, fontSize: 13 },
-  muted: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
-  error: { color: colors.negative, fontSize: 13 },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  chipTextActive: { color: colors.textPrimary },
-  submit: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 4,
-  },
-  submitText: { color: colors.textPrimary, fontWeight: "700", fontSize: 16 },
+  previewTitle: { ...typography.bodyStrong, color: colors.textPrimary, marginBottom: spacing.xs },
+  previewRow: { ...typography.caption, color: colors.textPrimary },
+  muted: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
+  error: { ...typography.caption, color: colors.negative },
 });

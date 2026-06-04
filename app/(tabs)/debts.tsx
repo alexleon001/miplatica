@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { CurrencyToggle } from "../../components/CurrencyToggle";
@@ -10,7 +10,8 @@ import { StateMessage } from "../../components/StateMessage";
 import { useDebts, useDeleteDebt } from "../../lib/hooks/use-debts";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
 import { confirmDelete } from "../../lib/confirm";
-import { colors } from "../../lib/colors";
+import { Card, Fab, ScreenTitle, SectionLabel } from "../../components/ui";
+import { colors, spacing } from "../../lib/theme";
 
 export default function DebtsScreen() {
   const router = useRouter();
@@ -53,15 +54,15 @@ export default function DebtsScreen() {
         }
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>Deudas</Text>
+            <ScreenTitle>Deudas</ScreenTitle>
             <CurrencyToggle />
 
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Total adeudado</Text>
+            <Card style={styles.summaryCard}>
+              <SectionLabel>Total adeudado</SectionLabel>
               <MoneyAmount ars={totals.ars} usd={totals.usd} size="lg" tone="negative" />
-            </View>
+            </Card>
 
-            <Text style={styles.listLabel}>Tus deudas</Text>
+            <SectionLabel>Tus deudas</SectionLabel>
           </View>
         }
         ListEmptyComponent={
@@ -75,47 +76,15 @@ export default function DebtsScreen() {
         }
       />
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Nueva deuda"
-        style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}
-        onPress={() => router.push("/modals/add-debt")}
-      >
-        <Text style={styles.fabText}>+ Nueva</Text>
-      </Pressable>
+      <Fab label="Nueva" onPress={() => router.push("/modals/add-debt")} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  list: { padding: 20, paddingBottom: 100, flexGrow: 1 },
-  header: { gap: 16, marginBottom: 8 },
-  title: { color: colors.textPrimary, fontSize: 24, fontWeight: "700" },
-  summaryCard: {
-    backgroundColor: colors.surfaceDark,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 8,
-  },
-  summaryLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
-  listLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
-  separator: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
-  fab: {
-    position: "absolute",
-    right: 20,
-    bottom: 20,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 999,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  fabText: { color: colors.textPrimary, fontWeight: "700", fontSize: 15 },
+  list: { padding: spacing.xl, paddingBottom: 100, flexGrow: 1 },
+  header: { gap: spacing.lg, marginBottom: spacing.sm },
+  summaryCard: { padding: spacing.xl, gap: spacing.sm },
+  separator: { height: 1, backgroundColor: colors.borderSoft, marginVertical: 2 },
 });

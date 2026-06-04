@@ -11,10 +11,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { type AdvisorMessage, useAdvisor } from "../lib/hooks/use-advisor";
 import { useAdvisorChatStore } from "../lib/store/advisor";
 import { useKeyboardHeight } from "../lib/hooks/use-keyboard-height";
-import { colors } from "../lib/colors";
+import { colors, radius, spacing, typography } from "../lib/theme";
 
 const SUGGESTIONS = [
   "¿Cómo viene mi mes?",
@@ -87,10 +88,14 @@ export default function AdvisorScreen() {
           onPress={() => router.back()}
           hitSlop={12}
           accessibilityLabel="Volver"
+          style={styles.backBtn}
         >
-          <Text style={styles.back}>‹ Volver</Text>
+          <Ionicons name="chevron-back" size={22} color={colors.primaryBright} />
         </Pressable>
-        <Text style={styles.title}>Asesor IA</Text>
+        <View style={styles.titleWrap}>
+          <Ionicons name="sparkles" size={15} color={colors.primaryBright} />
+          <Text style={styles.title}>Asesor IA</Text>
+        </View>
         {messages.length > 0 ? (
           <Pressable onPress={confirmClear} hitSlop={12} accessibilityLabel="Nueva conversación">
             <Text style={styles.clear}>Limpiar</Text>
@@ -160,7 +165,7 @@ export default function AdvisorScreen() {
             disabled={advisor.isPending || !input.trim()}
             accessibilityLabel="Enviar mensaje"
           >
-            <Text style={styles.sendBtnText}>➤</Text>
+            <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
           </Pressable>
         </View>
       </View>
@@ -190,58 +195,59 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.borderSoft,
   },
-  back: { color: colors.primary, fontSize: 16, fontWeight: "600", width: 56 },
+  backBtn: { width: 56 },
+  titleWrap: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   clear: { color: colors.textMuted, fontSize: 14, fontWeight: "600", width: 56, textAlign: "right" },
-  title: { color: colors.textPrimary, fontSize: 18, fontWeight: "700" },
-  empty: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28, gap: 12 },
+  title: { ...typography.heading, color: colors.textPrimary },
+  empty: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing["3xl"], gap: spacing.md },
   emptyIcon: { fontSize: 44 },
-  emptyTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "700", textAlign: "center" },
-  emptyText: { color: colors.textMuted, fontSize: 14, textAlign: "center", lineHeight: 20 },
-  suggestions: { gap: 8, marginTop: 12, alignSelf: "stretch" },
+  emptyTitle: { ...typography.heading, color: colors.textPrimary, textAlign: "center" },
+  emptyText: { ...typography.body, color: colors.textMuted, textAlign: "center", lineHeight: 20 },
+  suggestions: { gap: spacing.sm, marginTop: spacing.md, alignSelf: "stretch" },
   suggestion: {
     backgroundColor: colors.surfaceDark,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
-  suggestionText: { color: colors.textPrimary, fontSize: 14 },
-  list: { padding: 16, gap: 10 },
-  bubble: { maxWidth: "85%", borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10 },
-  bubbleUser: { alignSelf: "flex-end", backgroundColor: colors.primary },
+  suggestionText: { ...typography.body, color: colors.textPrimary },
+  list: { padding: spacing.lg, gap: spacing.md },
+  bubble: { maxWidth: "85%", borderRadius: radius.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  bubbleUser: { alignSelf: "flex-end", backgroundColor: colors.primary, borderBottomRightRadius: radius.sm },
   bubbleAssistant: {
     alignSelf: "flex-start",
-    backgroundColor: colors.surfaceDark,
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  bubbleUserText: { color: colors.textPrimary, fontSize: 15, lineHeight: 21 },
+  bubbleUserText: { color: "#FFFFFF", fontSize: 15, lineHeight: 21 },
   bubbleAssistantText: { color: colors.textPrimary, fontSize: 15, lineHeight: 21 },
-  typing: { flexDirection: "row", alignItems: "center", gap: 8 },
+  typing: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   typingText: { color: colors.textMuted, fontSize: 14 },
   inputBar: {
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderSoft,
   },
   input: {
     flex: 1,
     maxHeight: 120,
     backgroundColor: colors.surfaceDark,
     color: colors.textPrimary,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderRadius: radius.xl,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     fontSize: 15,
@@ -249,10 +255,9 @@ const styles = StyleSheet.create({
   sendBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
-  sendBtnText: { color: colors.textPrimary, fontSize: 18, fontWeight: "700" },
 });

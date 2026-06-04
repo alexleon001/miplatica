@@ -6,7 +6,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useCurrencyStore } from "../lib/store/currency";
 import { colors } from "../lib/colors";
 
-type Size = "sm" | "md" | "lg";
+type Size = "sm" | "md" | "lg" | "xl";
 type Tone = "default" | "positive" | "negative";
 
 type MoneyAmountProps = {
@@ -32,6 +32,7 @@ const SIZES: Record<Size, { primary: number; secondary: number }> = {
   sm: { primary: 14, secondary: 11 },
   md: { primary: 20, secondary: 13 },
   lg: { primary: 32, secondary: 16 },
+  xl: { primary: 40, secondary: 18 },
 };
 
 function toneColor(tone: Tone): string {

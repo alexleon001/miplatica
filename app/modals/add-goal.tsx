@@ -1,21 +1,9 @@
 import { useEffect, useState } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
+import { Alert } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ChipRow, form, FormChip, FormField, FormInput, FormScreen, SubmitButton } from "../../components/form";
 import { DateField } from "../../components/DateField";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCreateGoal, useSavingsGoals, useUpdateGoal } from "../../lib/hooks/use-savings-goals";
-import { colors } from "../../lib/colors";
 
 type GoalCurrency = "ARS" | "USD";
 const CURRENCIES: GoalCurrency[] = ["ARS", "USD"];
@@ -92,138 +80,50 @@ export default function AddGoalModal() {
   const busy = create.isPending || update.isPending;
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: editing ? "Editar meta" : "Nueva meta de ahorro" }} />
-      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-          <Field label="Nombre">
-            <TextInput
-              style={styles.input}
-              placeholder="Auto, Vacaciones, Fondo de emergencia…"
-              placeholderTextColor={colors.textMuted}
-              value={name}
-              onChangeText={setName}
-            />
-          </Field>
+    <FormScreen title={editing ? "Editar meta" : "Nueva meta de ahorro"}>
+      <FormField label="Nombre">
+        <FormInput placeholder="Auto, Vacaciones, Fondo de emergencia…" value={name} onChangeText={setName} />
+      </FormField>
 
-          <Field label="Moneda">
-            <View style={styles.row}>
-              {CURRENCIES.map((c) => (
-                <Pressable
-                  key={c}
-                  style={[styles.chip, currency === c && styles.chipActive]}
-                  onPress={() => setCurrency(c)}
-                >
-                  <Text style={[styles.chipText, currency === c && styles.chipTextActive]}>{c}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </Field>
+      <FormField label="Moneda">
+        <ChipRow>
+          {CURRENCIES.map((c) => (
+            <FormChip key={c} label={c} active={currency === c} onPress={() => setCurrency(c)} />
+          ))}
+        </ChipRow>
+      </FormField>
 
-          <Field label={`Objetivo (${currency})`}>
-            <TextInput
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="decimal-pad"
-              value={target}
-              onChangeText={setTarget}
-            />
-          </Field>
+      <FormField label={`Objetivo (${currency})`}>
+        <FormInput placeholder="0" keyboardType="decimal-pad" value={target} onChangeText={setTarget} />
+      </FormField>
 
-          <Field label="Ya ahorrado (opcional)">
-            <TextInput
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="decimal-pad"
-              value={current}
-              onChangeText={setCurrent}
-            />
-          </Field>
+      <FormField label="Ya ahorrado (opcional)">
+        <FormInput placeholder="0" keyboardType="decimal-pad" value={current} onChangeText={setCurrent} />
+      </FormField>
 
-          <Field label="Aporte mensual (opcional)">
-            <TextInput
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="decimal-pad"
-              value={monthly}
-              onChangeText={setMonthly}
-            />
-          </Field>
+      <FormField label="Aporte mensual (opcional)">
+        <FormInput placeholder="0" keyboardType="decimal-pad" value={monthly} onChangeText={setMonthly} />
+      </FormField>
 
-          <Field label="Fecha objetivo (opcional)">
-            <DateField value={targetDate} onChange={setTargetDate} placeholder="Elegí la fecha objetivo" />
-          </Field>
+      <FormField label="Fecha objetivo (opcional)">
+        <DateField value={targetDate} onChange={setTargetDate} placeholder="Elegí la fecha objetivo" />
+      </FormField>
 
-          <Field label="Notas (opcional)">
-            <TextInput
-              style={[styles.input, styles.multiline]}
-              placeholder="ej: para el viaje a Bariloche"
-              placeholderTextColor={colors.textMuted}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-            />
-          </Field>
+      <FormField label="Notas (opcional)">
+        <FormInput
+          style={form.multiline}
+          placeholder="ej: para el viaje a Bariloche"
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+        />
+      </FormField>
 
-          <Pressable
-            style={({ pressed }) => [styles.submit, pressed && { opacity: 0.85 }, busy && { opacity: 0.5 }]}
-            onPress={submit}
-            disabled={busy}
-          >
-            <Text style={styles.submitText}>
-              {busy ? "Guardando…" : editing ? "Guardar cambios" : "Guardar meta"}
-            </Text>
-          </Pressable>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+      <SubmitButton
+        label={busy ? "Guardando…" : editing ? "Guardar cambios" : "Guardar meta"}
+        onPress={submit}
+        busy={busy}
+      />
+    </FormScreen>
   );
 }
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: 20, gap: 16 },
-  field: { gap: 8 },
-  fieldLabel: { color: colors.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 },
-  input: {
-    backgroundColor: colors.surfaceDark,
-    color: colors.textPrimary,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    fontSize: 16,
-  },
-  multiline: { minHeight: 70, textAlignVertical: "top" },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  chipTextActive: { color: colors.textPrimary },
-  submit: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  submitText: { color: colors.textPrimary, fontWeight: "700", fontSize: 16 },
-});

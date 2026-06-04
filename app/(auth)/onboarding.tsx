@@ -1,20 +1,11 @@
 import { useState } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
+import { ChipRow, FormChip, FormField, FormInput, SubmitButton } from "../../components/form";
 import { useUpdateProfile } from "../../lib/hooks/use-profile";
-import { colors } from "../../lib/colors";
+import { colors, spacing, typography } from "../../lib/theme";
 
 type UsdType = "mep" | "blue" | "oficial" | "ccl" | "tarjeta";
 type Display = "ars" | "usd" | "both";
@@ -68,127 +59,44 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.title}>Bienvenido a Mi Platica</Text>
-          <Text style={styles.subtitle}>
-            Configurá tus preferencias en 30 segundos. Después podés cambiarlas en cualquier
-            momento.
-          </Text>
+        <Text style={styles.title}>Bienvenido a Mi Platica</Text>
+        <Text style={styles.subtitle}>
+          Configurá tus preferencias en 30 segundos. Después podés cambiarlas en cualquier momento.
+        </Text>
 
-          <Field label="¿Cómo te llamamos?">
-            <TextInput
-              style={styles.input}
-              placeholder="Alex"
-              placeholderTextColor={colors.textMuted}
-              value={name}
-              onChangeText={setName}
-            />
-          </Field>
+        <FormField label="¿Cómo te llamamos?">
+          <FormInput placeholder="Alex" value={name} onChangeText={setName} />
+        </FormField>
 
-          <Field label="Ingreso mensual aproximado en ARS (opcional)">
-            <TextInput
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="decimal-pad"
-              value={income}
-              onChangeText={setIncome}
-            />
-          </Field>
+        <FormField label="Ingreso mensual aproximado en ARS (opcional)">
+          <FormInput placeholder="0" keyboardType="decimal-pad" value={income} onChangeText={setIncome} />
+        </FormField>
 
-          <Field label="¿Qué dólar preferís para calcular tu patrimonio?">
-            <View style={styles.row}>
-              {USD_OPTIONS.map((opt) => (
-                <Pressable
-                  key={opt.value}
-                  style={[styles.chip, usdType === opt.value && styles.chipActive]}
-                  onPress={() => setUsdType(opt.value)}
-                >
-                  <Text style={[styles.chipText, usdType === opt.value && styles.chipTextActive]}>
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </Field>
+        <FormField label="¿Qué dólar preferís para calcular tu patrimonio?">
+          <ChipRow>
+            {USD_OPTIONS.map((opt) => (
+              <FormChip key={opt.value} label={opt.label} active={usdType === opt.value} onPress={() => setUsdType(opt.value)} />
+            ))}
+          </ChipRow>
+        </FormField>
 
-          <Field label="¿Cómo querés ver los montos?">
-            <View style={styles.row}>
-              {DISPLAY_OPTIONS.map((opt) => (
-                <Pressable
-                  key={opt.value}
-                  style={[styles.chip, display === opt.value && styles.chipActive]}
-                  onPress={() => setDisplay(opt.value)}
-                >
-                  <Text style={[styles.chipText, display === opt.value && styles.chipTextActive]}>
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </Field>
+        <FormField label="¿Cómo querés ver los montos?">
+          <ChipRow>
+            {DISPLAY_OPTIONS.map((opt) => (
+              <FormChip key={opt.value} label={opt.label} active={display === opt.value} onPress={() => setDisplay(opt.value)} />
+            ))}
+          </ChipRow>
+        </FormField>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.submit,
-              pressed && { opacity: 0.85 },
-              updateProfile.isPending && { opacity: 0.5 },
-            ]}
-            onPress={submit}
-            disabled={updateProfile.isPending}
-          >
-            <Text style={styles.submitText}>
-              {updateProfile.isPending ? "Guardando…" : "Empezar"}
-            </Text>
-          </Pressable>
+        <SubmitButton label={updateProfile.isPending ? "Guardando…" : "Empezar"} onPress={submit} busy={updateProfile.isPending} />
       </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: 24, gap: 18 },
-  title: { color: colors.textPrimary, fontSize: 28, fontWeight: "700", marginTop: 12 },
-  subtitle: { color: colors.textMuted, fontSize: 14, marginBottom: 12 },
-  field: { gap: 8 },
-  fieldLabel: { color: colors.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 },
-  input: {
-    backgroundColor: colors.surfaceDark,
-    color: colors.textPrimary,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    fontSize: 16,
-  },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  chipTextActive: { color: colors.textPrimary },
-  submit: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  submitText: { color: colors.textPrimary, fontWeight: "700", fontSize: 16 },
+  container: { padding: spacing["2xl"], gap: spacing.lg },
+  title: { ...typography.title, fontSize: 28, color: colors.textPrimary, marginTop: spacing.md },
+  subtitle: { ...typography.body, color: colors.textMuted, marginBottom: spacing.xs },
 });

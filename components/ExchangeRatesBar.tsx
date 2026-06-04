@@ -4,7 +4,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useExchangeRates } from "../lib/hooks/use-exchange-rates";
 import { useCurrencyStore } from "../lib/store/currency";
-import { colors } from "../lib/colors";
+import { colors, radius, shadow } from "../lib/theme";
 
 type Rate = "oficial" | "mep" | "blue" | "ccl";
 
@@ -45,19 +45,20 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
     backgroundColor: colors.surfaceDark,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 4,
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadow.sm,
   },
   item: {
     flex: 1,
     paddingVertical: 8,
     paddingHorizontal: 6,
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
-  itemActive: { backgroundColor: colors.backgroundDark, borderWidth: 1, borderColor: colors.usd },
+  itemActive: { backgroundColor: colors.surfaceSunken, borderWidth: 1, borderColor: colors.usd },
   itemLabel: { color: colors.textMuted, fontSize: 11, letterSpacing: 0.5 },
   itemLabelActive: { color: colors.usd },
   itemValue: { color: colors.textPrimary, fontSize: 13, fontWeight: "600", marginTop: 2 },

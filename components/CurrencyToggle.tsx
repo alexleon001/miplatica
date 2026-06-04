@@ -4,7 +4,7 @@ import {
   type UsdType,
   useCurrencyStore,
 } from "../lib/store/currency";
-import { colors } from "../lib/colors";
+import { colors, radius, spacing } from "../lib/theme";
 
 const DISPLAY_OPTIONS: { value: CurrencyDisplay; label: string }[] = [
   { value: "ars", label: "ARS" },
@@ -60,23 +60,23 @@ export function CurrencyToggle() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 8 },
-  row: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
+  wrap: { gap: spacing.sm },
+  row: { flexDirection: "row", gap: spacing.xs, flexWrap: "wrap" },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
     backgroundColor: colors.surfaceDark,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
   chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  chipTextActive: { color: colors.textPrimary },
+  chipTextActive: { color: "#FFFFFF" },
   chipSm: {
-    paddingHorizontal: 10,
+    paddingHorizontal: spacing.md,
     paddingVertical: 5,
-    borderRadius: 999,
+    borderRadius: radius.full,
     backgroundColor: colors.surfaceDark,
     borderWidth: 1,
     borderColor: colors.border,

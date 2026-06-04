@@ -1,8 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { categoryById } from "../lib/categories";
 import { useBudgets } from "../lib/hooks/use-budgets";
-import { colors } from "../lib/colors";
+import { CtaButton, ProgressBar } from "./ui";
+import { colors, spacing, typography } from "../lib/theme";
 
 const fmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 
@@ -11,14 +12,12 @@ export function BudgetsList() {
   const router = useRouter();
 
   const cta = (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Agregar presupuesto"
-      style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
+    <CtaButton
+      label="Agregar presupuesto"
+      icon="add"
+      variant="outline"
       onPress={() => router.push("/modals/add-budget")}
-    >
-      <Text style={styles.ctaText}>+ Agregar presupuesto</Text>
-    </Pressable>
+    />
   );
 
   if (isLoading) {
@@ -52,9 +51,7 @@ export function BudgetsList() {
                 ${fmt.format(b.spent_ars)} / ${fmt.format(b.limit_ars)}
               </Text>
             </View>
-            <View style={styles.barBg}>
-              <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: barColor }]} />
-            </View>
+            <ProgressBar pct={pct} color={barColor} />
           </View>
         );
       })}
@@ -64,26 +61,10 @@ export function BudgetsList() {
 }
 
 const styles = StyleSheet.create({
-  list: { gap: 14 },
-  muted: { color: colors.textMuted, fontSize: 13 },
-  cta: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: "center",
-    marginTop: 4,
-  },
-  ctaText: { color: colors.primary, fontWeight: "600" },
-  row: { gap: 6 },
+  list: { gap: spacing.lg },
+  muted: { ...typography.caption, color: colors.textMuted },
+  row: { gap: spacing.sm },
   head: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  label: { color: colors.textPrimary, fontSize: 14, fontWeight: "600" },
-  amounts: { color: colors.textMuted, fontSize: 12, fontVariant: ["tabular-nums"] },
-  barBg: {
-    height: 6,
-    backgroundColor: colors.border,
-    borderRadius: 999,
-    overflow: "hidden",
-  },
-  barFill: { height: "100%", borderRadius: 999 },
+  label: { ...typography.bodyStrong, color: colors.textPrimary },
+  amounts: { ...typography.caption, color: colors.textMuted, fontVariant: ["tabular-nums"] },
 });

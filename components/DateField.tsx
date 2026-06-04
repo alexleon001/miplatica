@@ -9,7 +9,8 @@
 
 import { useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
-import { colors } from "../lib/colors";
+import { Ionicons } from "@expo/vector-icons";
+import { colors, radius, spacing } from "../lib/theme";
 
 const MONTHS_ES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -100,7 +101,7 @@ export function DateField({ value, onChange, placeholder = "Elegí una fecha", c
         <Text style={value ? styles.valueText : styles.placeholder}>
           {value ? formatDateLabel(value) : placeholder}
         </Text>
-        <Text style={styles.icon}>📅</Text>
+        <Ionicons name="calendar-outline" size={18} color={colors.primaryBright} />
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -159,29 +160,28 @@ export function DateField({ value, onChange, placeholder = "Elegí una fecha", c
 const styles = StyleSheet.create({
   input: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: colors.surfaceDark, borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surfaceDark, borderRadius: radius.md,
+    paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderWidth: 1, borderColor: colors.border,
   },
   valueText: { color: colors.textPrimary, fontSize: 16 },
   placeholder: { color: colors.textMuted, fontSize: 16 },
-  icon: { fontSize: 16 },
-  backdrop: { flex: 1, backgroundColor: "#000A", alignItems: "center", justifyContent: "center", padding: 24 },
+  backdrop: { flex: 1, backgroundColor: "#000B", alignItems: "center", justifyContent: "center", padding: spacing["2xl"] },
   card: {
-    width: "100%", maxWidth: 360, backgroundColor: colors.surfaceDark, borderRadius: 18,
-    borderWidth: 1, borderColor: colors.border, padding: 16, gap: 10,
+    width: "100%", maxWidth: 360, backgroundColor: colors.surfaceElevated, borderRadius: radius.xl,
+    borderWidth: 1, borderColor: colors.border, padding: spacing.lg, gap: spacing.md,
   },
-  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8 },
-  navArrow: { color: colors.primary, fontSize: 30, fontWeight: "700", width: 36, textAlign: "center" },
+  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.sm },
+  navArrow: { color: colors.primaryBright, fontSize: 30, fontWeight: "700", width: 36, textAlign: "center" },
   navTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: "700" },
   weekRow: { flexDirection: "row" },
   weekday: { flex: 1, textAlign: "center", color: colors.textMuted, fontSize: 12, fontWeight: "600" },
   grid: { flexDirection: "row", flexWrap: "wrap" },
-  cell: { width: `${100 / 7}%`, aspectRatio: 1, alignItems: "center", justifyContent: "center", borderRadius: 999 },
+  cell: { width: `${100 / 7}%`, aspectRatio: 1, alignItems: "center", justifyContent: "center", borderRadius: radius.full },
   cellSelected: { backgroundColor: colors.primary },
-  cellToday: { borderWidth: 1, borderColor: colors.primary },
+  cellToday: { borderWidth: 1, borderColor: colors.primaryBright },
   cellText: { color: colors.textPrimary, fontSize: 15 },
-  cellTextSelected: { color: colors.textPrimary, fontWeight: "700" },
-  footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4, paddingHorizontal: 4 },
+  cellTextSelected: { color: "#FFFFFF", fontWeight: "700" },
+  footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: spacing.xs, paddingHorizontal: spacing.xs },
   clear: { color: colors.negative, fontSize: 14, fontWeight: "600" },
-  todayBtn: { color: colors.primary, fontSize: 14, fontWeight: "700" },
+  todayBtn: { color: colors.primaryBright, fontSize: 14, fontWeight: "700" },
 });

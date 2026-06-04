@@ -6,21 +6,13 @@
 // se relee dentro de la mutation, así no dependemos de data en cache stale.
 
 import { useState } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { FormField, FormInput, SubmitButton } from "../../components/form";
 import { useRegisterDebtPayment } from "../../lib/hooks/use-debts";
 import { useAddGoalContribution } from "../../lib/hooks/use-savings-goals";
-import { colors } from "../../lib/colors";
+import { colors, spacing, typography } from "../../lib/theme";
 
 type Kind = "payment" | "contribution";
 
@@ -72,29 +64,11 @@ export default function QuickAmountModal() {
         <View style={styles.container}>
           {name ? <Text style={styles.context} numberOfLines={1}>{name}</Text> : null}
 
-          <View style={styles.field}>
-            <Text style={styles.fieldLabel}>
-              {copy.label}
-              {currency ? ` (${currency})` : ""}
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="decimal-pad"
-              value={amount}
-              onChangeText={setAmount}
-              autoFocus
-            />
-          </View>
+          <FormField label={`${copy.label}${currency ? ` (${currency})` : ""}`}>
+            <FormInput placeholder="0" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} autoFocus />
+          </FormField>
 
-          <Pressable
-            style={({ pressed }) => [styles.submit, pressed && { opacity: 0.85 }, busy && { opacity: 0.5 }]}
-            onPress={submit}
-            disabled={busy}
-          >
-            <Text style={styles.submitText}>{busy ? "Guardando…" : copy.cta}</Text>
-          </Pressable>
+          <SubmitButton label={busy ? "Guardando…" : copy.cta} onPress={submit} busy={busy} />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -103,26 +77,6 @@ export default function QuickAmountModal() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: 20, gap: 16 },
-  context: { color: colors.textPrimary, fontSize: 18, fontWeight: "700" },
-  field: { gap: 8 },
-  fieldLabel: { color: colors.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 },
-  input: {
-    backgroundColor: colors.surfaceDark,
-    color: colors.textPrimary,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    fontSize: 16,
-  },
-  submit: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  submitText: { color: colors.textPrimary, fontWeight: "700", fontSize: 16 },
+  container: { padding: spacing.xl, gap: spacing.lg },
+  context: { ...typography.heading, color: colors.textPrimary },
 });

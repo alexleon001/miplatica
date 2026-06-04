@@ -9,7 +9,7 @@ import {
   useMpConnection,
   useSyncMp,
 } from "../lib/hooks/use-mp";
-import { colors } from "../lib/colors";
+import { colors, radius, spacing, typography } from "../lib/theme";
 
 // Recomendado por expo-web-browser para cerrar sesiones de auth pendientes.
 WebBrowser.maybeCompleteAuthSession();
@@ -69,7 +69,7 @@ export function MercadoPagoConnect() {
   return (
     <View style={styles.connected}>
       <View style={styles.statusRow}>
-        <Text style={styles.statusDot}>🟢</Text>
+        <View style={styles.statusDot} />
         <Text style={styles.statusText}>
           Conectado{conn.last_synced_at ? ` · sync ${dateFmt.format(new Date(conn.last_synced_at))}` : " · sin sincronizar aún"}
         </Text>
@@ -92,27 +92,28 @@ export function MercadoPagoConnect() {
 }
 
 const styles = StyleSheet.create({
-  muted: { color: colors.textMuted, fontSize: 13 },
+  muted: { ...typography.caption, color: colors.textMuted },
   connectBtn: {
+    backgroundColor: colors.primarySoft,
     borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 12,
+    borderColor: colors.primary + "55",
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
     alignItems: "center",
   },
-  connectText: { color: colors.primary, fontWeight: "600" },
-  connected: { gap: 10 },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  statusDot: { fontSize: 12 },
-  statusText: { color: colors.textPrimary, fontSize: 14, flex: 1 },
+  connectText: { color: colors.primaryBright, fontWeight: "700" },
+  connected: { gap: spacing.md },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  statusDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.positive },
+  statusText: { ...typography.body, color: colors.textPrimary, flex: 1 },
   actions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   syncBtn: {
     backgroundColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
   },
-  syncText: { color: colors.textPrimary, fontWeight: "700", fontSize: 13 },
+  syncText: { color: "#FFFFFF", fontWeight: "700", fontSize: 13 },
   disconnectText: { color: colors.negative, fontSize: 13, fontWeight: "600" },
-  note: { color: colors.textMuted, fontSize: 11 },
+  note: { ...typography.caption, color: colors.textMuted, fontSize: 11 },
 });

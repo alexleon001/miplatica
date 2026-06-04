@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useDeleteGoal, useSavingsGoals } from "../lib/hooks/use-savings-goals";
 import { confirmDelete } from "../lib/confirm";
-import { colors } from "../lib/colors";
+import { CtaButton, ProgressBar } from "./ui";
+import { colors, radius, spacing, typography } from "../lib/theme";
 
 const fmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 
@@ -18,14 +19,12 @@ export function SavingsGoalsList() {
   const router = useRouter();
 
   const cta = (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Agregar meta de ahorro"
-      style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
+    <CtaButton
+      label="Agregar meta"
+      icon="add"
+      variant="outline"
       onPress={() => router.push("/modals/add-goal")}
-    >
-      <Text style={styles.ctaText}>+ Agregar meta</Text>
-    </Pressable>
+    />
   );
 
   if (isLoading) return <Text style={styles.muted}>Cargando metas…</Text>;
@@ -80,9 +79,7 @@ export function SavingsGoalsList() {
             <Text style={styles.amounts}>
               ${fmt.format(g.current_amount)} / ${fmt.format(g.target_amount)} {g.target_currency}
             </Text>
-            <View style={styles.barBg}>
-              <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: barColor }]} />
-            </View>
+            <ProgressBar pct={pct} color={barColor} />
             <Text style={styles.sub}>
               {done
                 ? "¡Meta cumplida!"
@@ -97,30 +94,20 @@ export function SavingsGoalsList() {
 }
 
 const styles = StyleSheet.create({
-  list: { gap: 14 },
-  muted: { color: colors.textMuted, fontSize: 13 },
-  cta: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: "center",
-    marginTop: 4,
-  },
-  ctaText: { color: colors.primary, fontWeight: "600" },
-  row: { gap: 6 },
-  head: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 },
-  label: { color: colors.textPrimary, fontSize: 14, fontWeight: "600", flex: 1 },
-  amounts: { color: colors.textMuted, fontSize: 12, fontVariant: ["tabular-nums"] },
+  list: { gap: spacing.lg },
+  muted: { ...typography.caption, color: colors.textMuted },
+  row: { gap: spacing.sm },
+  head: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.sm },
+  label: { ...typography.bodyStrong, color: colors.textPrimary, flex: 1 },
+  amounts: { ...typography.caption, color: colors.textMuted, fontVariant: ["tabular-nums"] },
   contribPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    backgroundColor: colors.primarySoft,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: colors.primary + "55",
   },
-  contribPillText: { color: colors.primary, fontSize: 12, fontWeight: "700" },
-  barBg: { height: 6, backgroundColor: colors.border, borderRadius: 999, overflow: "hidden" },
-  barFill: { height: "100%", borderRadius: 999 },
-  sub: { color: colors.textMuted, fontSize: 11 },
+  contribPillText: { color: colors.primaryBright, fontSize: 12, fontWeight: "700" },
+  sub: { ...typography.caption, color: colors.textMuted, fontSize: 11 },
 });

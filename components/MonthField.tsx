@@ -3,7 +3,8 @@
 
 import { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
-import { colors } from "../lib/colors";
+import { Ionicons } from "@expo/vector-icons";
+import { colors, radius, spacing } from "../lib/theme";
 
 const MONTHS_ES = [
   "Ene", "Feb", "Mar", "Abr", "May", "Jun",
@@ -58,7 +59,7 @@ export function MonthField({ value, onChange, placeholder = "Elegí el mes" }: P
         <Text style={value ? styles.valueText : styles.placeholder}>
           {value ? formatMonthLabel(value) : placeholder}
         </Text>
-        <Text style={styles.icon}>🗓️</Text>
+        <Ionicons name="calendar-outline" size={18} color={colors.primaryBright} />
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -98,27 +99,26 @@ export function MonthField({ value, onChange, placeholder = "Elegí el mes" }: P
 const styles = StyleSheet.create({
   input: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: colors.surfaceDark, borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surfaceDark, borderRadius: radius.md,
+    paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderWidth: 1, borderColor: colors.border,
   },
   valueText: { color: colors.textPrimary, fontSize: 16 },
   placeholder: { color: colors.textMuted, fontSize: 16 },
-  icon: { fontSize: 16 },
-  backdrop: { flex: 1, backgroundColor: "#000A", alignItems: "center", justifyContent: "center", padding: 24 },
+  backdrop: { flex: 1, backgroundColor: "#000B", alignItems: "center", justifyContent: "center", padding: spacing["2xl"] },
   card: {
-    width: "100%", maxWidth: 360, backgroundColor: colors.surfaceDark, borderRadius: 18,
-    borderWidth: 1, borderColor: colors.border, padding: 16, gap: 12,
+    width: "100%", maxWidth: 360, backgroundColor: colors.surfaceElevated, borderRadius: radius.xl,
+    borderWidth: 1, borderColor: colors.border, padding: spacing.lg, gap: spacing.md,
   },
-  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8 },
-  navArrow: { color: colors.primary, fontSize: 30, fontWeight: "700", width: 36, textAlign: "center" },
+  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.sm },
+  navArrow: { color: colors.primaryBright, fontSize: 30, fontWeight: "700", width: 36, textAlign: "center" },
   navTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "700" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   monthCell: {
     flexGrow: 1, flexBasis: "22%", // ~4 por fila con gap
-    paddingVertical: 14, alignItems: "center", borderRadius: 12,
-    backgroundColor: colors.backgroundDark, borderWidth: 1, borderColor: colors.border,
+    paddingVertical: spacing.md, alignItems: "center", borderRadius: radius.md,
+    backgroundColor: colors.surfaceSunken, borderWidth: 1, borderColor: colors.border,
   },
-  monthCellSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  monthCellSelected: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
   monthText: { color: colors.textPrimary, fontSize: 14, fontWeight: "600" },
-  monthTextSelected: { color: colors.textPrimary, fontWeight: "700" },
+  monthTextSelected: { color: "#FFFFFF", fontWeight: "700" },
 });
