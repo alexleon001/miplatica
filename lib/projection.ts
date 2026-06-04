@@ -197,6 +197,33 @@ export type BuildProjectionArgs = {
   accrueFirstMonth?: boolean;
 };
 
+// Resumen de la proyección en texto plano, para compartir/exportar (WhatsApp,
+// notas, etc.). Pura y testeable. Montos en ARS (es-AR, sin decimales).
+export function projectionToText(p: Projection): string {
+  const fmt = (n: number) => Math.round(n).toLocaleString("es-AR");
+  const lines: string[] = [];
+  lines.push(`📊 Mi Platica — Proyección (${p.months.length} meses)`);
+  lines.push(`Efectivo hoy: $${fmt(p.startingBalanceArs)}`);
+  lines.push("");
+
+  for (const m of p.months) {
+    const net = Math.round(m.netArs);
+    const sign = net >= 0 ? "+" : "";
+    lines.push(
+      `${monthLabel(m.month)} — saldo $${fmt(m.cumulativeArs)} (neto ${sign}${fmt(net)})`,
+    );
+  }
+
+  lines.push("");
+  if (p.firstDeficitMonth) {
+    lines.push(`⚠️ Te quedás sin efectivo en ${monthLabel(p.firstDeficitMonth)}.`);
+  } else {
+    lines.push(`✅ Tu saldo se mantiene positivo todo el período.`);
+  }
+
+  return lines.join("\n");
+}
+
 export function buildProjection(args: BuildProjectionArgs): Projection {
   const { items, window, defaultIncomeArs, incomeOverrides, mep } = args;
   const startingBalanceArs = args.startingBalanceArs ?? 0;

@@ -38,8 +38,10 @@ export default function AddProjectionItemModal() {
   const router = useRouter();
   const create = useCreateProjectionItem();
   const update = useUpdateProjectionItem();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, dup } = useLocalSearchParams<{ id?: string; dup?: string }>();
   const editing = !!id;
+  // `dup` = duplicar: prefilla desde ese ítem pero crea uno NUEVO (no edita).
+  const sourceId = id ?? dup;
   const items = useProjectionItems();
 
   const [name, setName] = useState("");
@@ -52,10 +54,10 @@ export default function AddProjectionItemModal() {
   const [startMonth, setStartMonth] = useState(currentMonthInput());
 
   useEffect(() => {
-    if (!editing) return;
-    const it = items.data?.find((x) => x.id === id);
+    if (!sourceId) return;
+    const it = items.data?.find((x) => x.id === sourceId);
     if (it) {
-      setName(it.name);
+      setName(dup ? `${it.name} (copia)` : it.name);
       setPaymentMethod(it.payment_method);
       // Cuotas sin interés: en DB guardamos el monto POR cuota, pero al usuario le
       // mostramos el TOTAL de la compra → reconstruimos total = por-cuota × cuotas.
@@ -71,7 +73,7 @@ export default function AddProjectionItemModal() {
       setInterestRate(it.interest_rate != null ? String(it.interest_rate) : "");
       setStartMonth(it.start_month.slice(0, 7));
     }
-  }, [editing, id, items.data]);
+  }, [sourceId, dup, items.data]);
 
   // Con interés cargado, el "monto" es el capital a financiar y mostramos la
   // cuota fija (sistema francés) calculada en vivo.
@@ -184,7 +186,7 @@ export default function AddProjectionItemModal() {
   const pending = create.isPending || update.isPending;
 
   return (
-    <FormScreen title={editing ? "Editar gasto" : "Nuevo gasto proyectado"}>
+    <FormScreen title={editing ? "Editar gasto" : dup ? "Duplicar gasto" : "Nuevo gasto proyectado"}>
       <FormField label="Nombre">
         <FormInput placeholder="Alquiler, Concierto, Internet…" value={name} onChangeText={setName} />
       </FormField>

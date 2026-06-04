@@ -7,7 +7,7 @@ import { useCurrencyStore } from "../lib/store/currency";
 import { colors } from "../lib/colors";
 
 type Size = "sm" | "md" | "lg" | "xl";
-type Tone = "default" | "positive" | "negative";
+type Tone = "default" | "positive" | "negative" | "warning";
 
 type MoneyAmountProps = {
   ars?: number | null;
@@ -39,6 +39,7 @@ function toneColor(tone: Tone): string {
   switch (tone) {
     case "positive": return colors.positive;
     case "negative": return colors.negative;
+    case "warning":  return colors.warning;
     default:         return colors.textPrimary;
   }
 }

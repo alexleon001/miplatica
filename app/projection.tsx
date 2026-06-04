@@ -4,7 +4,7 @@
 // neto Deuda/Ganancia. La grilla la arma lib/projection.ts (testeada).
 
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,8 +29,10 @@ import {
   monthKey,
   monthLabel,
   monthsWindow,
+  projectionToText,
   type ProjItem,
 } from "../lib/projection";
+import { paidKey, useProjectionPaidStore } from "../lib/store/projection-paid";
 import { colors, radius, spacing, typography, shadow } from "../lib/theme";
 
 const HORIZONS = [6, 12] as const;
@@ -45,6 +47,8 @@ export default function ProjectionScreen() {
   const { data: netWorth } = useNetWorth();
   const delItem = useDeleteProjectionItem();
   const clearIncome = useClearProjectionIncome();
+  const paidMap = useProjectionPaidStore((s) => s.paid);
+  const togglePaid = useProjectionPaidStore((s) => s.toggle);
 
   const [horizon, setHorizon] = useState<number>(12);
   const [selected, setSelected] = useState<string>(monthKey(new Date()));
@@ -96,6 +100,31 @@ export default function ProjectionScreen() {
 
   const hasData = (items?.length ?? 0) > 0 || (debts?.length ?? 0) > 0;
 
+  // Restante por pagar del mes seleccionado = egresos cuyas líneas NO marcaste
+  // como pagadas. El TOTAL sigue siendo el completo (no se toca la lógica pura).
+  const remaining = useMemo(() => {
+    if (!current) return { ars: 0, usd: null as number | null };
+    let ars = 0;
+    let usd: number | null = 0;
+    for (const g of current.groups) {
+      for (const l of g.lines) {
+        if (paidMap[paidKey(l.id, current.month)]) continue;
+        ars += l.amountArs;
+        if (usd != null && l.amountUsd != null) usd += l.amountUsd;
+        else usd = null;
+      }
+    }
+    return { ars, usd };
+  }, [current, paidMap]);
+
+  async function shareProjection() {
+    try {
+      await Share.share({ message: projectionToText(projection) });
+    } catch {
+      // usuario canceló o no hay share sheet — sin ruido.
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <Stack.Screen options={{ title: "Proyección", headerShown: false }} />
@@ -104,7 +133,14 @@ export default function ProjectionScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Volver">
             <Ionicons name="chevron-back" size={24} color={colors.primaryBright} />
           </Pressable>
-          <CurrencyToggle />
+          <View style={styles.headerActions}>
+            {hasData ? (
+              <Pressable onPress={shareProjection} hitSlop={12} accessibilityLabel="Compartir proyección" style={styles.shareBtn}>
+                <Ionicons name="share-outline" size={20} color={colors.primaryBright} />
+              </Pressable>
+            ) : null}
+            <CurrencyToggle />
+          </View>
         </View>
         <Text style={styles.title}>Proyección de pagos</Text>
         <Text style={styles.subtitle}>
@@ -259,24 +295,41 @@ export default function ProjectionScreen() {
                     {g.lines.map((l) => {
                       const isDebt = l.id.startsWith("debt:");
                       const editItem = () => router.push(`/modals/add-projection-item?id=${l.id}`);
+                      const pkey = paidKey(l.id, current.month);
+                      const paid = !!paidMap[pkey];
                       return (
                         <View key={l.id} style={styles.line}>
+                          <Pressable
+                            onPress={() => togglePaid(pkey)}
+                            hitSlop={8}
+                            style={styles.checkbox}
+                            accessibilityLabel={paid ? `Marcar ${l.name} como pendiente` : `Marcar ${l.name} como pagado`}
+                          >
+                            <Ionicons
+                              name={paid ? "checkmark-circle" : "ellipse-outline"}
+                              size={20}
+                              color={paid ? colors.positive : colors.textMuted}
+                            />
+                          </Pressable>
                           <Pressable
                             style={({ pressed }) => [styles.lineMain, pressed && !isDebt && styles.linePressed]}
                             disabled={isDebt}
                             onPress={editItem}
                           >
-                            <Text style={styles.lineName} numberOfLines={1}>
+                            <Text style={[styles.lineName, paid && styles.linePaid]} numberOfLines={1}>
                               {l.name}
                               {l.installmentLabel ? <Text style={styles.lineCuota}>  cuota {l.installmentLabel}</Text> : null}
                               {isDebt ? <Text style={styles.lineTag}>  · deuda</Text> : null}
                             </Text>
-                            <Text style={styles.lineAmount}>{Math.round(l.amountArs).toLocaleString("es-AR")}</Text>
+                            <Text style={[styles.lineAmount, paid && styles.linePaid]}>{Math.round(l.amountArs).toLocaleString("es-AR")}</Text>
                           </Pressable>
                           {isDebt ? (
                             <Text style={styles.lineDebtHint}>en Deudas</Text>
                           ) : (
                             <View style={styles.lineActions}>
+                              <Pressable onPress={() => router.push(`/modals/add-projection-item?dup=${l.id}`)} hitSlop={8} style={styles.lineBtn} accessibilityLabel={`Duplicar ${l.name}`}>
+                                <Ionicons name="copy-outline" size={16} color={colors.textSecondary} />
+                              </Pressable>
                               <Pressable onPress={editItem} hitSlop={8} style={styles.lineBtn} accessibilityLabel={`Editar ${l.name}`}>
                                 <Ionicons name="pencil" size={16} color={colors.primaryBright} />
                               </Pressable>
@@ -301,6 +354,12 @@ export default function ProjectionScreen() {
                   <Text style={styles.totalLabel}>TOTAL egresos</Text>
                   <MoneyAmount ars={current.totalArs} usd={current.totalUsd} size="sm" />
                 </View>
+                {remaining.ars < current.totalArs ? (
+                  <View style={styles.remainingRow}>
+                    <Text style={styles.remainingLabel}>Te falta pagar</Text>
+                    <MoneyAmount ars={remaining.ars} usd={remaining.usd} size="sm" tone="warning" />
+                  </View>
+                ) : null}
                 <View style={[styles.netRow, { backgroundColor: (current.netArs < 0 ? colors.negative : colors.positive) + "22" }]}>
                   <Text style={styles.netLabel}>{current.netArs < 0 ? "Déficit del mes" : "Te sobra"}</Text>
                   <MoneyAmount
@@ -344,6 +403,11 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
   container: { padding: spacing.xl, paddingBottom: 100, gap: spacing.md },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  shareBtn: {
+    width: 36, height: 36, borderRadius: radius.full, alignItems: "center", justifyContent: "center",
+    backgroundColor: colors.surfaceDark, borderWidth: 1, borderColor: colors.border,
+  },
   title: { ...typography.title, color: colors.textPrimary },
   subtitle: { ...typography.caption, color: colors.textMuted },
   horizonRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs },
@@ -408,6 +472,8 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: spacing.sm,
     paddingVertical: spacing.sm,
   },
+  checkbox: { width: 24, alignItems: "center", justifyContent: "center" },
+  linePaid: { textDecorationLine: "line-through", color: colors.textMuted },
   lineMain: {
     flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     gap: spacing.sm,
@@ -428,6 +494,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border,
   },
   totalLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
+  remainingRow: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    marginTop: spacing.xs,
+  },
+  remainingLabel: { color: colors.warning, fontSize: 13, fontWeight: "700" },
   netRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm,

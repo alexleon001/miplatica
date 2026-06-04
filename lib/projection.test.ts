@@ -9,6 +9,7 @@ import {
   monthsBetween,
   monthsWindow,
   occurrenceIndex,
+  projectionToText,
   type ProjItem,
 } from "./projection";
 
@@ -81,6 +82,24 @@ test("debtToProjItem: sin cuota mensual → null", () => {
   expect(
     debtToProjItem({ id: "d", name: "x", currency: "ARS", remaining_amount: 100, monthly_payment: null, next_payment_date: null }, "2026-06-01"),
   ).toBeNull();
+});
+
+test("projectionToText: resumen legible con saldo, neto y aviso de déficit", () => {
+  const proj = buildProjection({
+    items: [
+      { id: "a", name: "Alquiler", paymentMethod: "Débito", amount: 950000, currency: "ARS", recurrence: "monthly", startMonth: "2026-06-01", installmentsTotal: null },
+    ],
+    window: monthsWindow("2026-06-01", 2),
+    defaultIncomeArs: 500000,
+    incomeOverrides: {},
+    mep: 1000,
+    startingBalanceArs: 100000,
+  });
+  const text = projectionToText(proj);
+  expect(text).toContain("Mi Platica — Proyección (2 meses)");
+  expect(text).toContain("Efectivo hoy: $100.000");
+  expect(text).toContain("Junio 2026");
+  expect(text).toContain("Te quedás sin efectivo"); // déficit: gasto > ingreso
 });
 
 test("buildProjection: agrupa, subtotaliza y calcula neto vs ingreso", () => {
