@@ -1,13 +1,17 @@
+import { useEffect } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AccountsList } from "../../components/AccountsList";
 import { CurrencyToggle } from "../../components/CurrencyToggle";
 import { ExchangeRatesBar } from "../../components/ExchangeRatesBar";
 import { NetWorthCard } from "../../components/NetWorthCard";
+import { NetWorthChart } from "../../components/NetWorthChart";
 import { UpcomingReminders } from "../../components/UpcomingReminders";
 import { useAuth } from "../../lib/auth";
+import { useFreshNetWorth } from "../../lib/hooks/use-net-worth";
 import { useProfile } from "../../lib/hooks/use-profile";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
+import { useNetWorthHistoryStore } from "../../lib/store/networth-history";
 import { colors, radius, spacing, typography } from "../../lib/theme";
 
 const fechaFmt = new Intl.DateTimeFormat("es-AR", {
@@ -20,8 +24,16 @@ export default function DashboardScreen() {
   const { session } = useAuth();
   const { data: profile } = useProfile();
   const { refreshing, onRefresh } = usePullRefresh();
+  const { data: netWorth } = useFreshNetWorth();
+  const recordNetWorth = useNetWorthHistoryStore((s) => s.record);
   const name = profile?.name?.trim() || session?.user.email?.split("@")[0] || "";
   const initial = (name || "?").charAt(0).toUpperCase();
+
+  // Snapshot diario del patrimonio (un punto por día) para el mini-gráfico de
+  // evolución. Local; se va llenando a medida que el usuario abre la app.
+  useEffect(() => {
+    if (netWorth?.net_ars != null) recordNetWorth(netWorth.net_ars, netWorth.net_usd ?? null);
+  }, [netWorth?.net_ars, netWorth?.net_usd, recordNetWorth]);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -49,6 +61,7 @@ export default function DashboardScreen() {
         <CurrencyToggle />
         <UpcomingReminders />
         <NetWorthCard />
+        <NetWorthChart />
         <AccountsList />
 
         <View style={styles.ratesSection}>
