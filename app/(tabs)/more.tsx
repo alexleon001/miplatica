@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,6 +10,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth";
 import { useProfile } from "../../lib/hooks/use-profile";
 import { useNotifPrefsStore } from "../../lib/store/notif-prefs";
+import { transactionsToCsv } from "../../lib/csv-export";
 import { colors, radius, spacing, typography, shadow } from "../../lib/theme";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -23,6 +24,30 @@ export default function MoreScreen() {
   async function signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) Alert.alert("Ups", error.message);
+  }
+
+  async function exportMonthCsv() {
+    const now = new Date();
+    const since = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("date, type, category, merchant, description, amount_ars, amount_usd")
+      .gte("date", since)
+      .order("date", { ascending: true })
+      .limit(2000);
+    if (error) {
+      Alert.alert("Ups", "No pude leer los movimientos.");
+      return;
+    }
+    if (!data || data.length === 0) {
+      Alert.alert("Sin movimientos", "No hay movimientos este mes para exportar.");
+      return;
+    }
+    try {
+      await Share.share({ message: transactionsToCsv(data) });
+    } catch {
+      // usuario canceló
+    }
   }
 
   return (
@@ -71,6 +96,12 @@ export default function MoreScreen() {
             icon="document-text-outline"
             variant="outline"
             onPress={() => router.push("/modals/import-broker-csv")}
+          />
+          <CtaButton
+            label="Exportar movimientos del mes (CSV)"
+            icon="share-outline"
+            variant="outline"
+            onPress={exportMonthCsv}
           />
         </View>
 

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AccountsList } from "../../components/AccountsList";
+import { BudgetBanner } from "../../components/BudgetBanner";
 import { CurrencyToggle } from "../../components/CurrencyToggle";
 import { ExchangeRatesBar } from "../../components/ExchangeRatesBar";
 import { NetWorthCard } from "../../components/NetWorthCard";
@@ -60,6 +61,7 @@ export default function DashboardScreen() {
 
         <CurrencyToggle />
         <UpcomingReminders />
+        <BudgetBanner />
         <NetWorthCard />
         <NetWorthChart />
         <AccountsList />

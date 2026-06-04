@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { budgetAlerts, currentPeriod, pruneNotified, type BudgetRow } from "./budget-alerts";
+import { budgetAlerts, budgetsAtRisk, currentPeriod, pruneNotified, type BudgetRow } from "./budget-alerts";
 
 function row(over: Partial<BudgetRow> & { spent_ars: number; limit_ars: number }): BudgetRow {
   return {
@@ -56,6 +56,27 @@ describe("pruneNotified", () => {
   it("conserva sólo el período actual", () => {
     const keys = ["b1:warn:2026-05", "b1:over:2026-06", "b2:warn:2026-06"];
     expect(pruneNotified(keys, "2026-06")).toEqual(["b1:over:2026-06", "b2:warn:2026-06"]);
+  });
+});
+
+describe("budgetsAtRisk", () => {
+  it("devuelve los >=80% del período, ordenados desc, marcando over", () => {
+    const rows = [
+      row({ id: "a", spent_ars: 50, limit_ars: 100 }), // 50% → fuera
+      row({ id: "b", spent_ars: 90, limit_ars: 100 }), // 90% → warn
+      row({ id: "c", spent_ars: 130, limit_ars: 100 }), // 130% → over
+    ];
+    const risk = budgetsAtRisk(rows, "2026-06");
+    expect(risk.map((r) => r.category === undefined)).not.toContain(true);
+    expect(risk).toHaveLength(2);
+    expect(risk[0].pct).toBeCloseTo(130); // ordenado desc
+    expect(risk[0].over).toBe(true);
+    expect(risk[1].over).toBe(false);
+  });
+
+  it("filtra por período", () => {
+    const rows = [row({ spent_ars: 95, limit_ars: 100, month: 5 })];
+    expect(budgetsAtRisk(rows, "2026-06")).toEqual([]);
   });
 });
 

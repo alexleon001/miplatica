@@ -62,3 +62,24 @@ export function pruneNotified(notified: string[], currentPeriod: string): string
 export function currentPeriod(now: Date = new Date()): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
+
+export type BudgetRisk = {
+  category: string;
+  pct: number;
+  spent: number;
+  limit: number;
+  over: boolean; // true si superó el 100%
+};
+
+// Presupuestos del período en o por encima del umbral de aviso (≥80%), para el
+// banner in-app del dashboard. Ordenados de mayor a menor consumo.
+export function budgetsAtRisk(budgets: BudgetRow[], period: string): BudgetRisk[] {
+  return budgets
+    .filter((b) => b.limit_ars > 0 && periodOf(b) === period)
+    .map((b) => {
+      const pct = (b.spent_ars / b.limit_ars) * 100;
+      return { category: b.category, pct, spent: b.spent_ars, limit: b.limit_ars, over: pct >= 100 };
+    })
+    .filter((r) => r.pct >= WARN_PCT)
+    .sort((a, b) => b.pct - a.pct);
+}
