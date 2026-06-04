@@ -64,7 +64,11 @@
 >   3. **Alertas de presupuesto:** notificación local al cruzar 80%/100% (`lib/budget-alerts.ts` puro + `lib/hooks/use-budget-alerts.ts`, montado en el layout de tabs). Dedup por `id:level:YYYY-MM` en AsyncStorage; notif inmediata (no la pisa el `cancelAll` de reminders).
 >   4. **Resumen mensual IA:** edge `monthly-summary` (agrega gasto por categoría mes actual vs anterior + ingreso + inflación server-side, Claude `claude-sonnet-4-6`, prompt caching) + `use-monthly-summary` (cache 6h) + pantalla `app/monthly-summary.tsx` (entry en `more.tsx`). **Necesita deploy (ver arriba).**
 >   5. **Sparkline de patrimonio:** `lib/networth-history.ts` (puro) + `lib/store/networth-history.ts` (snapshot diario local) + `components/NetWorthChart.tsx` (barras con Views puras, **sin react-native-svg → OTA-safe**), bajo el `NetWorthCard`. Respeta el CurrencyToggle; se llena a medida que se abre la app día a día (mín. 2 días).
-> - **Tests:** 71 `bun test` verdes (+19 en la sesión: budget-alerts, projectionToText, networth-history). `type-check:app` limpio.
+> - **Extras (post las 4, todas OTA-safe):**
+>   6. **Desglose de gastos por categoría del mes** (tab Movimientos): `lib/spending.ts` puro (`spendingByCategory`/`topCategories`, tests) + `lib/hooks/use-month-spending.ts` (trae TODO el mes, no los 50 recientes) + `components/SpendingBreakdown.tsx` (card colapsable con barra de proporción por categoría, currency-aware). Compartir también en la pantalla de resumen mensual.
+>   7. **Preferencias de notificaciones:** `lib/store/notif-prefs.ts` (local) + switches en "Más" → `useRemindersSync`/`useBudgetAlerts` las respetan (si apagás recordatorios, se cancelan los agendados).
+>   8. **Búsqueda en Movimientos:** filtro instantáneo client-side por comercio/descripción/categoría (sobre la lista cargada), combinable con el filtro tipo.
+> - **Tests:** 77 `bun test` verdes (+25 en la sesión: budget-alerts, projectionToText, networth-history, spending). `type-check:app` limpio.
 > - **Decisión transversal:** todas las features nuevas que necesitaban persistencia van **local-first** (Zustand+AsyncStorage), evitando migraciones/crons a prod (consistente con asesor/alertas). El único backend nuevo es el edge `monthly-summary`.
 >
 > **Para arrancar sesión 9:**
