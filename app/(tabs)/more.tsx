@@ -42,6 +42,13 @@ export default function MoreScreen() {
           subtitle="Tu flujo de caja mes a mes, como el Excel pero solo"
           onPress={() => router.push("/projection")}
         />
+        <FeatureCard
+          icon="newspaper-outline"
+          tint={colors.primaryBright}
+          title="Resumen del mes"
+          subtitle="Qué pasó con tu plata este mes, contado por la IA"
+          onPress={() => router.push("/monthly-summary")}
+        />
 
         <View style={styles.section}>
           <SectionLabel>Presupuestos del mes</SectionLabel>
