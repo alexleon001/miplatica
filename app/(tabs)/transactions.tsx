@@ -54,7 +54,7 @@ export default function TransactionsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
         <ScreenTitle>Movimientos</ScreenTitle>
 

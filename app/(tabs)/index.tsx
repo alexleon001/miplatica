@@ -24,7 +24,7 @@ export default function DashboardScreen() {
   const initial = (name || "?").charAt(0).toUpperCase();
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}

@@ -24,7 +24,7 @@ export default function MoreScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <ScreenTitle>Más</ScreenTitle>
 

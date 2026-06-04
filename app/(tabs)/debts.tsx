@@ -30,7 +30,7 @@ export default function DebtsScreen() {
   }, [debts]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
       <FlatList
         data={debts ?? []}
         keyExtractor={(d) => d.id}

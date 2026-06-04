@@ -85,7 +85,7 @@ export default function InvestmentsScreen() {
   }, [positions, inflationRows]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
       <FlatList
         data={positions}
         keyExtractor={(i) => i.id}
