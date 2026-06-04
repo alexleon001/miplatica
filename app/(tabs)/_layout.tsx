@@ -1,6 +1,6 @@
-import { Platform } from "react-native";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRemindersSync } from "../../lib/hooks/use-reminders-sync";
 import { colors } from "../../lib/colors";
 
@@ -16,6 +16,10 @@ function tabIcon(focused: string, unfocused: string) {
 export default function TabsLayout() {
   // Programa/reprograma notificaciones locales de vencimientos al entrar a la app.
   useRemindersSync();
+  // Respeta la barra de gestos/botones del sistema (Android/iOS): sin esto el
+  // tab bar se solapa con los botones de volver/recientes del celular.
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 8);
 
   return (
     <Tabs
@@ -25,9 +29,9 @@ export default function TabsLayout() {
           backgroundColor: colors.surfaceDark,
           borderTopColor: colors.borderSoft,
           borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 88 : 64,
-          paddingTop: 6,
-          paddingBottom: Platform.OS === "ios" ? 28 : 8,
+          height: 58 + bottomInset,
+          paddingTop: 8,
+          paddingBottom: bottomInset,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
         tabBarActiveTintColor: colors.primaryBright,

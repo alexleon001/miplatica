@@ -59,6 +59,10 @@ export const gradients = {
 } as const;
 
 // Sombras (elevación). iOS usa shadow*, Android usa elevation.
+// En Android, `elevation` sobre cards que ya tienen borde agrega overdraw (y con
+// overflow:hidden + borderRadius fuerza render offscreen). Como el borde ya las
+// define, mantenemos las sombras suaves en iOS y bajamos/anulamos la elevation en
+// Android para que no se ponga pesado. El FAB y el héroe conservan algo de relieve.
 export const shadow = {
   sm: Platform.select({
     ios: {
@@ -67,7 +71,7 @@ export const shadow = {
       shadowOpacity: 0.18,
       shadowRadius: 6,
     },
-    android: { elevation: 2 },
+    android: { elevation: 0 },
     default: {},
   }),
   md: Platform.select({
@@ -77,7 +81,7 @@ export const shadow = {
       shadowOpacity: 0.24,
       shadowRadius: 14,
     },
-    android: { elevation: 5 },
+    android: { elevation: 3 },
     default: {},
   }),
   // Glow de acento para el héroe (tinte indigo).
@@ -88,7 +92,7 @@ export const shadow = {
       shadowOpacity: 0.45,
       shadowRadius: 24,
     },
-    android: { elevation: 8 },
+    android: { elevation: 4 },
     default: {},
   }),
 } as const;
