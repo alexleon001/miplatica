@@ -68,7 +68,10 @@
 >   6. **Desglose de gastos por categoría del mes** (tab Movimientos): `lib/spending.ts` puro (`spendingByCategory`/`topCategories`, tests) + `lib/hooks/use-month-spending.ts` (trae TODO el mes, no los 50 recientes) + `components/SpendingBreakdown.tsx` (card colapsable con barra de proporción por categoría, currency-aware). Compartir también en la pantalla de resumen mensual.
 >   7. **Preferencias de notificaciones:** `lib/store/notif-prefs.ts` (local) + switches en "Más" → `useRemindersSync`/`useBudgetAlerts` las respetan (si apagás recordatorios, se cancelan los agendados).
 >   8. **Búsqueda en Movimientos:** filtro instantáneo client-side por comercio/descripción/categoría (sobre la lista cargada), combinable con el filtro tipo.
-> - **Tests:** 77 `bun test` verdes (+25 en la sesión: budget-alerts, projectionToText, networth-history, spending). `type-check:app` limpio.
+>   9. **Exportar CSV del mes:** `lib/csv-export.ts` (puro, escape RFC-4180, tests) + acción en Más → Datos que trae el mes y comparte el CSV por el share sheet (texto, OTA-safe; export a archivo real necesitaría `expo-file-system`/`expo-sharing` = deps nativas, futuro APK).
+>   10. **Banner de presupuesto en dashboard:** `budgetsAtRisk` (puro, ≥80% del período, test) + `components/BudgetBanner.tsx` (visible aunque las notifs estén apagadas; toca → Más).
+>   11. **Gastos recurrentes / plantillas:** `lib/recurring.ts` (puro, tests) + `lib/store/recurring.ts` (local). Toggle "Repetir todos los meses" en alta de movimiento → guarda plantilla; `components/RecurringBanner.tsx` en Movimientos registra los pendientes del mes de un toque; `components/RecurringList.tsx` en Más para ver/borrar. `source: "recurring"` en las tx creadas.
+> - **Tests:** 85 `bun test` verdes (+33 en la sesión: budget-alerts, projectionToText, networth-history, spending, csv-export, recurring). `type-check:app` limpio.
 > - **Decisión transversal:** todas las features nuevas que necesitaban persistencia van **local-first** (Zustand+AsyncStorage), evitando migraciones/crons a prod (consistente con asesor/alertas). El único backend nuevo es el edge `monthly-summary`.
 >
 > **Para arrancar sesión 9:**
