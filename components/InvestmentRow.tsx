@@ -20,12 +20,16 @@ export function InvestmentRow({
   onLongPress?: () => void;
 }) {
   const instrument = instrumentById(inv.type);
+  const isFci = inv.type === "fci";
 
-  // Solo instrumentos con cotización live pueden quedar "desactualizados".
-  const stale = !!instrument?.hasLivePrice && isPriceStale(inv.last_updated);
+  // Solo instrumentos con cotización live pueden quedar "desactualizados". Los FCI
+  // se refrescan client-side con el VCP del día (freshenFci), no se marcan stale.
+  const stale = !!instrument?.hasLivePrice && !isFci && isPriceStale(inv.last_updated);
 
+  // El "ticker" de un FCI es un slug feo (ALPHA-PESOS-CLASE-A); mostramos su
+  // categoría/label en vez del slug.
   const subtitle = [
-    inv.ticker ?? instrument?.label ?? inv.type,
+    isFci ? (instrument?.label ?? "FCI") : (inv.ticker ?? instrument?.label ?? inv.type),
     `${qtyFmt.format(inv.quantity)} ${instrument?.quantityLabel.toLowerCase() ?? ""}`.trim(),
   ]
     .filter(Boolean)

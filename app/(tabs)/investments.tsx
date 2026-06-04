@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { CurrencyToggle } from "../../components/CurrencyToggle";
@@ -9,13 +9,15 @@ import { PnLBadge } from "../../components/PnLBadge";
 import { PortfolioDistribution } from "../../components/PortfolioDistribution";
 import { RowsSkeleton } from "../../components/Skeleton";
 import { StateMessage } from "../../components/StateMessage";
-import { freshenPlazoFijo, useDeleteInvestment, useInvestments } from "../../lib/hooks/use-investments";
+import { freshenFci, freshenPlazoFijo, useDeleteInvestment, useInvestments } from "../../lib/hooks/use-investments";
+import { useFciFundsBySlug } from "../../lib/hooks/use-fci-funds";
 import { useInflation } from "../../lib/hooks/use-inflation";
 import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
 import { confirmDelete } from "../../lib/confirm";
 import { realReturnForPosition } from "../../lib/inflation";
-import { colors } from "../../lib/colors";
+import { Card, Fab, ScreenTitle, SectionLabel } from "../../components/ui";
+import { colors, spacing, typography } from "../../lib/theme";
 
 export default function InvestmentsScreen() {
   const router = useRouter();
@@ -25,11 +27,12 @@ export default function InvestmentsScreen() {
   const { refreshing, onRefresh } = usePullRefresh();
   const del = useDeleteInvestment();
 
-  // Recalcula el interés devengado de plazos fijos al vuelo (ver freshenPlazoFijo).
+  // Recalcula al vuelo: interés devengado de plazos fijos + VCP de hoy de los FCI.
   const mep = rates?.mep ?? null;
+  const fciFundsBySlug = useFciFundsBySlug();
   const positions = useMemo(
-    () => (investments ?? []).map((inv) => freshenPlazoFijo(inv, mep)),
-    [investments, mep],
+    () => (investments ?? []).map((inv) => freshenFci(freshenPlazoFijo(inv, mep), fciFundsBySlug, mep)),
+    [investments, mep, fciFundsBySlug],
   );
 
   // Rendimiento real (ajustado por inflación, regla #5) por posición + agregado.
@@ -99,21 +102,21 @@ export default function InvestmentsScreen() {
         }
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>Inversiones</Text>
+            <ScreenTitle>Inversiones</ScreenTitle>
             <CurrencyToggle />
 
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Valor del portafolio</Text>
+            <Card style={styles.summaryCard}>
+              <SectionLabel>Valor del portafolio</SectionLabel>
               <MoneyAmount ars={summary.valueArs} usd={summary.valueUsd} size="lg" />
               <View style={styles.summaryPnl}>
                 <Text style={styles.summaryPnlLabel}>Resultado</Text>
                 <PnLBadge pct={summary.plPct} realPct={summary.realPct} size="md" />
               </View>
-            </View>
+            </Card>
 
             <PortfolioDistribution />
 
-            <Text style={styles.listLabel}>Posiciones</Text>
+            <SectionLabel>Posiciones</SectionLabel>
           </View>
         }
         ListEmptyComponent={
@@ -127,57 +130,25 @@ export default function InvestmentsScreen() {
         }
       />
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Nueva inversión"
-        style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}
-        onPress={() => router.push("/modals/add-investment")}
-      >
-        <Text style={styles.fabText}>+ Nueva</Text>
-      </Pressable>
+      <Fab label="Nueva" onPress={() => router.push("/modals/add-investment")} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  list: { padding: 20, paddingBottom: 100, gap: 0, flexGrow: 1 },
-  header: { gap: 16, marginBottom: 8 },
-  title: { color: colors.textPrimary, fontSize: 24, fontWeight: "700" },
-  summaryCard: {
-    backgroundColor: colors.surfaceDark,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 8,
-  },
-  summaryLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
+  list: { padding: spacing.xl, paddingBottom: 100, gap: 0, flexGrow: 1 },
+  header: { gap: spacing.lg, marginBottom: spacing.sm },
+  summaryCard: { padding: spacing.xl, gap: spacing.sm },
   summaryPnl: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 8,
+    marginTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 12,
+    borderTopColor: colors.borderSoft,
+    paddingTop: spacing.md,
   },
-  summaryPnlLabel: { color: colors.textMuted, fontSize: 13 },
-  listLabel: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
-  separator: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
-  fab: {
-    position: "absolute",
-    right: 20,
-    bottom: 20,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 999,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  fabText: { color: colors.textPrimary, fontWeight: "700", fontSize: 15 },
+  summaryPnlLabel: { ...typography.caption, color: colors.textMuted },
+  separator: { height: 1, backgroundColor: colors.borderSoft, marginVertical: 2 },
 });

@@ -1,19 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
+import { Alert, StyleSheet, Text } from "react-native";
 import { DateField } from "../../components/DateField";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { FundField } from "../../components/FundField";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ChipRow, FormChip, FormField, FormInput, FormScreen, SubmitButton } from "../../components/form";
 import {
   INSTRUMENTS,
   instrumentById,
@@ -21,14 +11,18 @@ import {
   type InstrumentField,
   type InstrumentType,
 } from "../../lib/instruments";
+import type { FciFund } from "../../lib/fci";
 import { useAccounts } from "../../lib/hooks/use-accounts";
 import { useAssetPrice } from "../../lib/hooks/use-asset-price";
+import { useFciFundsBySlug } from "../../lib/hooks/use-fci-funds";
 import { isPriceStale, staleLabel } from "../../lib/prices";
 import { useCreateInvestment, useUpdateInvestment } from "../../lib/hooks/use-create-investment";
 import { useInvestments } from "../../lib/hooks/use-investments";
 import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
 import { useCurrencyStore } from "../../lib/store/currency";
-import { colors } from "../../lib/colors";
+import { colors, typography } from "../../lib/theme";
+
+const vcpFmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 });
 
 const CURRENCIES: InstrumentCurrency[] = ["ARS", "USD"];
 
@@ -91,13 +85,30 @@ export default function AddInvestmentModal() {
     prefilled.current = true;
   }, [editing, id, investments.data]);
 
-  // Cotización live del ticker (solo para instrumentos de mercado).
-  const liveTicker = instrument.hasLivePrice ? ticker : "";
+  const isFci = type === "fci";
+
+  // FCI: el "ticker" es el slug del fondo y la cotización es el VCP (no vive en
+  // asset_prices). Lo resolvemos de la lista de fondos (useFciFunds) por slug.
+  const fciFundsBySlug = useFciFundsBySlug();
+  const fciVcp = isFci && ticker ? (fciFundsBySlug.get(ticker)?.vcp ?? null) : null;
+
+  // Al elegir un fondo: nombre = fondo, ticker = slug, y prellena el costo con el
+  // VCP actual si el campo está vacío (compra "a hoy").
+  function pickFund(fund: FciFund) {
+    setTicker(fund.slug);
+    setName(fund.fondo);
+    setCurrency("ARS");
+    if (!avgCost.trim()) setAvgCost(String(fund.vcp));
+  }
+
+  // Cotización live del ticker (solo para instrumentos de mercado, no FCI).
+  const liveTicker = instrument.hasLivePrice && !isFci ? ticker : "";
   const assetPrice = useAssetPrice(liveTicker);
   const livePrice = useMemo<number | null>(() => {
+    if (isFci) return fciVcp;
     if (!instrument.hasLivePrice || !assetPrice.data) return null;
     return (currency === "ARS" ? assetPrice.data.price_ars : assetPrice.data.price_usd) ?? null;
-  }, [instrument.hasLivePrice, assetPrice.data, currency]);
+  }, [isFci, fciVcp, instrument.hasLivePrice, assetPrice.data, currency]);
 
   const mep = useMemo<number | null>(() => {
     if (!rates.data) return null;
@@ -105,6 +116,10 @@ export default function AddInvestmentModal() {
   }, [rates.data, usdType]);
 
   async function submit() {
+    if (isFci && !ticker.trim()) {
+      Alert.alert("Elegí un fondo", "Buscá y seleccioná tu FCI de la lista.");
+      return;
+    }
     const qty = parseNum(quantity);
     if (!quantity.trim() || Number.isNaN(qty) || qty <= 0) {
       Alert.alert("Cantidad inválida", "Ingresá un número mayor a cero.");
@@ -146,46 +161,43 @@ export default function AddInvestmentModal() {
     }
   }
 
-  return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: editing ? "Editar inversión" : "Nueva inversión" }} />
-      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-          <Field label="Tipo de instrumento">
-            <View style={styles.row}>
-              {INSTRUMENTS.map((ins) => (
-                <Pressable
-                  key={ins.id}
-                  style={[styles.chip, type === ins.id && styles.chipActive]}
-                  onPress={() => changeType(ins.id)}
-                >
-                  <Text style={[styles.chipText, type === ins.id && styles.chipTextActive]}>
-                    {ins.icon} {ins.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </Field>
+  const busy = create.isPending || update.isPending;
 
-          <Field label="Nombre">
-            <TextInput
-              style={styles.input}
-              placeholder={instrument.label}
-              placeholderTextColor={colors.textMuted}
-              value={name}
-              onChangeText={setName}
-            />
-          </Field>
+  return (
+    <FormScreen title={editing ? "Editar inversión" : "Nueva inversión"}>
+      <FormField label="Tipo de instrumento">
+        <ChipRow>
+          {INSTRUMENTS.map((ins) => (
+            <FormChip key={ins.id} label={`${ins.icon} ${ins.label}`} active={type === ins.id} onPress={() => changeType(ins.id)} />
+          ))}
+        </ChipRow>
+      </FormField>
+
+      {isFci ? (
+        <FormField label="Fondo común (FCI)">
+          <FundField valueLabel={name} onChange={pickFund} placeholder="Buscá y elegí tu fondo" />
+          {ticker ? (
+            fciVcp != null ? (
+              <Text style={styles.hint}>
+                VCP actual: ${vcpFmt.format(fciVcp)} ARS
+                {fciFundsBySlug.get(ticker)?.fecha ? ` · al ${fciFundsBySlug.get(ticker)?.fecha}` : ""}
+              </Text>
+            ) : (
+              <Text style={styles.hint}>Cargando cotización del fondo…</Text>
+            )
+          ) : (
+            <Text style={styles.hint}>El valor de la cuotaparte (VCP) se actualiza solo desde CAFCI.</Text>
+          )}
+        </FormField>
+      ) : (
+        <>
+          <FormField label="Nombre">
+            <FormInput placeholder={instrument.label} value={name} onChangeText={setName} />
+          </FormField>
 
           {has("ticker") ? (
-            <Field label={instrument.tickerLabel ?? "Ticker"}>
-              <TextInput
-                style={styles.input}
-                placeholder="AAPL"
-                placeholderTextColor={colors.textMuted}
-                autoCapitalize="characters"
-                value={ticker}
-                onChangeText={setTicker}
-              />
+            <FormField label={instrument.tickerLabel ?? "Ticker"}>
+              <FormInput placeholder="AAPL" autoCapitalize="characters" value={ticker} onChangeText={setTicker} />
               {instrument.hasLivePrice && ticker.trim() ? (
                 livePrice != null && isPriceStale(assetPrice.data?.fetched_at) ? (
                   <Text style={[styles.hint, styles.hintStale]}>
@@ -201,156 +213,74 @@ export default function AddInvestmentModal() {
                   </Text>
                 )
               ) : null}
-            </Field>
+            </FormField>
           ) : null}
+        </>
+      )}
 
-          <Field label="Moneda">
-            <View style={styles.row}>
-              {CURRENCIES.map((c) => (
-                <Pressable
-                  key={c}
-                  style={[styles.chip, currency === c && styles.chipActive]}
-                  onPress={() => setCurrency(c)}
-                >
-                  <Text style={[styles.chipText, currency === c && styles.chipTextActive]}>{c}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </Field>
+      {!isFci ? (
+        <FormField label="Moneda">
+          <ChipRow>
+            {CURRENCIES.map((c) => (
+              <FormChip key={c} label={c} active={currency === c} onPress={() => setCurrency(c)} />
+            ))}
+          </ChipRow>
+        </FormField>
+      ) : null}
 
-          <Field label={instrument.quantityLabel}>
-            <TextInput
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="decimal-pad"
-              value={quantity}
-              onChangeText={setQuantity}
-            />
-          </Field>
+      <FormField label={instrument.quantityLabel}>
+        <FormInput placeholder="0" keyboardType="decimal-pad" value={quantity} onChangeText={setQuantity} />
+      </FormField>
 
-          {has("avg_cost") ? (
-            <Field label={instrument.costLabel || "Costo"}>
-              <TextInput
-                style={styles.input}
-                placeholder="0"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="decimal-pad"
-                value={avgCost}
-                onChangeText={setAvgCost}
+      {has("avg_cost") ? (
+        <FormField label={instrument.costLabel || "Costo"}>
+          <FormInput placeholder="0" keyboardType="decimal-pad" value={avgCost} onChangeText={setAvgCost} />
+        </FormField>
+      ) : null}
+
+      {has("interest_rate") ? (
+        <FormField label="Tasa anual (%)">
+          <FormInput placeholder="ej: 35" keyboardType="decimal-pad" value={interestRate} onChangeText={setInterestRate} />
+        </FormField>
+      ) : null}
+
+      {has("purchase_date") ? (
+        <FormField label="Fecha de inicio">
+          <DateField value={purchaseDate} onChange={setPurchaseDate} placeholder="Elegí la fecha de inicio" />
+        </FormField>
+      ) : null}
+
+      {has("maturity_date") ? (
+        <FormField label="Vencimiento">
+          <DateField value={maturityDate} onChange={setMaturityDate} placeholder="Elegí el vencimiento" />
+        </FormField>
+      ) : null}
+
+      {accounts.data && accounts.data.length > 0 ? (
+        <FormField label="Cuenta (opcional)">
+          <ChipRow>
+            {accounts.data.map((acc) => (
+              <FormChip
+                key={acc.id}
+                label={acc.name}
+                active={accountId === acc.id}
+                onPress={() => setAccountId(accountId === acc.id ? null : acc.id)}
               />
-            </Field>
-          ) : null}
+            ))}
+          </ChipRow>
+        </FormField>
+      ) : null}
 
-          {has("interest_rate") ? (
-            <Field label="Tasa anual (%)">
-              <TextInput
-                style={styles.input}
-                placeholder="ej: 35"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="decimal-pad"
-                value={interestRate}
-                onChangeText={setInterestRate}
-              />
-            </Field>
-          ) : null}
-
-          {has("purchase_date") ? (
-            <Field label="Fecha de inicio">
-              <DateField value={purchaseDate} onChange={setPurchaseDate} placeholder="Elegí la fecha de inicio" />
-            </Field>
-          ) : null}
-
-          {has("maturity_date") ? (
-            <Field label="Vencimiento">
-              <DateField value={maturityDate} onChange={setMaturityDate} placeholder="Elegí el vencimiento" />
-            </Field>
-          ) : null}
-
-          {accounts.data && accounts.data.length > 0 ? (
-            <Field label="Cuenta (opcional)">
-              <View style={styles.row}>
-                {accounts.data.map((acc) => (
-                  <Pressable
-                    key={acc.id}
-                    style={[styles.chip, accountId === acc.id && styles.chipActive]}
-                    onPress={() => setAccountId(accountId === acc.id ? null : acc.id)}
-                  >
-                    <Text style={[styles.chipText, accountId === acc.id && styles.chipTextActive]}>
-                      {acc.name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </Field>
-          ) : null}
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.submit,
-              pressed && { opacity: 0.85 },
-              (create.isPending || update.isPending) && { opacity: 0.5 },
-            ]}
-            onPress={submit}
-            disabled={create.isPending || update.isPending}
-          >
-            <Text style={styles.submitText}>
-              {create.isPending || update.isPending
-                ? "Guardando…"
-                : editing
-                  ? "Guardar cambios"
-                  : "Guardar inversión"}
-            </Text>
-          </Pressable>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      {children}
-    </View>
+      <SubmitButton
+        label={busy ? "Guardando…" : editing ? "Guardar cambios" : "Guardar inversión"}
+        onPress={submit}
+        busy={busy}
+      />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: 20, gap: 16 },
-  field: { gap: 8 },
-  fieldLabel: { color: colors.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 },
-  input: {
-    backgroundColor: colors.surfaceDark,
-    color: colors.textPrimary,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    fontSize: 16,
-  },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  chipTextActive: { color: colors.textPrimary },
-  hint: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
+  hint: { ...typography.caption, color: colors.textMuted, marginTop: 4 },
   hintStale: { color: colors.warning },
-  submit: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  submitText: { color: colors.textPrimary, fontWeight: "700", fontSize: 16 },
 });
