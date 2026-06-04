@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BudgetsList } from "../../components/BudgetsList";
 import { MercadoPagoConnect } from "../../components/MercadoPagoConnect";
+import { RecurringList } from "../../components/RecurringList";
 import { SavingsGoalsList } from "../../components/SavingsGoalsList";
 import { CtaButton, IconChip, ScreenTitle, SectionLabel } from "../../components/ui";
 import { supabase } from "../../lib/supabase";
@@ -85,6 +86,11 @@ export default function MoreScreen() {
         <View style={styles.section}>
           <SectionLabel>Metas de ahorro</SectionLabel>
           <SavingsGoalsList />
+        </View>
+
+        <View style={styles.section}>
+          <SectionLabel>Gastos recurrentes</SectionLabel>
+          <RecurringList />
         </View>
 
         <View style={styles.section}>

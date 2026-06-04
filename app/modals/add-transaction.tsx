@@ -8,6 +8,7 @@ import { useAccounts } from "../../lib/hooks/use-accounts";
 import { useCategorizeTransaction } from "../../lib/hooks/use-categorize-transaction";
 import { useCreateTransaction } from "../../lib/hooks/use-create-transaction";
 import { useTransactions, useUpdateTransaction } from "../../lib/hooks/use-transactions";
+import { useRecurringStore } from "../../lib/store/recurring";
 import { colors, radius, spacing } from "../../lib/theme";
 
 type TxType = "income" | "expense" | "transfer" | "investment";
@@ -34,6 +35,8 @@ export default function AddTransactionModal() {
   const [description, setDescription] = useState("");
   const [accountId, setAccountId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [repeat, setRepeat] = useState(false);
+  const addRecurring = useRecurringStore((s) => s.add);
   const prefilled = useRef(false);
 
   // Default a la primera cuenta activa cuando carguen (solo en alta).
@@ -130,6 +133,16 @@ export default function AddTransactionModal() {
           merchant: null,
           source: "manual",
         });
+        if (repeat) {
+          addRecurring({
+            accountId: selectedAccount.id,
+            type,
+            category: categoryId ?? null,
+            amountArs: amount_ars,
+            amountUsd: amount_usd,
+            description: description.trim() || null,
+          });
+        }
       }
       router.back();
     } catch (e) {
@@ -199,6 +212,20 @@ export default function AddTransactionModal() {
         </ChipRow>
       </FormField>
 
+      {!editing ? (
+        <Pressable style={styles.repeatRow} onPress={() => setRepeat((v) => !v)}>
+          <Ionicons
+            name={repeat ? "checkbox" : "square-outline"}
+            size={22}
+            color={repeat ? colors.primaryBright : colors.textMuted}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.repeatLabel}>Repetir todos los meses</Text>
+            <Text style={styles.repeatHint}>Lo vas a poder registrar de un toque cada mes.</Text>
+          </View>
+        </Pressable>
+      ) : null}
+
       <SubmitButton
         label={busy ? "Guardando…" : editing ? "Guardar cambios" : "Guardar movimiento"}
         onPress={submit}
@@ -221,4 +248,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
   aiBtnText: { color: colors.primaryBright, fontWeight: "700" },
+  repeatRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xs },
+  repeatLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: "600" },
+  repeatHint: { color: colors.textMuted, fontSize: 12 },
 });

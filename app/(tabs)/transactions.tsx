@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { MoneyAmount } from "../../components/MoneyAmount";
+import { RecurringBanner } from "../../components/RecurringBanner";
 import { RowsSkeleton } from "../../components/Skeleton";
 import { SpendingBreakdown } from "../../components/SpendingBreakdown";
 import { StateMessage } from "../../components/StateMessage";
@@ -128,6 +129,7 @@ export default function TransactionsScreen() {
           </Pressable>
         ) : null}
 
+        <RecurringBanner />
         <SpendingBreakdown />
       </View>
 

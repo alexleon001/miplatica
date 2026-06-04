@@ -1,0 +1,66 @@
+// Lista de plantillas recurrentes con opción de borrar. Vive en "Más". Si no hay
+// ninguna, muestra una ayuda de cómo crearlas.
+
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { categoryById } from "../lib/categories";
+import { useRecurringStore } from "../lib/store/recurring";
+import { templateLabel } from "../lib/recurring";
+import { confirmDelete } from "../lib/confirm";
+import { colors, radius, spacing, typography } from "../lib/theme";
+
+const TYPE_LABEL: Record<string, string> = { income: "Ingreso", expense: "Gasto", transfer: "Transf." };
+
+export function RecurringList() {
+  const templates = useRecurringStore((s) => s.templates);
+  const remove = useRecurringStore((s) => s.remove);
+
+  if (templates.length === 0) {
+    return (
+      <Text style={styles.muted}>
+        Marcá “Repetir todos los meses” al crear un movimiento y aparece acá para registrarlo de un toque cada mes.
+      </Text>
+    );
+  }
+
+  return (
+    <View style={styles.list}>
+      {templates.map((t) => {
+        const cat = categoryById(t.category);
+        return (
+          <View key={t.id} style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label} numberOfLines={1}>
+                {cat?.icon ?? "🔁"} {templateLabel(t)}
+              </Text>
+              <Text style={styles.sub}>
+                {TYPE_LABEL[t.type] ?? t.type}
+                {cat?.label ? ` · ${cat.label}` : ""}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => confirmDelete(t.description ?? "este recurrente", () => remove(t.id))}
+              hitSlop={8}
+              style={styles.delBtn}
+              accessibilityLabel="Borrar recurrente"
+            >
+              <Ionicons name="trash-outline" size={16} color={colors.negative} />
+            </Pressable>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  muted: { ...typography.caption, color: colors.textMuted },
+  list: { gap: spacing.sm },
+  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  label: { ...typography.body, color: colors.textPrimary },
+  sub: { ...typography.caption, color: colors.textMuted },
+  delBtn: {
+    width: 32, height: 32, borderRadius: radius.sm, alignItems: "center", justifyContent: "center",
+    backgroundColor: colors.surfaceSunken,
+  },
+});
