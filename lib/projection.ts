@@ -49,9 +49,20 @@ export type ProjMonth = {
   incomeUsd: number | null;
   netArs: number; // ingreso − total (negativo = déficit)
   netUsd: number | null;
+  // Saldo acumulado proyectado: efectivo inicial + suma de los netos hasta este
+  // mes inclusive. Negativo = te quedás sin plata ese mes.
+  cumulativeArs: number;
+  cumulativeUsd: number | null;
 };
 
-export type Projection = { months: ProjMonth[] };
+export type Projection = {
+  months: ProjMonth[];
+  startingBalanceArs: number;
+  // Primer mes con saldo acumulado negativo ("YYYY-MM-01"), o null si nunca.
+  firstDeficitMonth: string | null;
+  // Cantidad de meses del período con déficit mensual (gastás más de lo que entra).
+  deficitMonthCount: number;
+};
 
 export const MONTH_NAMES_ES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -177,10 +188,19 @@ export type BuildProjectionArgs = {
   defaultIncomeArs: number; // profile.monthly_income_ars
   incomeOverrides: Record<string, number>; // monthKey -> amount_ars
   mep: number | null;       // ARS por USD
+  // Efectivo de hoy (accounts_ars) para sembrar el saldo acumulado. Default 0.
+  startingBalanceArs?: number;
+  // Si `false`, el PRIMER mes de la ventana (el mes en curso) no suma su neto al
+  // saldo acumulado: se trata como informativo y la proyección arranca a acumular
+  // desde el mes siguiente. Evita el doble-conteo del mes en curso (el efectivo de
+  // hoy ya refleja lo cobrado/pagado de este mes). Default `true` (acumula todo).
+  accrueFirstMonth?: boolean;
 };
 
 export function buildProjection(args: BuildProjectionArgs): Projection {
   const { items, window, defaultIncomeArs, incomeOverrides, mep } = args;
+  const startingBalanceArs = args.startingBalanceArs ?? 0;
+  const accrueFirstMonth = args.accrueFirstMonth ?? true;
   const hasMep = mep != null && mep > 0;
 
   const arsOf = (amt: number, cur: "ARS" | "USD") =>
@@ -188,7 +208,11 @@ export function buildProjection(args: BuildProjectionArgs): Projection {
   const usdOf = (amt: number, cur: "ARS" | "USD"): number | null =>
     cur === "USD" ? amt : hasMep ? amt / mep! : null;
 
-  const months: ProjMonth[] = window.map((month) => {
+  let runningArs = startingBalanceArs;
+  let firstDeficitMonth: string | null = null;
+  let deficitMonthCount = 0;
+
+  const months: ProjMonth[] = window.map((month, monthIdx) => {
     // Agrupar por medio de pago, preservando orden de aparición.
     const groupOrder: string[] = [];
     const groupMap = new Map<string, ProjGroup>();
@@ -225,8 +249,18 @@ export function buildProjection(args: BuildProjectionArgs): Projection {
     const netArs = incomeArs - totalArs;
     const netUsd = hasMep ? incomeArs / mep! - (totalUsd ?? 0) : null;
 
-    return { month, groups, totalArs, totalUsd, incomeArs, incomeUsd, netArs, netUsd };
+    if (netArs < 0) deficitMonthCount += 1;
+
+    // El mes en curso (idx 0) no acumula su neto si accrueFirstMonth=false:
+    // el saldo de ese mes queda en el efectivo de hoy (informativo) y la
+    // acumulación real arranca el mes siguiente.
+    if (monthIdx > 0 || accrueFirstMonth) runningArs += netArs;
+    const cumulativeArs = runningArs;
+    const cumulativeUsd = hasMep ? cumulativeArs / mep! : null;
+    if (cumulativeArs < 0 && firstDeficitMonth == null) firstDeficitMonth = month;
+
+    return { month, groups, totalArs, totalUsd, incomeArs, incomeUsd, netArs, netUsd, cumulativeArs, cumulativeUsd };
   });
 
-  return { months };
+  return { months, startingBalanceArs, firstDeficitMonth, deficitMonthCount };
 }

@@ -1,31 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { MonthField } from "../../components/MonthField";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ChipRow, FormChip, FormField, FormInput, FormScreen, SubmitButton } from "../../components/form";
 import {
   useCreateProjectionItem,
   useProjectionItems,
   useUpdateProjectionItem,
 } from "../../lib/hooks/use-projection";
-import { frenchPayment, monthKey } from "../../lib/projection";
-import { colors } from "../../lib/colors";
+import { addMonths, frenchPayment, monthKey, monthLabel } from "../../lib/projection";
+import { colors, radius, spacing, typography } from "../../lib/theme";
 
 type Recurrence = "monthly" | "installments" | "once";
 type Currency = "ARS" | "USD";
 
+// Orden pensado para que "Solo ese mes" (el default) sea lo primero y lo más
+// intuitivo: cargar un gasto puntual no debería repetirse en todos los meses.
 const RECURRENCES: { value: Recurrence; label: string }[] = [
-  { value: "monthly", label: "Mensual" },
+  { value: "once", label: "Solo ese mes" },
+  { value: "monthly", label: "Todos los meses" },
   { value: "installments", label: "En cuotas" },
-  { value: "once", label: "Único" },
 ];
 
 const METHOD_SUGGESTIONS = ["TDC VISA", "TDC MASTER", "Mercado Pago", "Débito", "Efectivo", "Otros"];
@@ -51,7 +46,7 @@ export default function AddProjectionItemModal() {
   const [paymentMethod, setPaymentMethod] = useState("Otros");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState<Currency>("ARS");
-  const [recurrence, setRecurrence] = useState<Recurrence>("monthly");
+  const [recurrence, setRecurrence] = useState<Recurrence>("once");
   const [installments, setInstallments] = useState("");
   const [interestRate, setInterestRate] = useState("");
   const [startMonth, setStartMonth] = useState(currentMonthInput());
@@ -85,6 +80,26 @@ export default function AddProjectionItemModal() {
     const cuota = frenchPayment(capital, rate, n);
     return { cuota, total: cuota * n, interes: cuota * n - capital };
   }, [hasInterest, amount, installments, interestRate]);
+
+  // Preview en vivo del alcance: en qué meses cae el gasto. Resuelve la confusión
+  // del default "todos los meses" (antes, un gasto puntual se repetía a futuro).
+  const spanPreview = useMemo(() => {
+    if (!/^\d{4}-\d{2}$/.test(startMonth.trim())) return null;
+    const start = monthKey(`${startMonth.trim()}-01`);
+    if (recurrence === "once") return `Aparece solo en ${monthLabel(start)}.`;
+    if (recurrence === "monthly") return `Se repite todos los meses desde ${monthLabel(start)}.`;
+    const n = Math.round(parseNum(installments));
+    if (!Number.isFinite(n) || n <= 0) return `Arranca en ${monthLabel(start)}. Elegí cuántas cuotas.`;
+    return `${n} ${n === 1 ? "cuota" : "cuotas"}: ${monthLabel(start)} → ${monthLabel(addMonths(start, n - 1))}.`;
+  }, [recurrence, startMonth, installments]);
+
+  const amountLabel = hasInterest
+    ? `Total a financiar / capital (${currency})`
+    : recurrence === "installments"
+      ? `Monto de cada cuota (${currency})`
+      : recurrence === "monthly"
+        ? `Monto por mes (${currency})`
+        : `Monto (${currency})`;
 
   async function submit() {
     if (!name.trim()) {
@@ -140,155 +155,112 @@ export default function AddProjectionItemModal() {
   const pending = create.isPending || update.isPending;
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: editing ? "Editar gasto" : "Nuevo gasto proyectado" }} />
-      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-          <Field label="Nombre">
-            <TextInput
-              style={styles.input}
-              placeholder="Alquiler, Concierto, Internet…"
-              placeholderTextColor={colors.textMuted}
-              value={name}
-              onChangeText={setName}
-            />
-          </Field>
+    <FormScreen title={editing ? "Editar gasto" : "Nuevo gasto proyectado"}>
+      <FormField label="Nombre">
+        <FormInput placeholder="Alquiler, Concierto, Internet…" value={name} onChangeText={setName} />
+      </FormField>
 
-          <Field label="Medio de pago / grupo">
-            <TextInput
-              style={styles.input}
-              placeholder="TDC VISA, Mercado Pago…"
-              placeholderTextColor={colors.textMuted}
-              value={paymentMethod}
-              onChangeText={setPaymentMethod}
-            />
-            <View style={styles.row}>
-              {METHOD_SUGGESTIONS.map((m) => (
-                <Pressable key={m} style={styles.suggestChip} onPress={() => setPaymentMethod(m)}>
-                  <Text style={styles.suggestText}>{m}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </Field>
+      <FormField label="Medio de pago / grupo">
+        <FormInput placeholder="TDC VISA, Mercado Pago…" value={paymentMethod} onChangeText={setPaymentMethod} />
+        <ChipRow>
+          {METHOD_SUGGESTIONS.map((m) => (
+            <Pressable key={m} style={styles.suggestChip} onPress={() => setPaymentMethod(m)}>
+              <Text style={styles.suggestText}>{m}</Text>
+            </Pressable>
+          ))}
+        </ChipRow>
+      </FormField>
 
-          <Field label="Moneda">
-            <View style={styles.row}>
-              {CURRENCIES.map((c) => (
-                <Pressable key={c} style={[styles.chip, currency === c && styles.chipActive]} onPress={() => setCurrency(c)}>
-                  <Text style={[styles.chipText, currency === c && styles.chipTextActive]}>{c}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </Field>
+      <FormField label="Moneda">
+        <ChipRow>
+          {CURRENCIES.map((c) => (
+            <FormChip key={c} label={c} active={currency === c} onPress={() => setCurrency(c)} />
+          ))}
+        </ChipRow>
+      </FormField>
 
-          <Field label={hasInterest ? `Total a financiar / capital (${currency})` : `Monto por mes (${currency})`}>
-            <TextInput
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="decimal-pad"
-              value={amount}
-              onChangeText={setAmount}
-            />
-          </Field>
+      <FormField label={amountLabel}>
+        <FormInput placeholder="0" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} />
+      </FormField>
 
-          <Field label="Recurrencia">
-            <View style={styles.row}>
-              {RECURRENCES.map((r) => (
-                <Pressable key={r.value} style={[styles.chip, recurrence === r.value && styles.chipActive]} onPress={() => setRecurrence(r.value)}>
-                  <Text style={[styles.chipText, recurrence === r.value && styles.chipTextActive]}>{r.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </Field>
+      <FormField label="¿Cada cuánto?">
+        <ChipRow>
+          {RECURRENCES.map((r) => (
+            <FormChip key={r.value} label={r.label} active={recurrence === r.value} onPress={() => setRecurrence(r.value)} />
+          ))}
+        </ChipRow>
+        {spanPreview ? (
+          <View style={styles.spanCallout}>
+            <Ionicons name="calendar-outline" size={14} color={colors.primaryBright} />
+            <Text style={styles.spanText}>{spanPreview}</Text>
+          </View>
+        ) : null}
+      </FormField>
 
-          {recurrence === "installments" && (
-            <>
-              <Field label="Cantidad de cuotas">
-                <TextInput
-                  style={styles.input}
-                  placeholder="ej: 6"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="number-pad"
-                  value={installments}
-                  onChangeText={setInstallments}
-                />
-              </Field>
+      {recurrence === "installments" && (
+        <>
+          <FormField label="Cantidad de cuotas">
+            <FormInput placeholder="ej: 6" keyboardType="number-pad" value={installments} onChangeText={setInstallments} />
+          </FormField>
 
-              <Field label="Interés TNA % anual (opcional)">
-                <TextInput
-                  style={styles.input}
-                  placeholder="ej: 60 — dejalo vacío si ya sabés la cuota"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="decimal-pad"
-                  value={interestRate}
-                  onChangeText={setInterestRate}
-                />
-                {hasInterest ? (
-                  cuotaPreview ? (
-                    <Text style={styles.preview}>
-                      Cuota: {Math.round(cuotaPreview.cuota).toLocaleString("es-AR")} {currency}/mes
-                      {"  ·  "}Total: {Math.round(cuotaPreview.total).toLocaleString("es-AR")}
-                      {"  ·  "}Interés: {Math.round(cuotaPreview.interes).toLocaleString("es-AR")}
-                    </Text>
-                  ) : (
-                    <Text style={styles.hint}>
-                      Con interés, el monto de arriba es el capital total; la cuota se calcula sola.
-                    </Text>
-                  )
-                ) : null}
-              </Field>
-            </>
-          )}
-
-          <Field label="Mes de inicio">
-            <MonthField value={startMonth} onChange={setStartMonth} placeholder="Elegí el mes de inicio" />
-          </Field>
-
-          <Pressable
-            style={({ pressed }) => [styles.submit, pressed && { opacity: 0.85 }, pending && { opacity: 0.5 }]}
-            onPress={submit}
-            disabled={pending}
+          <FormField
+            label="Interés TNA % anual (opcional)"
+            hint={
+              hasInterest && !cuotaPreview
+                ? "Con interés, el monto de arriba es el capital total; la cuota se calcula sola."
+                : undefined
+            }
           >
-            <Text style={styles.submitText}>{pending ? "Guardando…" : editing ? "Guardar cambios" : "Guardar gasto"}</Text>
-          </Pressable>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
-  );
-}
+            <FormInput
+              placeholder="ej: 60 — dejalo vacío si ya sabés la cuota"
+              keyboardType="decimal-pad"
+              value={interestRate}
+              onChangeText={setInterestRate}
+            />
+            {hasInterest && cuotaPreview ? (
+              <Text style={styles.preview}>
+                Cuota: {Math.round(cuotaPreview.cuota).toLocaleString("es-AR")} {currency}/mes
+                {"  ·  "}Total: {Math.round(cuotaPreview.total).toLocaleString("es-AR")}
+                {"  ·  "}Interés: {Math.round(cuotaPreview.interes).toLocaleString("es-AR")}
+              </Text>
+            ) : null}
+          </FormField>
+        </>
+      )}
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      {children}
-    </View>
+      <FormField label="Mes de inicio">
+        <MonthField value={startMonth} onChange={setStartMonth} placeholder="Elegí el mes de inicio" />
+      </FormField>
+
+      <SubmitButton
+        label={pending ? "Guardando…" : editing ? "Guardar cambios" : "Guardar gasto"}
+        onPress={submit}
+        busy={pending}
+      />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: 20, gap: 16 },
-  field: { gap: 8 },
-  fieldLabel: { color: colors.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 },
-  input: {
-    backgroundColor: colors.surfaceDark, color: colors.textPrimary, borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: colors.border, fontSize: 16,
-  },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999,
-    backgroundColor: colors.surfaceDark, borderWidth: 1, borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  chipTextActive: { color: colors.textPrimary },
   suggestChip: {
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999,
-    backgroundColor: colors.primary + "22", borderWidth: 1, borderColor: colors.primary + "55",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderColor: colors.primary + "55",
   },
-  suggestText: { color: colors.primary, fontSize: 12, fontWeight: "600" },
-  preview: { color: colors.positive, fontSize: 13, fontWeight: "600", marginTop: 6 },
-  hint: { color: colors.textMuted, fontSize: 12, marginTop: 6 },
-  submit: { backgroundColor: colors.primary, paddingVertical: 14, borderRadius: 12, alignItems: "center", marginTop: 8 },
-  submitText: { color: colors.textPrimary, fontWeight: "700", fontSize: 16 },
+  suggestText: { color: colors.primaryBright, fontSize: 12, fontWeight: "600" },
+  preview: { ...typography.caption, color: colors.positive, fontWeight: "700", marginTop: spacing.xs },
+  spanCallout: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+  },
+  spanText: { ...typography.caption, color: colors.primaryBright, fontWeight: "600", flex: 1 },
 });

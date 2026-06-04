@@ -7,11 +7,14 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { CurrencyToggle } from "../components/CurrencyToggle";
 import { MoneyAmount } from "../components/MoneyAmount";
 import { StateMessage } from "../components/StateMessage";
+import { Fab } from "../components/ui";
 import { useDebts } from "../lib/hooks/use-debts";
 import { useExchangeRates } from "../lib/hooks/use-exchange-rates";
+import { useNetWorth } from "../lib/hooks/use-net-worth";
 import { useProfile } from "../lib/hooks/use-profile";
 import {
   useClearProjectionIncome,
@@ -28,7 +31,7 @@ import {
   monthsWindow,
   type ProjItem,
 } from "../lib/projection";
-import { colors } from "../lib/colors";
+import { colors, radius, spacing, typography, shadow } from "../lib/theme";
 
 const HORIZONS = [6, 12] as const;
 
@@ -39,6 +42,7 @@ export default function ProjectionScreen() {
   const { data: incomeOverrides } = useProjectionIncome();
   const { data: profile } = useProfile();
   const { data: rates } = useExchangeRates();
+  const { data: netWorth } = useNetWorth();
   const delItem = useDeleteProjectionItem();
   const clearIncome = useClearProjectionIncome();
 
@@ -47,6 +51,9 @@ export default function ProjectionScreen() {
 
   const mep = rates?.mep ?? null;
   const defaultIncome = profile?.monthly_income_ars ?? 0;
+  // Efectivo de hoy = saldo de cuentas (líquido). Siembra el saldo proyectado.
+  const startingBalanceArs = netWorth?.accounts_ars ?? 0;
+  const startingBalanceUsd = netWorth?.accounts_usd ?? null;
 
   const projection = useMemo(() => {
     const start = monthKey(new Date());
@@ -74,8 +81,15 @@ export default function ProjectionScreen() {
       defaultIncomeArs: defaultIncome,
       incomeOverrides: incomeOverrides ?? {},
       mep,
+      startingBalanceArs,
+      // El mes en curso es informativo (tu efectivo de hoy ya refleja lo cobrado/
+      // pagado de este mes); el saldo proyectado acumula desde el mes que viene.
+      accrueFirstMonth: false,
     });
-  }, [items, debts, incomeOverrides, defaultIncome, mep, horizon]);
+  }, [items, debts, incomeOverrides, defaultIncome, mep, horizon, startingBalanceArs]);
+
+  const lastMonth = projection.months[projection.months.length - 1];
+  const currentMonthKey = monthKey(new Date());
 
   const current =
     projection.months.find((m) => m.month === selected) ?? projection.months[0];
@@ -87,13 +101,15 @@ export default function ProjectionScreen() {
       <Stack.Screen options={{ title: "Proyección", headerShown: false }} />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Text style={styles.back}>‹ Volver</Text>
+          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Volver">
+            <Ionicons name="chevron-back" size={24} color={colors.primaryBright} />
           </Pressable>
           <CurrencyToggle />
         </View>
         <Text style={styles.title}>Proyección de pagos</Text>
-        <Text style={styles.subtitle}>Tu flujo de caja mes a mes. Rojo = gastás más de lo que entra.</Text>
+        <Text style={styles.subtitle}>
+          Tu flujo de caja mes a mes. El número grande de cada mes es tu saldo proyectado; rojo = te quedás sin efectivo.
+        </Text>
 
         <View style={styles.horizonRow}>
           {HORIZONS.map((h) => (
@@ -118,11 +134,56 @@ export default function ProjectionScreen() {
           )
         ) : (
           <>
-            {/* Overview horizontal: una tarjeta por mes con el neto. */}
+            {/* Resumen de cash-flow: efectivo hoy → saldo proyectado al final +
+                aviso de en qué mes te quedás corto. */}
+            <View style={styles.summary}>
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Efectivo hoy</Text>
+                  <MoneyAmount ars={startingBalanceArs} usd={startingBalanceUsd} size="sm" />
+                </View>
+                <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
+                <View style={[styles.summaryItem, { alignItems: "flex-end" }]}>
+                  <Text style={styles.summaryLabel}>Saldo en {horizon} meses</Text>
+                  <MoneyAmount
+                    ars={lastMonth?.cumulativeArs ?? startingBalanceArs}
+                    usd={lastMonth?.cumulativeUsd ?? startingBalanceUsd}
+                    size="sm"
+                    tone={(lastMonth?.cumulativeArs ?? 0) < 0 ? "negative" : "positive"}
+                  />
+                </View>
+              </View>
+              <View
+                style={[
+                  styles.statusBanner,
+                  { backgroundColor: (projection.firstDeficitMonth ? colors.negative : colors.positive) + "1F" },
+                ]}
+              >
+                <Ionicons
+                  name={projection.firstDeficitMonth ? "alert-circle" : "checkmark-circle"}
+                  size={16}
+                  color={projection.firstDeficitMonth ? colors.negative : colors.positive}
+                />
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: projection.firstDeficitMonth ? colors.negative : colors.positive },
+                  ]}
+                >
+                  {projection.firstDeficitMonth
+                    ? `Ojo: te quedás sin efectivo en ${monthLabel(projection.firstDeficitMonth)}.`
+                    : `Tu saldo se mantiene en positivo los ${horizon} meses.`}
+                </Text>
+              </View>
+            </View>
+
+            {/* Overview horizontal: una tarjeta por mes con el saldo proyectado. */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.overview}>
               {projection.months.map((m) => {
                 const isSel = m.month === selected;
-                const deficit = m.netArs < 0;
+                const isCurrent = m.month === currentMonthKey;
+                const underwater = m.cumulativeArs < 0;
+                const net = Math.round(m.netArs);
                 return (
                   <Pressable
                     key={m.month}
@@ -130,15 +191,25 @@ export default function ProjectionScreen() {
                     style={[
                       styles.monthCard,
                       isSel && styles.monthCardActive,
-                      { borderLeftColor: deficit ? colors.negative : colors.positive },
+                      { borderLeftColor: underwater ? colors.negative : colors.positive },
                     ]}
                   >
-                    <Text style={styles.monthCardLabel}>{monthLabel(m.month, false)}</Text>
+                    <View style={styles.monthCardHead}>
+                      <Text style={styles.monthCardLabel}>{monthLabel(m.month, false)}</Text>
+                      {isCurrent ? <Text style={styles.monthCardToday}>hoy</Text> : null}
+                    </View>
                     <Text style={styles.monthCardYear}>{m.month.slice(0, 4)}</Text>
-                    <Text style={[styles.monthCardNet, { color: deficit ? colors.negative : colors.positive }]}>
-                      {deficit ? "" : "+"}
-                      {Math.round(m.netArs).toLocaleString("es-AR")}
+                    <Text style={[styles.monthCardNet, { color: underwater ? colors.negative : colors.positive }]}>
+                      {Math.round(m.cumulativeArs).toLocaleString("es-AR")}
                     </Text>
+                    {isCurrent ? (
+                      <Text style={styles.monthCardSub}>efectivo hoy</Text>
+                    ) : (
+                      <Text style={[styles.monthCardSub, { color: net < 0 ? colors.negative : colors.textMuted }]}>
+                        {net >= 0 ? "+" : ""}
+                        {net.toLocaleString("es-AR")} este mes
+                      </Text>
+                    )}
                   </Pressable>
                 );
               })}
@@ -194,7 +265,7 @@ export default function ProjectionScreen() {
                             {isDebt ? <Text style={styles.lineTag}>  · deuda (editás en Deudas)</Text> : null}
                           </Text>
                           <Text style={styles.lineAmount}>{Math.round(l.amountArs).toLocaleString("es-AR")}</Text>
-                          {!isDebt ? <Text style={styles.lineEdit}>✎</Text> : null}
+                          {!isDebt ? <Ionicons name="pencil" size={13} color={colors.primaryBright} style={styles.lineEdit} /> : null}
                         </Pressable>
                       );
                     })}
@@ -215,90 +286,123 @@ export default function ProjectionScreen() {
                     tone={current.netArs < 0 ? "negative" : "positive"}
                   />
                 </View>
+
+                <View style={styles.cumulativeRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cumulativeLabel}>
+                      {current.month === currentMonthKey ? "Efectivo hoy" : "Saldo proyectado a fin de mes"}
+                    </Text>
+                    <Text style={styles.cumulativeHint}>
+                      {current.month === currentMonthKey
+                        ? "Tu saldo de cuentas. La proyección acumula desde el mes que viene."
+                        : "Efectivo de hoy + sueldo − gastos, acumulado."}
+                    </Text>
+                  </View>
+                  <MoneyAmount
+                    ars={current.cumulativeArs}
+                    usd={current.cumulativeUsd}
+                    size="sm"
+                    tone={current.cumulativeArs < 0 ? "negative" : "positive"}
+                  />
+                </View>
               </View>
             )}
           </>
         )}
       </ScrollView>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Nuevo gasto en la proyección"
-        style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}
-        onPress={() => router.push("/modals/add-projection-item")}
-      >
-        <Text style={styles.fabText}>+ Gasto</Text>
-      </Pressable>
+      <Fab label="Gasto" onPress={() => router.push("/modals/add-projection-item")} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: 20, paddingBottom: 100, gap: 12 },
+  container: { padding: spacing.xl, paddingBottom: 100, gap: spacing.md },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  back: { color: colors.primary, fontSize: 16, fontWeight: "600" },
-  title: { color: colors.textPrimary, fontSize: 24, fontWeight: "700" },
-  subtitle: { color: colors.textMuted, fontSize: 13 },
-  horizonRow: { flexDirection: "row", gap: 8, marginTop: 4 },
+  title: { ...typography.title, color: colors.textPrimary },
+  subtitle: { ...typography.caption, color: colors.textMuted },
+  horizonRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs },
   horizonChip: {
-    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999,
+    paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full,
     backgroundColor: colors.surfaceDark, borderWidth: 1, borderColor: colors.border,
   },
-  horizonChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  horizonChipActive: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
   horizonText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  horizonTextActive: { color: colors.textPrimary },
-  overview: { gap: 10, paddingVertical: 4, paddingRight: 8 },
+  horizonTextActive: { color: "#FFFFFF" },
+  summary: {
+    backgroundColor: colors.surfaceDark, borderRadius: radius.lg, padding: spacing.lg,
+    borderWidth: 1, borderColor: colors.border, gap: spacing.md, marginTop: spacing.xs,
+    ...shadow.sm,
+  },
+  summaryRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
+  summaryItem: { gap: 2 },
+  summaryLabel: { ...typography.overline, color: colors.textMuted },
+  statusBanner: {
+    flexDirection: "row", alignItems: "center", gap: spacing.sm,
+    borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+  },
+  statusText: { ...typography.caption, fontWeight: "700", flex: 1 },
+  overview: { gap: spacing.sm, paddingVertical: spacing.xs, paddingRight: spacing.sm },
   monthCard: {
-    backgroundColor: colors.surfaceDark, borderRadius: 14, padding: 12, minWidth: 110,
+    backgroundColor: colors.surfaceDark, borderRadius: radius.md, padding: spacing.md, minWidth: 110,
     borderWidth: 1, borderColor: colors.border, borderLeftWidth: 4, gap: 2,
+    ...shadow.sm,
   },
-  monthCardActive: { borderColor: colors.primary },
+  monthCardActive: { borderColor: colors.primaryBright },
+  monthCardHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.xs },
   monthCardLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
-  monthCardYear: { color: colors.textMuted, fontSize: 11 },
-  monthCardNet: { fontSize: 14, fontWeight: "700", marginTop: 4 },
-  detail: {
-    backgroundColor: colors.surfaceDark, borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: colors.border, gap: 10, marginTop: 4,
+  monthCardToday: {
+    color: colors.primaryBright, fontSize: 9, fontWeight: "800", textTransform: "uppercase",
+    letterSpacing: 0.5, backgroundColor: colors.primarySoft, paddingHorizontal: 5, paddingVertical: 1,
+    borderRadius: radius.sm, overflow: "hidden",
   },
-  detailMonth: { color: colors.textPrimary, fontSize: 18, fontWeight: "700" },
-  detailHint: { color: colors.textMuted, fontSize: 12, marginTop: -4 },
+  monthCardYear: { color: colors.textMuted, fontSize: 11 },
+  monthCardNet: { fontSize: 16, fontWeight: "800", marginTop: spacing.xs },
+  monthCardSub: { fontSize: 11, fontWeight: "600", marginTop: 1, color: colors.textMuted },
+  detail: {
+    backgroundColor: colors.surfaceDark, borderRadius: radius.lg, padding: spacing.lg,
+    borderWidth: 1, borderColor: colors.border, gap: spacing.md, marginTop: spacing.xs,
+    ...shadow.sm,
+  },
+  detailMonth: { ...typography.heading, color: colors.textPrimary },
+  detailHint: { ...typography.caption, color: colors.textMuted, marginTop: -spacing.xs },
   incomeRow: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border,
+    paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderSoft,
   },
-  incomeLabel: { color: colors.positive, fontSize: 13, fontWeight: "600" },
-  group: { gap: 4, marginTop: 6 },
+  incomeLabel: { color: colors.positive, fontSize: 13, fontWeight: "700" },
+  group: { gap: spacing.xs, marginTop: spacing.sm },
   groupHeader: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: colors.border,
+    paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.borderSoft,
   },
-  groupName: { color: colors.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 },
-  groupSubtotal: { color: colors.textMuted, fontSize: 13, fontWeight: "700" },
+  groupName: { ...typography.overline, color: colors.textMuted },
+  groupSubtotal: { color: colors.textSecondary, fontSize: 13, fontWeight: "700" },
   line: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    paddingVertical: 7,
+    paddingVertical: spacing.sm,
   },
   linePressed: { opacity: 0.55 },
-  lineName: { color: colors.textPrimary, fontSize: 14, flex: 1, marginRight: 8 },
+  lineName: { color: colors.textPrimary, fontSize: 14, flex: 1, marginRight: spacing.sm },
   lineCuota: { color: colors.warning, fontSize: 12 },
   lineTag: { color: colors.textMuted, fontSize: 12 },
   lineAmount: { color: colors.textPrimary, fontSize: 14, fontWeight: "600" },
-  lineEdit: { color: colors.primary, fontSize: 15, marginLeft: 10 },
+  lineEdit: { marginLeft: spacing.sm },
   totalRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border,
+    marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border,
   },
   totalLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
   netRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    borderRadius: 12, padding: 12, marginTop: 6,
+    borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm,
   },
   netLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
-  fab: {
-    position: "absolute", right: 20, bottom: 20, backgroundColor: colors.primary,
-    paddingHorizontal: 20, paddingVertical: 14, borderRadius: 999,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 6,
+  cumulativeRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    marginTop: spacing.sm, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.borderSoft,
   },
-  fabText: { color: colors.textPrimary, fontWeight: "700", fontSize: 15 },
+  cumulativeLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
+  cumulativeHint: { ...typography.caption, color: colors.textMuted, fontSize: 11, marginTop: 1 },
 });

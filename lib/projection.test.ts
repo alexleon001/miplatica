@@ -122,6 +122,62 @@ test("buildProjection: agrupa, subtotaliza y calcula neto vs ingreso", () => {
   expect(ago.netArs).toBe(3000000 - 950000);
 });
 
+test("buildProjection: saldo acumulado siembra desde el efectivo y detecta el mes en rojo", () => {
+  // Efectivo hoy 100k. Ingreso 50k/mes, alquiler 80k/mes → neto −30k/mes.
+  // Acumulado: 70k, 40k, 10k, −20k (mes 4 = primer rojo).
+  const proj = buildProjection({
+    items: [
+      { id: "a", name: "Alquiler", paymentMethod: "Débito", amount: 80000, currency: "ARS", recurrence: "monthly", startMonth: "2026-06-01", installmentsTotal: null },
+    ],
+    window: monthsWindow("2026-06-01", 4),
+    defaultIncomeArs: 50000,
+    incomeOverrides: {},
+    mep: null,
+    startingBalanceArs: 100000,
+  });
+
+  expect(proj.startingBalanceArs).toBe(100000);
+  expect(proj.months.map((m) => m.cumulativeArs)).toEqual([70000, 40000, 10000, -20000]);
+  expect(proj.firstDeficitMonth).toBe("2026-09-01");
+  expect(proj.deficitMonthCount).toBe(4); // los 4 meses tienen neto negativo
+});
+
+test("buildProjection: accrueFirstMonth=false → el mes en curso no acumula (queda en el efectivo de hoy)", () => {
+  // Efectivo 100k, neto −30k/mes. Con el mes en curso informativo, el saldo del
+  // mes 0 queda en 100k y recién el mes 1 acumula: 100k, 70k, 40k, 10k.
+  const proj = buildProjection({
+    items: [
+      { id: "a", name: "Alquiler", paymentMethod: "Débito", amount: 80000, currency: "ARS", recurrence: "monthly", startMonth: "2026-06-01", installmentsTotal: null },
+    ],
+    window: monthsWindow("2026-06-01", 4),
+    defaultIncomeArs: 50000,
+    incomeOverrides: {},
+    mep: null,
+    startingBalanceArs: 100000,
+    accrueFirstMonth: false,
+  });
+  expect(proj.months.map((m) => m.cumulativeArs)).toEqual([100000, 70000, 40000, 10000]);
+  expect(proj.firstDeficitMonth).toBeNull(); // nunca baja de 0 en la ventana
+  expect(proj.deficitMonthCount).toBe(4); // los netos mensuales siguen siendo negativos
+});
+
+test("buildProjection: sin déficit acumulado → firstDeficitMonth null", () => {
+  const proj = buildProjection({
+    items: [
+      { id: "a", name: "Servicio", paymentMethod: "Débito", amount: 10000, currency: "ARS", recurrence: "monthly", startMonth: "2026-06-01", installmentsTotal: null },
+    ],
+    window: monthsWindow("2026-06-01", 3),
+    defaultIncomeArs: 50000,
+    incomeOverrides: {},
+    mep: 1000,
+    startingBalanceArs: 0,
+  });
+  expect(proj.firstDeficitMonth).toBeNull();
+  expect(proj.deficitMonthCount).toBe(0);
+  expect(proj.months.map((m) => m.cumulativeArs)).toEqual([40000, 80000, 120000]);
+  expect(proj.months[2].cumulativeUsd).toBeCloseTo(120, 6); // 120000 / 1000
+});
+
 test("frenchPayment: tasa 0 → capital / n", () => {
   expect(frenchPayment(120000, 0, 12)).toBe(10000);
 });
