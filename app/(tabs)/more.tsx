@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,6 +9,7 @@ import { CtaButton, IconChip, ScreenTitle, SectionLabel } from "../../components
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth";
 import { useProfile } from "../../lib/hooks/use-profile";
+import { useNotifPrefsStore } from "../../lib/store/notif-prefs";
 import { colors, radius, spacing, typography, shadow } from "../../lib/theme";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -17,6 +18,7 @@ export default function MoreScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const { data: profile } = useProfile();
+  const notif = useNotifPrefsStore();
 
   async function signOut() {
     const { error } = await supabase.auth.signOut();
@@ -73,6 +75,23 @@ export default function MoreScreen() {
         </View>
 
         <View style={styles.section}>
+          <SectionLabel>Notificaciones</SectionLabel>
+          <ToggleRow
+            label="Recordatorios de vencimiento"
+            hint="Deudas y metas, el día previo"
+            value={notif.reminders}
+            onValueChange={notif.setReminders}
+          />
+          <View style={styles.dataDivider} />
+          <ToggleRow
+            label="Alertas de presupuesto"
+            hint="Aviso al llegar al 80% y 100%"
+            value={notif.budgetAlerts}
+            onValueChange={notif.setBudgetAlerts}
+          />
+        </View>
+
+        <View style={styles.section}>
           <SectionLabel>Perfil</SectionLabel>
           <Text style={styles.kvLabel}>Nombre</Text>
           <Text style={styles.kvValue}>{profile?.name ?? "—"}</Text>
@@ -107,6 +126,33 @@ export default function MoreScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function ToggleRow({
+  label,
+  hint,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  hint: string;
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+}) {
+  return (
+    <View style={styles.toggleRow}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.toggleLabel}>{label}</Text>
+        <Text style={styles.toggleHint}>{hint}</Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ true: colors.primary, false: colors.surfaceSunken }}
+        thumbColor="#FFFFFF"
+      />
+    </View>
   );
 }
 
@@ -166,6 +212,9 @@ const styles = StyleSheet.create({
   },
   btnText: { color: "#FFFFFF", fontWeight: "700" },
   dataDivider: { height: 1, backgroundColor: colors.borderSoft, marginVertical: spacing.xs },
+  toggleRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
+  toggleLabel: { ...typography.body, color: colors.textPrimary },
+  toggleHint: { ...typography.caption, color: colors.textMuted },
   featureCard: {
     flexDirection: "row",
     alignItems: "center",

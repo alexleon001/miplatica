@@ -13,6 +13,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useBudgets } from "./use-budgets";
 import { categoryById } from "../categories";
 import { budgetAlerts, currentPeriod, pruneNotified, type BudgetAlert } from "../budget-alerts";
+import { useNotifPrefsStore } from "../store/notif-prefs";
 
 const STORAGE_KEY = "mi-platica.budget-alerts-notified.v1";
 const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
@@ -37,10 +38,11 @@ function alertBody(a: BudgetAlert): string {
 
 export function useBudgetAlerts() {
   const { data: budgets } = useBudgets();
+  const budgetAlertsEnabled = useNotifPrefsStore((s) => s.budgetAlerts);
   const running = useRef(false);
 
   useEffect(() => {
-    if (Platform.OS === "web" || !budgets || budgets.length === 0) return;
+    if (Platform.OS === "web" || !budgetAlertsEnabled || !budgets || budgets.length === 0) return;
     if (running.current) return;
     running.current = true;
 
@@ -81,5 +83,5 @@ export function useBudgetAlerts() {
         running.current = false;
       }
     })();
-  }, [budgets]);
+  }, [budgets, budgetAlertsEnabled]);
 }

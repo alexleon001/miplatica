@@ -12,6 +12,7 @@ import * as Notifications from "expo-notifications";
 import { useDebts } from "./use-debts";
 import { useSavingsGoals } from "./use-savings-goals";
 import { buildReminders, reminderBody, reminderFireDate, type ReminderKind } from "../reminders";
+import { useNotifPrefsStore } from "../store/notif-prefs";
 
 // Al tocar una notificación de recordatorio, abrir la pantalla relevante:
 // deudas → tab Deudas; metas → "Más" (donde vive la lista de metas).
@@ -41,6 +42,7 @@ export function useRemindersSync() {
   const debts = useDebts();
   const goals = useSavingsGoals();
   const router = useRouter();
+  const remindersEnabled = useNotifPrefsStore((s) => s.reminders);
   const syncing = useRef(false);
 
   // Deep-link: navegar al tocar la notificación (y si la app se abrió desde una).
@@ -67,6 +69,12 @@ export function useRemindersSync() {
 
     (async () => {
       try {
+        // Apagado por el usuario: limpiamos lo que hubiéramos agendado y salimos.
+        if (!remindersEnabled) {
+          await Notifications.cancelAllScheduledNotificationsAsync();
+          return;
+        }
+
         const ok = await ensurePermission();
         if (!ok) return;
 
@@ -105,5 +113,5 @@ export function useRemindersSync() {
         syncing.current = false;
       }
     })();
-  }, [debts.data, goals.data]);
+  }, [debts.data, goals.data, remindersEnabled]);
 }
