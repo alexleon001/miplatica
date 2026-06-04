@@ -1,13 +1,18 @@
-// Card grande de patrimonio neto. Usa MoneyAmount → reacciona al CurrencyToggle.
-// Si la query está cargando o no hay row aún (usuario sin movimientos), muestra
-// ceros (la vista v_net_worth no devuelve fila si nada existe).
+// Héroe del dashboard: card de patrimonio neto. Superficie indigo profunda con
+// glow + blob de acento para jerarquía visual. Usa MoneyAmount → reacciona al
+// CurrencyToggle. Si la query carga o no hay row aún (usuario sin movimientos),
+// muestra ceros (la vista v_net_worth no devuelve fila si nada existe).
 
 import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useFreshNetWorth } from "../lib/hooks/use-net-worth";
+import { BrandGradient } from "./BrandGradient";
 import { MoneyAmount } from "./MoneyAmount";
 import { Skeleton } from "./Skeleton";
 import { StateMessage } from "./StateMessage";
-import { colors } from "../lib/colors";
+import { colors, radius, spacing, typography, shadow } from "../lib/theme";
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
 
 export function NetWorthCard() {
   const { data, isLoading, isError, refetch } = useFreshNetWorth();
@@ -17,32 +22,61 @@ export function NetWorthCard() {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.label}>Patrimonio neto</Text>
+      {/* Gradiente de marca indigo→cyan + blobs decorativos para profundidad */}
+      <BrandGradient style={StyleSheet.absoluteFill} pointerEvents="none" />
+      <View style={styles.blobTop} pointerEvents="none" />
+      <View style={styles.blobBottom} pointerEvents="none" />
+
+      <View style={styles.labelRow}>
+        <Ionicons name="sparkles" size={13} color={colors.primaryBright} />
+        <Text style={styles.label}>Patrimonio neto</Text>
+      </View>
+
       {isError ? (
         <StateMessage kind="error" message="No pude cargar el patrimonio." onRetry={() => refetch()} />
       ) : isLoading ? (
         <View style={styles.loadingWrap}>
-          <Skeleton width={200} height={34} />
-          <Skeleton width={140} height={16} />
+          <Skeleton width={220} height={42} />
+          <Skeleton width={150} height={18} />
         </View>
       ) : (
-        <MoneyAmount ars={netArs} usd={netUsd} size="lg" />
+        <MoneyAmount ars={netArs} usd={netUsd} size="xl" />
       )}
+
       {data ? (
         <View style={styles.breakdown}>
-          <Row label="Activos en cuentas" ars={data.accounts_ars} usd={data.accounts_usd} />
-          <Row label="Inversiones"         ars={data.investments_ars} usd={data.investments_usd} />
-          <Row label="Deudas"              ars={data.debts_ars}      usd={data.debts_usd}      negative />
+          <Row icon="wallet-outline" tint={colors.ars} label="Activos en cuentas" ars={data.accounts_ars} usd={data.accounts_usd} />
+          <Row icon="trending-up-outline" tint={colors.usd} label="Inversiones" ars={data.investments_ars} usd={data.investments_usd} />
+          <Row icon="card-outline" tint={colors.negative} label="Deudas" ars={data.debts_ars} usd={data.debts_usd} negative />
         </View>
       ) : null}
     </View>
   );
 }
 
-function Row({ label, ars, usd, negative }: { label: string; ars: number | null; usd: number | null; negative?: boolean }) {
+function Row({
+  icon,
+  tint,
+  label,
+  ars,
+  usd,
+  negative,
+}: {
+  icon: IoniconName;
+  tint: string;
+  label: string;
+  ars: number | null;
+  usd: number | null;
+  negative?: boolean;
+}) {
   return (
     <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
+      <View style={styles.rowLeft}>
+        <View style={[styles.iconChip, { backgroundColor: tint + "22" }]}>
+          <Ionicons name={icon} size={14} color={tint} />
+        </View>
+        <Text style={styles.rowLabel}>{label}</Text>
+      </View>
       <MoneyAmount ars={ars} usd={usd} size="sm" tone={negative ? "negative" : "default"} />
     </View>
   );
@@ -50,16 +84,51 @@ function Row({ label, ars, usd, negative }: { label: string; ars: number | null;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surfaceDark,
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: colors.primaryDeep,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    gap: spacing.sm,
+    overflow: "hidden",
     borderWidth: 1,
-    borderColor: colors.border,
-    gap: 8,
+    borderColor: colors.primaryBright + "33",
+    ...shadow.glow,
   },
-  label: { color: colors.textMuted, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" },
-  loadingWrap: { gap: 8, marginVertical: 2 },
-  breakdown: { marginTop: 12, gap: 6, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
+  blobTop: {
+    position: "absolute",
+    top: -60,
+    right: -40,
+    width: 180,
+    height: 180,
+    borderRadius: 999,
+    backgroundColor: colors.accent + "1F",
+  },
+  blobBottom: {
+    position: "absolute",
+    bottom: -70,
+    left: -50,
+    width: 160,
+    height: 160,
+    borderRadius: 999,
+    backgroundColor: colors.primaryBright + "1A",
+  },
+  labelRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  label: { ...typography.overline, color: colors.primaryBright },
+  loadingWrap: { gap: spacing.sm, marginVertical: 2 },
+  breakdown: {
+    marginTop: spacing.md,
+    gap: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.10)",
+    paddingTop: spacing.lg,
+  },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  rowLabel: { color: colors.textMuted, fontSize: 13 },
+  rowLeft: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flex: 1 },
+  iconChip: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowLabel: { ...typography.caption, color: colors.textSecondary },
 });

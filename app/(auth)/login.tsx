@@ -1,17 +1,10 @@
 import { useState } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BrandGradient } from "../../components/BrandGradient";
+import { FormInput } from "../../components/form";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../lib/colors";
+import { colors, radius, spacing, typography, shadow } from "../../lib/theme";
 
 type Mode = "signin" | "signup";
 
@@ -41,13 +34,16 @@ export default function LoginScreen() {
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <Text style={styles.title}>Mi Platica</Text>
-        <Text style={styles.subtitle}>Tus finanzas, con inteligencia argentina.</Text>
+        <View style={styles.brand}>
+          <BrandGradient style={styles.logo}>
+            <Text style={styles.logoText}>$</Text>
+          </BrandGradient>
+          <Text style={styles.title}>Mi Platica</Text>
+          <Text style={styles.subtitle}>Tus finanzas, con inteligencia argentina.</Text>
+        </View>
 
-        <TextInput
-          style={styles.input}
+        <FormInput
           placeholder="tu@email.com"
-          placeholderTextColor={colors.textMuted}
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
@@ -55,30 +51,19 @@ export default function LoginScreen() {
           onChangeText={setEmail}
         />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña"
-          placeholderTextColor={colors.textMuted}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <FormInput placeholder="Contraseña" secureTextEntry value={password} onChangeText={setPassword} />
 
         <Pressable
           style={({ pressed }) => [styles.btn, pressed && { opacity: 0.85 }, busy && { opacity: 0.5 }]}
           onPress={submit}
           disabled={busy}
         >
-          <Text style={styles.btnText}>
-            {busy ? "..." : mode === "signin" ? "Entrar" : "Crear cuenta"}
-          </Text>
+          <Text style={styles.btnText}>{busy ? "..." : mode === "signin" ? "Entrar" : "Crear cuenta"}</Text>
         </Pressable>
 
-        <Pressable onPress={() => setMode(mode === "signin" ? "signup" : "signin")}>
+        <Pressable onPress={() => setMode(mode === "signin" ? "signup" : "signin")} hitSlop={8}>
           <Text style={styles.switch}>
-            {mode === "signin"
-              ? "¿No tenés cuenta? Registrate"
-              : "¿Ya tenés cuenta? Entrá"}
+            {mode === "signin" ? "¿No tenés cuenta? Registrate" : "¿Ya tenés cuenta? Entrá"}
           </Text>
         </Pressable>
       </KeyboardAvoidingView>
@@ -88,25 +73,31 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { flex: 1, justifyContent: "center", paddingHorizontal: 24, gap: 12 },
-  title: { color: colors.textPrimary, fontSize: 32, fontWeight: "700" },
-  subtitle: { color: colors.textMuted, fontSize: 14, marginBottom: 24 },
-  input: {
-    backgroundColor: colors.surfaceDark,
-    color: colors.textPrimary,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+  container: { flex: 1, justifyContent: "center", paddingHorizontal: spacing["2xl"], gap: spacing.md },
+  brand: { alignItems: "center", gap: spacing.xs, marginBottom: spacing["2xl"] },
+  logo: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.xl,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.primaryBright,
+    ...shadow.glow,
   },
+  logoText: { color: "#FFFFFF", fontSize: 38, fontWeight: "800" },
+  title: { ...typography.display, color: colors.textPrimary },
+  subtitle: { ...typography.body, color: colors.textMuted, textAlign: "center" },
   btn: {
     backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: spacing.lg,
+    borderRadius: radius.md,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: spacing.sm,
+    ...shadow.sm,
   },
-  btnText: { color: colors.textPrimary, fontWeight: "600", fontSize: 16 },
-  switch: { color: colors.textMuted, textAlign: "center", marginTop: 16 },
+  btnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
+  switch: { color: colors.primaryBright, textAlign: "center", marginTop: spacing.lg, fontWeight: "600" },
 });
