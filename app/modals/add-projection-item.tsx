@@ -57,7 +57,14 @@ export default function AddProjectionItemModal() {
     if (it) {
       setName(it.name);
       setPaymentMethod(it.payment_method);
-      setAmount(String(it.amount));
+      // Cuotas sin interés: en DB guardamos el monto POR cuota, pero al usuario le
+      // mostramos el TOTAL de la compra → reconstruimos total = por-cuota × cuotas.
+      // (Con interés, `amount` ya es el capital total y se muestra tal cual.)
+      const isInstallNoInterest =
+        it.recurrence === "installments" && it.interest_rate == null && it.installments_total != null;
+      setAmount(
+        isInstallNoInterest ? String(it.amount * (it.installments_total ?? 1)) : String(it.amount),
+      );
       setCurrency(it.currency === "USD" ? "USD" : "ARS");
       setRecurrence(it.recurrence as Recurrence);
       setInstallments(it.installments_total != null ? String(it.installments_total) : "");
@@ -81,6 +88,16 @@ export default function AddProjectionItemModal() {
     return { cuota, total: cuota * n, interes: cuota * n - capital };
   }, [hasInterest, amount, installments, interestRate]);
 
+  // Cuotas SIN interés: el usuario carga el total de la compra y N cuotas; la app
+  // reparte total / N. Mostramos el valor de cada cuota en vivo.
+  const cuotaSinInteres = useMemo(() => {
+    if (recurrence !== "installments" || hasInterest) return null;
+    const total = parseNum(amount);
+    const n = Math.round(parseNum(installments));
+    if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(n) || n <= 0) return null;
+    return total / n;
+  }, [recurrence, hasInterest, amount, installments]);
+
   // Preview en vivo del alcance: en qué meses cae el gasto. Resuelve la confusión
   // del default "todos los meses" (antes, un gasto puntual se repetía a futuro).
   const spanPreview = useMemo(() => {
@@ -96,7 +113,7 @@ export default function AddProjectionItemModal() {
   const amountLabel = hasInterest
     ? `Total a financiar / capital (${currency})`
     : recurrence === "installments"
-      ? `Monto de cada cuota (${currency})`
+      ? `Total de la compra (${currency})`
       : recurrence === "monthly"
         ? `Monto por mes (${currency})`
         : `Monto (${currency})`;
@@ -108,7 +125,12 @@ export default function AddProjectionItemModal() {
     }
     const amountNum = parseNum(amount);
     if (!amount.trim() || Number.isNaN(amountNum) || amountNum <= 0) {
-      Alert.alert("Monto inválido", "Ingresá el monto mensual del gasto (mayor a cero).");
+      Alert.alert(
+        "Monto inválido",
+        recurrence === "installments"
+          ? "Ingresá el total de la compra (mayor a cero)."
+          : "Ingresá el monto del gasto (mayor a cero).",
+      );
       return;
     }
     if (!/^\d{4}-\d{2}$/.test(startMonth.trim())) {
@@ -117,6 +139,11 @@ export default function AddProjectionItemModal() {
     }
     let installmentsTotal: number | null = null;
     let interest: number | null = null;
+    // Monto que se guarda en DB. Para cuotas SIN interés, `amount` (lo que tipeó el
+    // usuario) es el TOTAL de la compra → guardamos el valor POR cuota (total / N),
+    // que es lo que la grilla de proyección espera. Con interés, `amount` es el
+    // capital y se guarda tal cual (la cuota se calcula con sistema francés).
+    let amountToStore = amountNum;
     if (recurrence === "installments") {
       installmentsTotal = Math.round(parseNum(installments));
       if (!installments.trim() || Number.isNaN(installmentsTotal) || installmentsTotal <= 0) {
@@ -129,13 +156,15 @@ export default function AddProjectionItemModal() {
           Alert.alert("Interés inválido", "La tasa anual (TNA %) tiene que ser un número válido.");
           return;
         }
+      } else {
+        amountToStore = amountNum / installmentsTotal;
       }
     }
 
     const payload = {
       name: name.trim(),
       payment_method: paymentMethod.trim() || "Otros",
-      amount: amountNum,
+      amount: amountToStore,
       currency,
       recurrence,
       installments_total: installmentsTotal,
@@ -201,6 +230,12 @@ export default function AddProjectionItemModal() {
         <>
           <FormField label="Cantidad de cuotas">
             <FormInput placeholder="ej: 6" keyboardType="number-pad" value={installments} onChangeText={setInstallments} />
+            {cuotaSinInteres != null ? (
+              <Text style={styles.preview}>
+                {Math.round(parseNum(installments))} cuotas de{" "}
+                {Math.round(cuotaSinInteres).toLocaleString("es-AR")} {currency} c/u
+              </Text>
+            ) : null}
           </FormField>
 
           <FormField

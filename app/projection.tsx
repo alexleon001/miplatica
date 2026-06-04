@@ -218,25 +218,34 @@ export default function ProjectionScreen() {
             {current && (
               <View style={styles.detail}>
                 <Text style={styles.detailMonth}>{monthLabel(current.month)}</Text>
-                <Text style={styles.detailHint}>Tocá un gasto para editarlo · mantenelo apretado para borrarlo.</Text>
+                <Text style={styles.detailHint}>Usá los botones ✎ para editar y 🗑 para borrar cada gasto. Las deudas se editan en Deudas.</Text>
 
                 {/* Ingreso (editable) */}
-                <Pressable
-                  style={styles.incomeRow}
-                  onPress={() => router.push(`/modals/set-income?month=${current.month}`)}
-                  onLongPress={() => {
-                    if (incomeOverrides?.[current.month] != null) {
-                      confirmDelete("el ajuste de ingreso de este mes", () => clearIncome.mutate(current.month));
-                    }
-                  }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.incomeLabel}>
-                      Sueldo neto{incomeOverrides?.[current.month] != null ? " · ajustado ✎" : " ✎"}
-                    </Text>
-                  </View>
-                  <MoneyAmount ars={current.incomeArs} usd={current.incomeUsd} size="sm" tone="positive" />
-                </Pressable>
+                <View style={styles.incomeRow}>
+                  <Pressable
+                    style={styles.incomeMain}
+                    onPress={() => router.push(`/modals/set-income?month=${current.month}`)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.incomeLabel}>
+                        Sueldo neto{incomeOverrides?.[current.month] != null ? " · ajustado ✎" : " ✎"}
+                      </Text>
+                    </View>
+                    <MoneyAmount ars={current.incomeArs} usd={current.incomeUsd} size="sm" tone="positive" />
+                  </Pressable>
+                  {incomeOverrides?.[current.month] != null ? (
+                    <Pressable
+                      onPress={() =>
+                        confirmDelete("el ajuste de ingreso de este mes", () => clearIncome.mutate(current.month))
+                      }
+                      hitSlop={8}
+                      style={styles.lineBtn}
+                      accessibilityLabel="Quitar ajuste de ingreso"
+                    >
+                      <Ionicons name="trash-outline" size={16} color={colors.negative} />
+                    </Pressable>
+                  ) : null}
+                </View>
 
                 {/* Grupos por medio de pago */}
                 {current.groups.map((g) => (
@@ -249,24 +258,39 @@ export default function ProjectionScreen() {
                     </View>
                     {g.lines.map((l) => {
                       const isDebt = l.id.startsWith("debt:");
+                      const editItem = () => router.push(`/modals/add-projection-item?id=${l.id}`);
                       return (
-                        <Pressable
-                          key={l.id}
-                          style={({ pressed }) => [styles.line, pressed && !isDebt && styles.linePressed]}
-                          disabled={isDebt}
-                          onPress={() => router.push(`/modals/add-projection-item?id=${l.id}`)}
-                          onLongPress={() =>
-                            !isDebt && confirmDelete(l.name, () => delItem.mutate(l.id))
-                          }
-                        >
-                          <Text style={styles.lineName} numberOfLines={1}>
-                            {l.name}
-                            {l.installmentLabel ? <Text style={styles.lineCuota}>  cuota {l.installmentLabel}</Text> : null}
-                            {isDebt ? <Text style={styles.lineTag}>  · deuda (editás en Deudas)</Text> : null}
-                          </Text>
-                          <Text style={styles.lineAmount}>{Math.round(l.amountArs).toLocaleString("es-AR")}</Text>
-                          {!isDebt ? <Ionicons name="pencil" size={13} color={colors.primaryBright} style={styles.lineEdit} /> : null}
-                        </Pressable>
+                        <View key={l.id} style={styles.line}>
+                          <Pressable
+                            style={({ pressed }) => [styles.lineMain, pressed && !isDebt && styles.linePressed]}
+                            disabled={isDebt}
+                            onPress={editItem}
+                          >
+                            <Text style={styles.lineName} numberOfLines={1}>
+                              {l.name}
+                              {l.installmentLabel ? <Text style={styles.lineCuota}>  cuota {l.installmentLabel}</Text> : null}
+                              {isDebt ? <Text style={styles.lineTag}>  · deuda</Text> : null}
+                            </Text>
+                            <Text style={styles.lineAmount}>{Math.round(l.amountArs).toLocaleString("es-AR")}</Text>
+                          </Pressable>
+                          {isDebt ? (
+                            <Text style={styles.lineDebtHint}>en Deudas</Text>
+                          ) : (
+                            <View style={styles.lineActions}>
+                              <Pressable onPress={editItem} hitSlop={8} style={styles.lineBtn} accessibilityLabel={`Editar ${l.name}`}>
+                                <Ionicons name="pencil" size={16} color={colors.primaryBright} />
+                              </Pressable>
+                              <Pressable
+                                onPress={() => confirmDelete(l.name, () => delItem.mutate(l.id))}
+                                hitSlop={8}
+                                style={styles.lineBtn}
+                                accessibilityLabel={`Borrar ${l.name}`}
+                              >
+                                <Ionicons name="trash-outline" size={16} color={colors.negative} />
+                              </Pressable>
+                            </View>
+                          )}
+                        </View>
                       );
                     })}
                   </View>
@@ -368,9 +392,10 @@ const styles = StyleSheet.create({
   detailMonth: { ...typography.heading, color: colors.textPrimary },
   detailHint: { ...typography.caption, color: colors.textMuted, marginTop: -spacing.xs },
   incomeRow: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    flexDirection: "row", alignItems: "center", gap: spacing.sm,
     paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderSoft,
   },
+  incomeMain: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   incomeLabel: { color: colors.positive, fontSize: 13, fontWeight: "700" },
   group: { gap: spacing.xs, marginTop: spacing.sm },
   groupHeader: {
@@ -380,15 +405,24 @@ const styles = StyleSheet.create({
   groupName: { ...typography.overline, color: colors.textMuted },
   groupSubtotal: { color: colors.textSecondary, fontSize: 13, fontWeight: "700" },
   line: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    flexDirection: "row", alignItems: "center", gap: spacing.sm,
     paddingVertical: spacing.sm,
+  },
+  lineMain: {
+    flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    gap: spacing.sm,
   },
   linePressed: { opacity: 0.55 },
   lineName: { color: colors.textPrimary, fontSize: 14, flex: 1, marginRight: spacing.sm },
   lineCuota: { color: colors.warning, fontSize: 12 },
   lineTag: { color: colors.textMuted, fontSize: 12 },
   lineAmount: { color: colors.textPrimary, fontSize: 14, fontWeight: "600" },
-  lineEdit: { marginLeft: spacing.sm },
+  lineActions: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  lineBtn: {
+    width: 32, height: 32, borderRadius: radius.sm, alignItems: "center", justifyContent: "center",
+    backgroundColor: colors.surfaceSunken,
+  },
+  lineDebtHint: { color: colors.textMuted, fontSize: 11, fontStyle: "italic" },
   totalRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border,
