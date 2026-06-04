@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { MoneyAmount } from "../../components/MoneyAmount";
 import { RowsSkeleton } from "../../components/Skeleton";
+import { SpendingBreakdown } from "../../components/SpendingBreakdown";
 import { StateMessage } from "../../components/StateMessage";
 import { TransactionItem } from "../../components/TransactionItem";
 import { useMonthlyBalance } from "../../lib/hooks/use-monthly-balance";
@@ -99,6 +100,8 @@ export default function TransactionsScreen() {
             </Text>
           </Pressable>
         ) : null}
+
+        <SpendingBreakdown />
       </View>
 
       <FlatList
