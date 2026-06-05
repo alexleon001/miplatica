@@ -15,6 +15,13 @@ on:
     branches: [main]
   pull_request:
 
+# Si pusheás de nuevo (mismo ref) antes de que termine la corrida anterior, se
+# cancela la vieja y queda sólo la última. Ahorra minutos de CI y evita que un
+# resultado viejo "pise" al nuevo.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checks:
     name: Type-check & logic tests

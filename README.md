@@ -3,6 +3,7 @@
 > A production-ready test automation framework built with **Playwright**, **TypeScript**, and **KATA Architecture**.
 > Designed for AI-assisted test development with comprehensive context engineering.
 
+[![CI](https://github.com/alexleon001/miplatica/actions/workflows/ci.yml/badge.svg)](https://github.com/alexleon001/miplatica/actions/workflows/ci.yml)
 [![Playwright Tests](https://img.shields.io/badge/Playwright-1.50+-green?logo=playwright)](https://playwright.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Bun](https://img.shields.io/badge/Bun-1.0+-black?logo=bun)](https://bun.sh/)
