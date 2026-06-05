@@ -60,12 +60,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 6) Type-check de la app (tsc --noEmit sobre tsconfig.json). NO incluye el
+      # 6) Lint del app (eslint con config propio: lib/app/components, enfocado en
+      #    correctitud — imports/vars sin usar, react-hooks. El estilo y los tipos
+      #    los cubren el código y tsc; ver eslint.config.app.mjs).
+      - name: Lint (app)
+        run: pnpm run lint:app
+
+      # 7) Type-check de la app (tsc --noEmit sobre tsconfig.json). NO incluye el
       #    tsconfig de tests KATA, que tiene errores pre-existentes ajenos a la app.
       - name: Type-check (app)
         run: pnpm run type-check:app
 
-      # 7) Tests de lógica pura (bun test lib). Son los ~120 tests de lib/*.test.ts.
+      # 8) Tests de lógica pura (bun test lib). Son los ~120 tests de lib/*.test.ts.
       #    Scopeado a lib/ a propósito: el resto de tests/ es KATA Playwright web.
       - name: Logic tests
         run: pnpm run test:unit

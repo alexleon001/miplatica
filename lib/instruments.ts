@@ -8,7 +8,6 @@
 // persisten en `investments` (current_value_*, profit_loss_*, etc.). Se usa al
 // crear una posición y al refrescar cotizaciones.
 
-import { colors } from "./colors";
 
 export type InstrumentType =
   | "fci"

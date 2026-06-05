@@ -3,7 +3,7 @@
 // y la marca como registrada en el período actual.
 
 import { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useCreateTransaction } from "../lib/hooks/use-create-transaction";
 import { useRecurringStore } from "../lib/store/recurring";
