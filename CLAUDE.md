@@ -35,7 +35,9 @@
   3. **Simulador de inversiones** — `lib/invest-sim.ts` (puro: `simulate` compara plazo fijo/FCI MM/dólar MEP, rendimiento real ajustado por inflación; `suggestedMonthlyInflation` del IPC; `realAnnualRate` Fisher) + `app/invest-sim.tsx` (tasas editables, USD vía MEP). Entry en `more.tsx`.
   4. **Categorías personalizadas** — registry mutable en `lib/categories.ts` (`registerCustomCategories`/`isBuiltInCategory`; `categoryById`/`categoriesByGroup` ahora mergean custom) + `lib/store/custom-categories.ts` (local, registra en rehidratación) + `lib/hooks/use-categories.ts` (`useCategoriesByGroup` reactivo para chips) + `app/categories.tsx` (alta con emoji/color/grupo). `add-transaction`/`add-budget` usan el hook. Store referenciado en `(tabs)/_layout.tsx` para registro temprano. **Caveat:** local por dispositivo (una tx con categoría custom guarda su id en DB pero en otro device cae a "sin categoría"); la IA sigue sugiriendo sólo built-in.
 - **Tests:** 120 `bun test` verdes (+35: rate-alerts, insights, invest-sim, categories). `type-check:app` limpio.
-- **Falta:** `git push` + OTA al canal `preview` + validar en device las 4 features.
+- **Commiteado en `main` local:** `0ea1830` (features) + `2dddde9` (docs). **Falta `git push`** (lo corre el user).
+- **🆕 OTA al canal `preview` PUBLICADO** (update group `9aaf63ee`, runtime `0.1.0`, android+ios, commit `2dddde9`) — sobre el APK `c368dc3e`. El device lo levanta reabriendo 2 veces.
+- **🔴 Falta validar en device las 4 features** (entradas nuevas en "Más"): alertas de cotización (crear umbral, ver aviso al cruzar), insights (gráfico 6 meses + qué cambió), simulador (comparar plazo fijo/FCI/MEP), categorías custom (crear y usarla en un movimiento/presupuesto).
 
 ## Estado actual — cierre sesión 8 (2026-06-04)
 
