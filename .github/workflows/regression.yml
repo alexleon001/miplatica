@@ -8,8 +8,12 @@ name: Regression Tests
 run-name: ${{ github.actor }} triggered Regression Tests on ${{ github.event.inputs.environment || 'staging' }}
 
 on:
-  schedule:
-    - cron: '0 0 * * *' # Runs daily at midnight UTC
+  # Cron deshabilitado: estos tests Playwright son del boilerplate KATA (web,
+  # contra un "staging" que no existe para esta app móvil). Corrían a diario y
+  # fallaban en la validación de env (faltan STAGING_USER_*). Quedan ejecutables
+  # a mano (workflow_dispatch) por si algún día se adaptan. Ver CLAUDE.md.
+  # schedule:
+  #   - cron: '0 0 * * *' # Runs daily at midnight UTC
 
   workflow_dispatch:
     inputs:

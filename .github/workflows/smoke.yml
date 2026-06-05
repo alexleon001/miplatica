@@ -8,8 +8,12 @@ name: Smoke Tests
 run-name: ${{ github.actor }} triggered Smoke Tests on ${{ github.event.inputs.environment || 'staging' }}
 
 on:
-  schedule:
-    - cron: '0 2 * * *' # Runs daily at 2:00 AM UTC
+  # Cron deshabilitado: estos tests Playwright son del boilerplate KATA (web,
+  # contra un "staging" que no existe para esta app móvil). Corrían a diario y
+  # fallaban en la validación de env (faltan STAGING_USER_*). Quedan ejecutables
+  # a mano (workflow_dispatch) por si algún día se adaptan. Ver CLAUDE.md.
+  # schedule:
+  #   - cron: '0 2 * * *' # Runs daily at 2:00 AM UTC
 
   workflow_dispatch:
     inputs:
