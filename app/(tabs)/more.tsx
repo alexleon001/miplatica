@@ -77,6 +77,34 @@ export default function MoreScreen() {
           subtitle="Qué pasó con tu plata este mes, contado por la IA"
           onPress={() => router.push("/monthly-summary")}
         />
+        <FeatureCard
+          icon="bar-chart-outline"
+          tint={colors.positive}
+          title="Insights de gastos"
+          subtitle="Tu tendencia mensual y qué cambió"
+          onPress={() => router.push("/insights")}
+        />
+        <FeatureCard
+          icon="calculator-outline"
+          tint={colors.warning}
+          title="Simulador de inversiones"
+          subtitle="¿Dónde le ganás a la inflación?"
+          onPress={() => router.push("/invest-sim")}
+        />
+        <FeatureCard
+          icon="pricetags-outline"
+          tint={colors.accent}
+          title="Categorías"
+          subtitle="Creá las tuyas para clasificar mejor"
+          onPress={() => router.push("/categories")}
+        />
+        <FeatureCard
+          icon="notifications-outline"
+          tint={colors.usd}
+          title="Alertas de cotización"
+          subtitle="Avisame cuando el dólar cruce un valor"
+          onPress={() => router.push("/rate-alerts")}
+        />
 
         <View style={styles.section}>
           <SectionLabel>Presupuestos del mes</SectionLabel>
@@ -125,6 +153,13 @@ export default function MoreScreen() {
             hint="Aviso al llegar al 80% y 100%"
             value={notif.budgetAlerts}
             onValueChange={notif.setBudgetAlerts}
+          />
+          <View style={styles.dataDivider} />
+          <ToggleRow
+            label="Alertas de cotización"
+            hint="Cuando el dólar cruza un umbral tuyo"
+            value={notif.rateAlerts}
+            onValueChange={notif.setRateAlerts}
           />
         </View>
 

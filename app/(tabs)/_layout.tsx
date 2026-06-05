@@ -3,6 +3,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRemindersSync } from "../../lib/hooks/use-reminders-sync";
 import { useBudgetAlerts } from "../../lib/hooks/use-budget-alerts";
+import { useRateAlerts } from "../../lib/hooks/use-rate-alerts";
+import { useCustomCategoriesStore } from "../../lib/store/custom-categories";
 import { colors } from "../../lib/colors";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -19,6 +21,12 @@ export default function TabsLayout() {
   useRemindersSync();
   // Avisa al cruzar 80%/100% de un presupuesto (notificación inmediata, con dedup).
   useBudgetAlerts();
+  // Avisa cuando la cotización del dólar cruza un umbral configurado (edge-trigger).
+  useRateAlerts();
+  // Referencia el store de categorías custom para forzar su carga/rehidratación
+  // temprana (onRehydrateStorage las registra → categoryById las resuelve en
+  // listas y desgloses apenas arranca la app).
+  useCustomCategoriesStore((s) => s.categories.length);
   // Respeta la barra de gestos/botones del sistema (Android/iOS): sin esto el
   // tab bar se solapa con los botones de volver/recientes del celular.
   const insets = useSafeAreaInsets();

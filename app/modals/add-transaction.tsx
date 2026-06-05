@@ -3,7 +3,8 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChipRow, FormChip, FormField, FormInput, FormScreen, SubmitButton } from "../../components/form";
-import { categoriesByGroup, categoryById } from "../../lib/categories";
+import { categoryById } from "../../lib/categories";
+import { useCategoriesByGroup } from "../../lib/hooks/use-categories";
 import { useAccounts } from "../../lib/hooks/use-accounts";
 import { useCategorizeTransaction } from "../../lib/hooks/use-categorize-transaction";
 import { useCreateTransaction } from "../../lib/hooks/use-create-transaction";
@@ -67,12 +68,10 @@ export default function AddTransactionModal() {
     [accounts.data, accountId],
   );
 
-  const availableCategories = useMemo(() => {
-    if (type === "income") return categoriesByGroup("income");
-    if (type === "transfer") return categoriesByGroup("transfer");
-    if (type === "investment") return categoriesByGroup("investment");
-    return categoriesByGroup("expense");
-  }, [type]);
+  // El grupo de categorías sigue al tipo de movimiento (las custom de
+  // gasto/ingreso entran vía useCategoriesByGroup).
+  const categoryGroup = type === "income" ? "income" : type === "transfer" ? "transfer" : type === "investment" ? "investment" : "expense";
+  const availableCategories = useCategoriesByGroup(categoryGroup);
 
   async function suggestWithAI() {
     if (!description.trim() || !amount.trim() || !selectedAccount) {

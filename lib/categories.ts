@@ -44,15 +44,38 @@ export const CATEGORIES: readonly Category[] = [
 
 const BY_ID = new Map(CATEGORIES.map((c) => [c.id, c]));
 
+// ── Categorías personalizadas del usuario (local-first) ───────────────────
+// El store lib/store/custom-categories las registra acá vía
+// registerCustomCategories. Así categoryById/categoriesByGroup las resuelven en
+// TODA la app (listas, desglose, insights, presupuestos) sin tocar cada
+// consumidor. Local por dispositivo: una tx con categoría custom guarda su id en
+// la DB, pero en otro dispositivo sin esa custom caerá a "sin categoría" (igual
+// que el resto de los datos local-first). La IA sólo sugiere las built-in.
+let CUSTOM: Category[] = [];
+let customById = new Map<string, Category>();
+
+export function registerCustomCategories(list: Category[]): void {
+  CUSTOM = list;
+  customById = new Map(list.map((c) => [c.id, c]));
+}
+
 export function categoryById(id: string | null | undefined): Category | undefined {
   if (!id) return undefined;
-  return BY_ID.get(id);
+  return BY_ID.get(id) ?? customById.get(id);
 }
 
 export function categoriesByGroup(group: CategoryGroup): Category[] {
-  return CATEGORIES.filter((c) => c.group === group);
+  const builtin = CATEGORIES.filter((c) => c.group === group);
+  const custom = CUSTOM.filter((c) => c.group === group);
+  return [...builtin, ...custom];
 }
 
 // Lista de IDs válidos para mandar al prompt de IA (evita que el modelo
-// invente categorías nuevas que después no podemos renderear).
+// invente categorías nuevas que después no podemos renderear). Sólo built-in:
+// el modelo no conoce las custom del usuario.
 export const CATEGORY_IDS = CATEGORIES.map((c) => c.id);
+
+// True si el id corresponde a una categoría built-in (no custom/borrable).
+export function isBuiltInCategory(id: string): boolean {
+  return BY_ID.has(id);
+}

@@ -2,17 +2,16 @@ import { useState } from "react";
 import { Alert, StyleSheet, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { ChipRow, FormChip, FormField, FormInput, FormScreen, SubmitButton } from "../../components/form";
-import { categoriesByGroup } from "../../lib/categories";
+import { useCategoriesByGroup } from "../../lib/hooks/use-categories";
 import { useCreateBudget } from "../../lib/hooks/use-budgets";
 import { colors, typography } from "../../lib/theme";
-
-const EXPENSE_CATEGORIES = categoriesByGroup("expense");
 
 const monthFmt = new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric" });
 
 export default function AddBudgetModal() {
   const router = useRouter();
   const create = useCreateBudget();
+  const EXPENSE_CATEGORIES = useCategoriesByGroup("expense");
 
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [limit, setLimit] = useState("");
