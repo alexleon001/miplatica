@@ -190,7 +190,8 @@ Si cambia la anon key: `eas env:create --environment preview --name EXPO_PUBLIC_
 - **Android SDK local no instalado** → `pnpm android` falla. Usar Expo Go (QR) o EAS Build remoto.
 - **Sin Sentry/observability** (descartado por el user). Errores de cliente y Edge Functions no se reportan; scheduling de notifs y flujos de IA fallan en silencio.
 - **`type-check` corre dos `tsc` en serie** (app+test). `type-check:test` tiene errores KATA pre-existentes (falta `allure-js-commons`), ajenos a la app.
-- **`CLAUDE.boilerplate.md` + `tests/` (KATA/Playwright)** intactos, no apuntan a la app.
+- **CI (sesión 9):** `.github/workflows/ci.yml` corre en push a `main` + PRs → `pnpm install --frozen-lockfile` + `type-check:app` + `test:unit` (bun test lib). **Verde.** Node 22 + pnpm 11 (pnpm 11 exige Node ≥22.13). Los crons KATA (`smoke.yml`/`regression.yml`) quedaron **deshabilitados** (comentado el `schedule:`; fallaban a diario en la validación de env contra un "staging" web inexistente) — disparables a mano por `workflow_dispatch`. `build.yml` corre en PRs (KATA framework). `sanity.yml` solo manual.
+- **`CLAUDE.boilerplate.md` + `tests/` (KATA/Playwright)** intactos, no apuntan a la app (su `bun test` sin scope falla por `@TestFixture`/`allure-js-commons`; por eso el CI usa `test:unit` = `bun test lib`).
 - **Íconos placeholder** (`scripts/gen-icons.py`); reemplazar por diseño definitivo antes del store si se quiere.
 
 ---
