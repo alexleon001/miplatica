@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRemindersSync } from "../../lib/hooks/use-reminders-sync";
 import { useBudgetAlerts } from "../../lib/hooks/use-budget-alerts";
 import { useRateAlerts } from "../../lib/hooks/use-rate-alerts";
+import { useNotificationRouting } from "../../lib/hooks/use-notification-routing";
 import { useCustomCategoriesStore } from "../../lib/store/custom-categories";
 import { colors } from "../../lib/colors";
 
@@ -23,6 +24,8 @@ export default function TabsLayout() {
   useBudgetAlerts();
   // Avisa cuando la cotización del dólar cruza un umbral configurado (edge-trigger).
   useRateAlerts();
+  // Deep-link al tocar cualquier notificación local (recordatorio/presupuesto/cotización).
+  useNotificationRouting();
   // Referencia el store de categorías custom para forzar su carga/rehidratación
   // temprana (onRehydrateStorage las registra → categoryById las resuelve en
   // listas y desgloses apenas arranca la app).

@@ -7,18 +7,14 @@
 
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
-import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { useDebts } from "./use-debts";
 import { useSavingsGoals } from "./use-savings-goals";
-import { buildReminders, reminderBody, reminderFireDate, type ReminderKind } from "../reminders";
+import { buildReminders, reminderBody, reminderFireDate } from "../reminders";
 import { useNotifPrefsStore } from "../store/notif-prefs";
 
-// Al tocar una notificación de recordatorio, abrir la pantalla relevante:
-// deudas → tab Deudas; metas → "Más" (donde vive la lista de metas).
-function routeForKind(kind: ReminderKind): "/(tabs)/debts" | "/(tabs)/more" {
-  return kind === "debt" ? "/(tabs)/debts" : "/(tabs)/more";
-}
+// El deep-link al tocar una notificación lo maneja use-notification-routing
+// (cubre todas las fuentes, no sólo recordatorios).
 
 // Cómo mostrar una notificación si la app está en foreground.
 Notifications.setNotificationHandler({
@@ -41,25 +37,8 @@ async function ensurePermission(): Promise<boolean> {
 export function useRemindersSync() {
   const debts = useDebts();
   const goals = useSavingsGoals();
-  const router = useRouter();
   const remindersEnabled = useNotifPrefsStore((s) => s.reminders);
   const syncing = useRef(false);
-
-  // Deep-link: navegar al tocar la notificación (y si la app se abrió desde una).
-  useEffect(() => {
-    if (Platform.OS === "web") return;
-
-    const handle = (response: Notifications.NotificationResponse | null) => {
-      const kind = response?.notification.request.content.data?.kind as ReminderKind | undefined;
-      if (kind === "debt" || kind === "goal") router.push(routeForKind(kind));
-    };
-
-    // Caso: la app se abrió tocando una notificación (estaba cerrada).
-    Notifications.getLastNotificationResponseAsync().then(handle).catch(() => {});
-    // Caso: la app ya estaba abierta / en background.
-    const sub = Notifications.addNotificationResponseReceivedListener(handle);
-    return () => sub.remove();
-  }, [router]);
 
   useEffect(() => {
     if (Platform.OS === "web") return;
