@@ -34,10 +34,12 @@ jobs:
           version: 11
 
       # 3) Instalar Node + cachear el store de pnpm (instalaciones más rápidas).
+      #    Node 22: pnpm 11 requiere Node >= 22.13 (usa node:sqlite). Con Node 20
+      #    el step de caché crashea en `pnpm store path`.
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       # 4) Instalar Bun (corre los tests de lógica: `bun test`).
