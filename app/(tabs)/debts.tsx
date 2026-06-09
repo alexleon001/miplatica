@@ -71,7 +71,13 @@ export default function DebtsScreen() {
           ) : isLoading ? (
             <RowsSkeleton count={3} />
           ) : (
-            <StateMessage kind="empty" message="No tenés deudas cargadas. Si tenés tarjeta, préstamo o cuotas, sumalas." />
+            <StateMessage
+              kind="empty"
+              message="No tenés deudas cargadas. Si tenés tarjeta, préstamo o cuotas, sumalas."
+              actionLabel="Sumar deuda"
+              actionIcon="add"
+              onAction={() => router.push("/modals/add-debt")}
+            />
           )
         }
       />

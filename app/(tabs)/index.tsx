@@ -5,6 +5,7 @@ import { AccountsList } from "../../components/AccountsList";
 import { BudgetBanner } from "../../components/BudgetBanner";
 import { CurrencyToggle } from "../../components/CurrencyToggle";
 import { ExchangeRatesBar } from "../../components/ExchangeRatesBar";
+import { FirstSteps } from "../../components/FirstSteps";
 import { NetWorthCard } from "../../components/NetWorthCard";
 import { NetWorthChart } from "../../components/NetWorthChart";
 import { UpcomingReminders } from "../../components/UpcomingReminders";
@@ -60,6 +61,7 @@ export default function DashboardScreen() {
         </View>
 
         <CurrencyToggle />
+        <FirstSteps />
         <UpcomingReminders />
         <BudgetBanner />
         <NetWorthCard />

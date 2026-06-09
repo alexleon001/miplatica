@@ -16,7 +16,7 @@ const ICON: Record<Kind, { name: IoniconName; color: string }> = {
   error: { name: "alert-circle-outline", color: colors.negative },
 };
 
-export function StateMessage({ kind = "empty", message, onRetry }: Props) {
+export function StateMessage({ kind = "empty", message, onRetry, actionLabel, onAction, actionIcon }: Props) {
   const icon = ICON[kind];
   return (
     <View style={styles.wrap}>
@@ -34,6 +34,19 @@ export function StateMessage({ kind = "empty", message, onRetry }: Props) {
           <Text style={styles.retryText}>Reintentar</Text>
         </Pressable>
       ) : null}
+      {/* CTA accionable (estados vacíos): un botón sólido que dispara la acción
+          principal de la pantalla (p. ej. abrir el modal de alta). */}
+      {kind !== "error" && actionLabel && onAction ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel}
+          style={({ pressed }) => [styles.action, pressed && { opacity: 0.85 }]}
+          onPress={onAction}
+        >
+          {actionIcon ? <Ionicons name={actionIcon} size={16} color="#FFFFFF" /> : null}
+          <Text style={styles.actionText}>{actionLabel}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -42,6 +55,11 @@ type Props = {
   kind?: Kind;
   message: string;
   onRetry?: () => void;
+  // CTA opcional para estados vacíos (no error): botón sólido con la acción
+  // principal de la pantalla.
+  actionLabel?: string;
+  onAction?: () => void;
+  actionIcon?: IoniconName;
 };
 
 const styles = StyleSheet.create({
@@ -66,4 +84,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   retryText: { color: colors.primaryBright, fontWeight: "700" },
+  action: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    marginTop: spacing.xs,
+  },
+  actionText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
 });

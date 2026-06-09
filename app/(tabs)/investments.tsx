@@ -127,7 +127,13 @@ export default function InvestmentsScreen() {
           ) : isLoading ? (
             <RowsSkeleton count={5} />
           ) : (
-            <StateMessage kind="empty" message="Todavía no cargaste inversiones. Sumá tu primera posición." />
+            <StateMessage
+              kind="empty"
+              message="Todavía no cargaste inversiones. Sumá tu primera posición."
+              actionLabel="Sumar inversión"
+              actionIcon="add"
+              onAction={() => router.push("/modals/add-investment")}
+            />
           )
         }
       />
