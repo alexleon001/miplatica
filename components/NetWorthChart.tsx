@@ -63,7 +63,7 @@ export function NetWorthChart() {
             color={barColor}
           />
           <MoneyAmount ars={arsSum?.deltaAbs ?? 0} usd={usdSum?.deltaAbs ?? null} size="sm" tone={tone} />
-          {sum.deltaPct != null ? (
+          {sum.deltaPct != null && sum.first > 0 ? (
             <Text style={[styles.pct, { color: barColor }]}>
               {sum.deltaPct >= 0 ? "+" : ""}
               {sum.deltaPct.toFixed(1)}%

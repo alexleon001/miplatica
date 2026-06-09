@@ -81,7 +81,7 @@ export function CtaButton({
       onPress={onPress}
     >
       {icon ? <Ionicons name={icon} size={16} color={colors.primaryBright} /> : null}
-      <Text style={styles.ctaText}>{label}</Text>
+      <Text style={styles.ctaText} numberOfLines={2}>{label}</Text>
     </Pressable>
   );
 }
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   ctaSoft: { backgroundColor: colors.primarySoft },
   ctaOutline: { borderWidth: 1, borderColor: colors.primary },
-  ctaText: { color: colors.primaryBright, fontWeight: "700", fontSize: 14 },
+  ctaText: { color: colors.primaryBright, fontWeight: "700", fontSize: 14, flexShrink: 1, textAlign: "center" },
   barBg: { height: 8, backgroundColor: colors.surfaceSunken, borderRadius: radius.full, overflow: "hidden" },
   barFill: { height: "100%", borderRadius: radius.full },
   iconChip: { borderRadius: radius.md, alignItems: "center", justifyContent: "center" },

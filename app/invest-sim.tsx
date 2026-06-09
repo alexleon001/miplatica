@@ -18,8 +18,27 @@ import { colors, radius, spacing, typography, shadow } from "../lib/theme";
 const HORIZONS = [3, 6, 12, 24];
 const DEFAULT_INFLATION = "2.5"; // fallback si no hay IPC cargado
 
+// Parsea un número de un input numérico. Acepta formato AR (1.234,56) y formato
+// con punto decimal del teclado decimal-pad (2.5). Heurística: la coma siempre es
+// decimal; un punto seguido de exactamente 3 dígitos (sin coma) o varios puntos se
+// tratan como separador de miles, si no el punto es decimal. Así "2.5" = 2.5 (no 25)
+// y "100.000" = 100000. Antes se borraban TODOS los puntos → "2.5" caía a 25 (bug:
+// la inflación 2.5% se interpretaba 25% mensual y reventaba el simulador).
 function num(s: string): number {
-  const n = Number(s.replace(/\./g, "").replace(",", "."));
+  const t = s.trim();
+  if (!t) return 0;
+  let normalized: string;
+  if (t.includes(",")) {
+    normalized = t.replace(/\./g, "").replace(",", ".");
+  } else {
+    const parts = t.split(".");
+    if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3)) {
+      normalized = parts.join(""); // miles: 1.234.567 / 100.000
+    } else {
+      normalized = t; // decimal: 2.5 / 12.50
+    }
+  }
+  const n = Number(normalized);
   return Number.isFinite(n) ? n : 0;
 }
 

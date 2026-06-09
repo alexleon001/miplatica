@@ -51,10 +51,13 @@ export const typography = {
 // en el último tramo (locations) para que el texto sobre indigo siga legible.
 export const gradients = {
   brand: {
-    colors: ["#4F46E5", "#4338CA", "#0891B2"] as const,
-    locations: [0, 0.6, 1] as const,
-    start: { x: 0, y: 0 },
-    end: { x: 1, y: 1 },
+    // Violeta → índigo → teal en diagonal. 4 paradas para una transición más suave
+    // y vibrante; el cyan/teal aparece recién en el tramo final (legibilidad del
+    // texto blanco sobre el índigo del cuerpo).
+    colors: ["#7C6CF5", "#5B4FE6", "#3B36B8", "#0E7FA8"] as const,
+    locations: [0, 0.38, 0.7, 1] as const,
+    start: { x: 0.05, y: 0 },
+    end: { x: 0.95, y: 1 },
   },
 } as const;
 
