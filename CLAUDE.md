@@ -27,7 +27,41 @@
 
 ---
 
-## Estado actual — sesión 9 en curso (2026-06-05)
+## Estado actual — sesión 11 (2026-06-09)
+
+**Foco: mejoras visuales/funcionales OTA-safe + darle Pro al user + cerrar los bug-fixes.**
+
+- **Commiteado en `main` local (falta `git push`, lo corre el user):**
+  - `c3d239c` — los **4 bug-fixes** de sesión 10 (invest-sim `num()`, NetWorthChart %, CtaButton wrap, gradiente). OTA-safe.
+  - `ecaa374` — **V4 + V3**: `components/FirstSteps.tsx` + `lib/store/first-steps.ts` (checklist de activación en el dashboard: cuenta→movimiento→presupuesto, derivado de datos en vivo, se auto-oculta al completar/descartar) + `StateMessage` con CTA opcional (`actionLabel`/`onAction`/`actionIcon`) cableada en empty states de inversiones/deudas/movimientos.
+- **V1 + F1 (sin commitear, pero YA en el OTA):** `app/(tabs)/transactions.tsx` ahora usa **`SectionList` agrupando por fecha** ("Hoy/Ayer/fecha"; parsea el `YYYY-MM-DD` crudo para evitar corrimiento de zona AR) + **filtro por categoría** (chips horizontales de las categorías presentes + "Sin categoría", combina con el filtro de tipo). **No se commiteó** porque el archivo importa `usePro` (Fase 1) y arrastraría `use-pro.ts` untracked → se commitea con el batch de Fase 1. Igual viaja en el OTA (empaqueta working tree).
+- **OTAs del día al canal `preview`** (sobre APK `c368dc3e`, runtime `0.1.0`, android+ios): `3cb7a3c4` (bug-fixes) + `889d4b38` (las 4 mejoras V1/F1/V3/V4). Reabrir la app 2 veces para aplicar.
+- **🆕 Migración `0012_entitlements` APLICADA** en prod (vía MCP). Existen `entitlements` + `is_pro()` + `ai_usage_daily` + `consume_ai_quota()`. **Regenerar `database.types`** para sacar el cast `as unknown` de `usePro`.
+- **🆕 User con Pro manual:** fila en `entitlements` (`user_id 9fcdac6f-e19d-414b-aff2-96d417fa344d`, `is_pro=true`, `store='manual'`, sin vencimiento). Para quitarlo: `update entitlements set is_pro=false where store='manual'`.
+- **🔴 GOTCHA OTA (importante):** `eas update` empaqueta el **working tree**, no el commit. Como el gating de Fase 1 está sin commitear pero presente en el tree, **ya salió al canal `preview`** en los OTAs del día. En el APK preview, `usePro` falla cerrado = **Free para todos salvo que tengan fila en `entitlements`** (el override dev es solo `__DEV__`). Por eso se le dio Pro manual al user (para recuperar la IA en su device de prueba). **Las 4 edges de IA siguen SIN el gate redeployado** → todavía sirven IA a cualquiera con JWT.
+- **Tests:** 120 `bun test` verdes. `type-check:app` limpio. `lint:app` 0 errores (5 warnings pre-existentes).
+- **🔴 Pendiente validar en device:** las 4 mejoras nuevas (movimientos agrupados por fecha + filtro categoría, empty states con botón, card "Primeros pasos") + que el Pro manual desbloquee asesor/resumen/categorización IA.
+
+## Estado actual — sesión 10 en curso (2026-06-08)
+
+**Foco: monetización (freemium ads + Pro con IA) + fixes visuales reportados en device.** Decisiones tomadas (todas recomendadas): IA = Pro, anuncios banner+interstitial+rewarded, pasarela **RevenueCat**. Ver `memory/project_monetization.md`.
+
+- **4 bug-fixes (JS puro, OTA-safe, sin commitear):**
+  1. **Simulador de inversiones** — `num()` en `app/invest-sim.tsx` borraba TODOS los puntos como miles → "2.5" caía a 25 (inflación 25% mensual reventaba todo: "real -99.1%", MEP +21076%). Ahora distingue decimal (`2.5`) de miles (`100.000`).
+  2. **Evolución patrimonio** (`NetWorthChart.tsx`) — ocultar el % cuando la base no es positiva (patrimonio negativo daba `-1383.3%` sin sentido). Se mantiene el delta absoluto.
+  3. **Texto fuera del botón** (`CtaButton` en `ui.tsx`) — `flexShrink:1` + `numberOfLines={2}` + centrado.
+  4. **Gradiente del home** (`gradients.brand` en `theme.ts`) — 4 paradas violeta→índigo→teal, más vibrante.
+- **Monetización Fase 1 (andamiaje, sin deploy todavía):**
+  - **Migración `0012_entitlements`** (✅ APLICADA 2026-06-09, sesión 11): tabla `entitlements` (RLS owner-read, escribe service_role) + `is_pro()` + `ai_usage_daily` + `consume_ai_quota(p_limit)`. SECURITY DEFINER, `search_path=public`.
+  - **Portón de IA server-side** `supabase/functions/_shared/ai-gate.ts` (`requireProAi`): chequea `is_pro` (402 si no) + cuota diaria 50 (`consume_ai_quota`, 429). **Cableado en las 4 edges de IA** (financial-advisor, monthly-summary, categorize-batch, categorize-transaction — a esta última se le agregó cliente supabase con auth header). **Falta redeployar las 4 + `_shared`.**
+  - **Cliente:** `lib/hooks/use-pro.ts` (`usePro()` → rpc `is_pro`, **falla cerrado** = Free; override dev en `lib/store/pro.ts`, solo `__DEV__`) + `app/paywall.tsx` (modal premium, planes anual/mensual, compra STUB hasta RevenueCat, atajo dev para forzar Pro/Free) + `components/ProLock.tsx`. Gateado: advisor, monthly-summary (query `enabled=isPro`), banner "Categorizar con IA" + "Sugerir categoría con IA" → paywall, badges PRO + card de upsell en `more.tsx`.
+  - **Webhook RevenueCat** `supabase/functions/revenuecat-webhook/index.ts` (`verify_jwt=false`, autenticado por `REVENUECAT_WEBHOOK_SECRET` en header Authorization) → upsert `entitlements` con service_role. Resuelve Pro por tipo de evento (EXPIRATION/REFUND/PAUSED=inactivo) + vencimiento. **Requiere que el cliente haga `Purchases.logIn(supabaseUserId)`** para que `app_user_id` = UUID Supabase. **Falta deploy + setear el secret + configurar el webhook en RevenueCat (Fase 2).**
+  - **`usePro` usa cast `as unknown` para `rpc("is_pro")`** (los tipos generados no la conocen hasta regenerar `database.types` post-migración).
+- **🔴 IMPORTANTE — secuencia de release:** la Fase 1 NO debe salir por OTA suelta. El cliente gatea a TODOS a Free hasta que (a) ✅ se aplique `0012` (hecho s11), (b) se redeployen las edges con el gate, y (c) exista forma de otorgar Pro (hoy solo grant manual SQL; RevenueCat = Fase 2). **OJO:** el gating de Fase 1 YA salió a `preview` en los OTAs de la sesión 11 (el OTA empaqueta el working tree, no el commit), así que en preview todos quedan Free salvo fila en `entitlements`. **Shippear Fase 1 a producción junto con Fase 2 (rebuild con RevenueCat+AdMob).** Los bug-fixes/mejoras visuales SÍ son OTA-eables por separado.
+- **Tests:** 120 `bun test` verdes. `type-check:app` limpio. `lint:app` 0 errores (5 warnings pre-existentes).
+- **Fase 2 (pendiente, requiere rebuild + cuentas del user):** crear AdMob + RevenueCat, instalar `react-native-purchases` + `react-native-google-mobile-ads`, webhook RevenueCat→edge→`entitlements`, anuncios + UMP, política de privacidad + Data Safety, íconos definitivos.
+
+## Estado actual — sesión 9 (2026-06-05)
 
 - **4 features nuevas, todas OTA-safe (JS puro, local-first), sin commitear todavía** (push lo corre el user):
   1. **Alertas de cotización** — `lib/rate-alerts.ts` (puro, edge-trigger/histéresis con re-armado) + `lib/store/rate-alerts.ts` + `lib/hooks/use-rate-alerts.ts` (notif local al cruzar umbral, mismo patrón que budget-alerts) + pantalla `app/rate-alerts.tsx` + toggle en notif-prefs (`rateAlerts`). Entry en `more.tsx`. **Gotcha:** `applyTriggered` conserva la referencia del array si nada cambió (evita loop de renders).
@@ -100,6 +134,7 @@
 | `EXPO_PUBLIC_APP_ENV` | cliente `.env` + `eas.json/preview env` | ✅ |
 | `ANTHROPIC_API_KEY` | **Edge Functions** (`supabase secrets set`) | ✅ seteada y verificada en device |
 | `MP_CLIENT_ID` / `MP_CLIENT_SECRET` / `MP_REDIRECT_URI` / `MP_TOKEN_KEY` | **Edge Functions** | ✅ seteados; falta validar flujo en device |
+| `REVENUECAT_WEBHOOK_SECRET` | **Edge Functions** (webhook RevenueCat) | ⏳ Fase 2 — setear y configurar el mismo valor en el panel de RevenueCat |
 
 > Regla #2: API keys sensibles **JAMÁS** en el cliente. Solo la anon publishable (diseñada para exponerse) viaja al bundle.
 
@@ -176,7 +211,7 @@ Si cambia la anon key: `eas env:create --environment preview --name EXPO_PUBLIC_
 - [x] Import CSV de movimientos (Cocos/PPI/IOL/banco) por alias de columnas + dedup `external_id`.
 - [x] FCI vía argentinadatos (client-side, sin cron) — selector de fondos + VCP del día.
 
-**Migraciones aplicadas:** `0001_init_schema`, `0002_helper_views`, `0003_refresh_positions`, `0004_schedule_crons`, `0005_budget_spent_triggers`, `0006_inflation`, `0007_mp_connections` (cifrada con pgcrypto + `mp_oauth_states` + funciones `mp_store_connection`/`mp_get_tokens` con `search_path = public, extensions` — pgcrypto vive en `extensions`), `0008_portfolio_by_type` (vista `v_portfolio_by_type`), `0009_payment_projection` (`projection_items` + `projection_income`, RLS owner-only), `0010_schedule_mp_sync_cron`, `0011_projection_item_interest` (columna `interest_rate numeric(6,2)` nullable).
+**Migraciones aplicadas:** `0001_init_schema`, `0002_helper_views`, `0003_refresh_positions`, `0004_schedule_crons`, `0005_budget_spent_triggers`, `0006_inflation`, `0007_mp_connections` (cifrada con pgcrypto + `mp_oauth_states` + funciones `mp_store_connection`/`mp_get_tokens` con `search_path = public, extensions` — pgcrypto vive en `extensions`), `0008_portfolio_by_type` (vista `v_portfolio_by_type`), `0009_payment_projection` (`projection_items` + `projection_income`, RLS owner-only), `0010_schedule_mp_sync_cron`, `0011_projection_item_interest` (columna `interest_rate numeric(6,2)` nullable), `0012_entitlements` (✅ **aplicada 2026-06-09** — Pro/IA: tabla `entitlements` + `is_pro()` + `ai_usage_daily` + `consume_ai_quota()`).
 
 ---
 
@@ -229,5 +264,8 @@ Si cambia la anon key: `eas env:create --environment preview --name EXPO_PUBLIC_
 | 6 | Deudas, metas, presupuestos avanzados, recordatorios | ✅ |
 | 7 | Refresh visual (design system) + proyección + FCI + gradiente | ✅ (pendiente validar en device) |
 | 8 | Proyección avanzada + alertas presupuesto + resumen IA + sparkline + extras | ✅ shipped (pendiente validar en device) |
+| 9 | Alertas cotización + insights + simulador + categorías custom + CI/ESLint | ✅ (pendiente validar en device) |
+| 10 | Monetización (freemium ads + Pro con IA, RevenueCat) + fixes device | 🚧 Fase 1: `0012` aplicada + Pro manual al user; falta redeploy edges con gate + Fase 2 (ads+IAP+rebuild) |
+| 11 | Mejoras UX OTA-safe: movimientos por fecha + filtro categoría + empty states con CTA + card "Primeros pasos" | ✅ commiteado/OTA (pendiente validar en device) |
 
-*Última actualización: 2026-06-05 (condensado para < 40k). Historial detallado por sesión/sprint en el git log.*
+*Última actualización: 2026-06-09 (sesión 11: mejoras UX OTA-safe + `0012` aplicada + Pro manual al user). Historial detallado por sesión/sprint en el git log.*
