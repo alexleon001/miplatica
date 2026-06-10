@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AccountsList } from "../../components/AccountsList";
+import { AdBanner } from "../../components/AdBanner";
 import { BudgetBanner } from "../../components/BudgetBanner";
 import { CurrencyToggle } from "../../components/CurrencyToggle";
 import { ExchangeRatesBar } from "../../components/ExchangeRatesBar";
@@ -72,6 +73,8 @@ export default function DashboardScreen() {
           <Text style={styles.ratesLabel}>Tipo de cambio hoy</Text>
           <ExchangeRatesBar />
         </View>
+
+        <AdBanner />
       </ScrollView>
     </SafeAreaView>
   );

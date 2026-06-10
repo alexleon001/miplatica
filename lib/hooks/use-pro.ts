@@ -8,6 +8,7 @@
 // el camino Pro/Free sin RevenueCat cableado.
 
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "../query-client";
 import { supabase } from "../supabase";
 import { useProDevStore } from "../store/pro";
 
@@ -33,4 +34,15 @@ export function usePro(): { isPro: boolean; isLoading: boolean } {
     return { isPro: devOverride, isLoading: false };
   }
   return { isPro: query.data === true, isLoading: query.isLoading };
+}
+
+// Refresca el entitlement tras una compra/restauración. El que escribe la DB es
+// el webhook de RevenueCat y puede tardar unos segundos en llegar, así que
+// además de invalidar ya, reintenta dos veces más.
+export function refreshProSoon(): void {
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["entitlement", "is-pro"] });
+  void invalidate();
+  setTimeout(invalidate, 4000);
+  setTimeout(invalidate, 12000);
 }

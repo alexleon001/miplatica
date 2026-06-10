@@ -1,17 +1,26 @@
 // Paywall de Mi Platica Pro (Sprint 10: monetización). La IA es Pro: esta pantalla
-// presenta los beneficios y deja elegir plan. La COMPRA todavía es un stub —
-// RevenueCat se cablea en Fase 2 (dep nativa → requiere rebuild). `startPurchase`
-// está aislado para que enchufar RevenueCat sea un cambio de una sola función.
+// presenta los beneficios y deja elegir plan. La compra va por RevenueCat
+// (lib/purchases.ts, Fase 2): si la capa está disponible compra de verdad
+// (los precios reales de la tienda pisan los hardcodeados) y el webhook escribe
+// el entitlement; si no (APK sin el módulo nativo, API key sin configurar),
+// cae al stub informativo de siempre.
 //
 // En __DEV__ hay un atajo para simular el entitlement (useProDevStore) y poder
 // probar el desbloqueo de las features de IA sin la pasarela.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BrandGradient } from "../components/BrandGradient";
+import { refreshProSoon } from "../lib/hooks/use-pro";
+import {
+  getProOfferings,
+  purchasePro,
+  restorePro,
+  type ProOfferings,
+} from "../lib/purchases";
 import { useProDevStore } from "../lib/store/pro";
 import { colors, radius, spacing, typography, shadow } from "../lib/theme";
 
@@ -29,15 +38,60 @@ const BENEFITS: { icon: IoniconName; title: string; subtitle: string }[] = [
 export default function PaywallScreen() {
   const router = useRouter();
   const [plan, setPlan] = useState<Plan>("annual");
+  const [offerings, setOfferings] = useState<ProOfferings | null>(null);
+  const [busy, setBusy] = useState(false);
   const setDevOverride = useProDevStore((s) => s.setDevOverride);
 
-  // Stub de compra. En Fase 2 esto llama a RevenueCat (Purchases.purchasePackage)
-  // y el webhook escribe el entitlement; usePro() lo refleja al instante.
-  function startPurchase() {
-    Alert.alert(
-      "Suscripción en camino",
-      "Las compras se habilitan en la próxima versión (estamos integrando el pago). ¡Gracias por el aguante!",
-    );
+  // Paquetes reales de RevenueCat (null si la capa no está disponible →
+  // seguimos con precios hardcodeados + stub de compra).
+  useEffect(() => {
+    let alive = true;
+    void getProOfferings().then((o) => {
+      if (alive) setOfferings(o);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function startPurchase() {
+    const pkg = plan === "annual" ? offerings?.annual : offerings?.monthly;
+    if (!pkg) {
+      // Stub: RevenueCat no disponible todavía en este build/entorno.
+      Alert.alert(
+        "Suscripción en camino",
+        "Las compras se habilitan en la próxima versión (estamos integrando el pago). ¡Gracias por el aguante!",
+      );
+      return;
+    }
+    setBusy(true);
+    const result = await purchasePro(pkg);
+    setBusy(false);
+    if (result === "purchased") {
+      refreshProSoon();
+      Alert.alert(
+        "¡Ya sos Pro! 🎉",
+        "Gracias por el aguante. La IA se desbloquea en unos segundos.",
+        [{ text: "Dale", onPress: () => router.back() }],
+      );
+    } else if (result === "error" || result === "unavailable") {
+      Alert.alert("No pudimos completar la compra", "No se te cobró nada. Probá de nuevo en un rato.");
+    }
+    // cancelled → el usuario cerró el flujo de pago, no molestamos.
+  }
+
+  async function restorePurchases() {
+    setBusy(true);
+    const restored = await restorePro();
+    setBusy(false);
+    if (restored) {
+      refreshProSoon();
+      Alert.alert("Compras restauradas", "Tu Pro vuelve a estar activo.", [
+        { text: "Dale", onPress: () => router.back() },
+      ]);
+    } else {
+      Alert.alert("Nada para restaurar", "No encontramos una suscripción activa con esta cuenta de Google Play.");
+    }
   }
 
   return (
@@ -79,25 +133,34 @@ export default function PaywallScreen() {
           active={plan === "annual"}
           onPress={() => setPlan("annual")}
           title="Anual"
-          price="US$ 19,99 / año"
-          hint="Equivale a ~US$ 1,67/mes · 2 meses gratis"
+          price={
+            offerings?.annual ? `${offerings.annual.product.priceString} / año` : "US$ 19,99 / año"
+          }
+          hint="2 meses gratis vs. el mensual"
           badge="Mejor precio"
         />
         <PlanCard
           active={plan === "monthly"}
           onPress={() => setPlan("monthly")}
           title="Mensual"
-          price="US$ 2,49 / mes"
+          price={
+            offerings?.monthly ? `${offerings.monthly.product.priceString} / mes` : "US$ 2,49 / mes"
+          }
           hint="Cancelás cuando quieras"
         />
 
         <Pressable
-          style={({ pressed }) => [styles.cta, pressed && { opacity: 0.88 }]}
+          style={({ pressed }) => [styles.cta, (pressed || busy) && { opacity: 0.88 }]}
           onPress={startPurchase}
+          disabled={busy}
           accessibilityRole="button"
         >
           <Text style={styles.ctaText}>
-            {plan === "annual" ? "Empezar con el plan anual" : "Empezar con el plan mensual"}
+            {busy
+              ? "Procesando…"
+              : plan === "annual"
+                ? "Empezar con el plan anual"
+                : "Empezar con el plan mensual"}
           </Text>
         </Pressable>
 
@@ -105,6 +168,10 @@ export default function PaywallScreen() {
           Precio en moneda local según tu tienda. La suscripción se renueva sola; la cancelás desde Google Play
           cuando quieras. La IA es orientativa, no es asesoramiento financiero profesional.
         </Text>
+
+        <Pressable onPress={restorePurchases} disabled={busy} hitSlop={8} accessibilityRole="button">
+          <Text style={styles.restore}>¿Ya pagaste Pro? Restaurar compras</Text>
+        </Pressable>
 
         {__DEV__ ? (
           <View style={styles.devBox}>
@@ -226,6 +293,10 @@ const styles = StyleSheet.create({
   },
   ctaText: { color: "#FFFFFF", fontWeight: "800", fontSize: 16 },
   legal: { ...typography.caption, color: colors.textMuted, fontSize: 11, lineHeight: 16, marginTop: spacing.xs },
+  restore: {
+    ...typography.caption, color: colors.textSecondary, fontWeight: "700",
+    textAlign: "center", paddingVertical: spacing.sm, textDecorationLine: "underline",
+  },
   devBox: {
     marginTop: spacing.md, padding: spacing.md, borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.warning + "55", backgroundColor: colors.warningSoft, gap: spacing.sm,

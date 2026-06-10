@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { useProfile } from "../lib/hooks/use-profile";
+import { syncPurchasesUser } from "../lib/purchases";
 import { QueryProvider } from "../lib/query-provider";
 import {
   type CurrencyDisplay,
@@ -39,6 +40,14 @@ function AuthGate() {
     setDisplay(p.currency_display as CurrencyDisplay);
     setUsdType(p.preferred_usd_type as UsdType);
   }, [profileQuery.data, setDisplay, setUsdType]);
+
+  // RevenueCat sigue al usuario de Supabase (logIn con el UUID → el webhook
+  // escribe `entitlements` con el user correcto). No-op si el módulo nativo o
+  // la API key no están (APK viejo, Expo Go, Fase 2 sin configurar).
+  const userId = session?.user.id ?? null;
+  useEffect(() => {
+    void syncPurchasesUser(userId);
+  }, [userId]);
 
   useEffect(() => {
     if (loading) return;

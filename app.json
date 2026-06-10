@@ -32,7 +32,15 @@
           "color": "#6366F1"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "userTrackingUsageDescription": "Usamos tu identificador para mostrarte anuncios más relevantes."
+        }
+      ]
     ],
     "extra": {
       "router": {},
