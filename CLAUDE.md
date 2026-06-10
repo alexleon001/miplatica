@@ -27,6 +27,17 @@
 
 ---
 
+## Estado actual — sesión 12 (2026-06-09)
+
+**Foco: cerrar Fase 1 — batch commiteado + `database.types` regenerado. Deploy de las edges con gate pendiente de OK del user.**
+
+- **Commiteado en `main` local (falta `git push`, lo corre el user):**
+  - `4d7627d` — **Fase 1 completa**: migración `0012` + `_shared/ai-gate.ts` + gate cableado en las 4 edges de IA + webhook RevenueCat + `usePro`/paywall/ProLock + gating cliente (advisor, monthly-summary, categorización IA, badges en Más) + `database.types` regenerado.
+  - `5943d39` — movimientos agrupados por fecha + filtro por categoría (V1+F1 de sesión 11, ahora sí commiteados).
+- **`database.types.ts` regenerado vía MCP** (`entitlements`/`ai_usage_daily`/`is_pro`/`consume_ai_quota` ya tipados) y **cast `as unknown` eliminado de `usePro`**.
+- **Tests:** 120 `bun test` verdes · `type-check:app` limpio · `lint:app` 0 errores (5 warnings pre-existentes). **Working tree limpio.**
+- **🔴 ÚNICO pendiente de Fase 1: redeployar las 4 edges de IA + `_shared`** — el permission classifier bloqueó el deploy a prod sin OK explícito del user. Hasta entonces las edges siguen sirviendo IA a cualquiera con JWT. El código ya está listo y commiteado; deployar tal cual (vía MCP `deploy_edge_function` o `supabase functions deploy`). El webhook RevenueCat NO se deploya todavía (Fase 2, requiere `REVENUECAT_WEBHOOK_SECRET`).
+
 ## Estado actual — sesión 11 (2026-06-09)
 
 **Foco: mejoras visuales/funcionales OTA-safe + darle Pro al user + cerrar los bug-fixes.**
@@ -34,9 +45,9 @@
 - **Commiteado en `main` local (falta `git push`, lo corre el user):**
   - `c3d239c` — los **4 bug-fixes** de sesión 10 (invest-sim `num()`, NetWorthChart %, CtaButton wrap, gradiente). OTA-safe.
   - `ecaa374` — **V4 + V3**: `components/FirstSteps.tsx` + `lib/store/first-steps.ts` (checklist de activación en el dashboard: cuenta→movimiento→presupuesto, derivado de datos en vivo, se auto-oculta al completar/descartar) + `StateMessage` con CTA opcional (`actionLabel`/`onAction`/`actionIcon`) cableada en empty states de inversiones/deudas/movimientos.
-- **V1 + F1 (sin commitear, pero YA en el OTA):** `app/(tabs)/transactions.tsx` ahora usa **`SectionList` agrupando por fecha** ("Hoy/Ayer/fecha"; parsea el `YYYY-MM-DD` crudo para evitar corrimiento de zona AR) + **filtro por categoría** (chips horizontales de las categorías presentes + "Sin categoría", combina con el filtro de tipo). **No se commiteó** porque el archivo importa `usePro` (Fase 1) y arrastraría `use-pro.ts` untracked → se commitea con el batch de Fase 1. Igual viaja en el OTA (empaqueta working tree).
+- **V1 + F1 (ya en el OTA):** `app/(tabs)/transactions.tsx` usa **`SectionList` agrupando por fecha** ("Hoy/Ayer/fecha"; parsea el `YYYY-MM-DD` crudo para evitar corrimiento de zona AR) + **filtro por categoría** (chips horizontales de las categorías presentes + "Sin categoría", combina con el filtro de tipo). Commiteado en sesión 12 (`5943d39`).
 - **OTAs del día al canal `preview`** (sobre APK `c368dc3e`, runtime `0.1.0`, android+ios): `3cb7a3c4` (bug-fixes) + `889d4b38` (las 4 mejoras V1/F1/V3/V4). Reabrir la app 2 veces para aplicar.
-- **🆕 Migración `0012_entitlements` APLICADA** en prod (vía MCP). Existen `entitlements` + `is_pro()` + `ai_usage_daily` + `consume_ai_quota()`. **Regenerar `database.types`** para sacar el cast `as unknown` de `usePro`.
+- **🆕 Migración `0012_entitlements` APLICADA** en prod (vía MCP). Existen `entitlements` + `is_pro()` + `ai_usage_daily` + `consume_ai_quota()`. (`database.types` regenerado en sesión 12.)
 - **🆕 User con Pro manual:** fila en `entitlements` (`user_id 9fcdac6f-e19d-414b-aff2-96d417fa344d`, `is_pro=true`, `store='manual'`, sin vencimiento). Para quitarlo: `update entitlements set is_pro=false where store='manual'`.
 - **🔴 GOTCHA OTA (importante):** `eas update` empaqueta el **working tree**, no el commit. Como el gating de Fase 1 está sin commitear pero presente en el tree, **ya salió al canal `preview`** en los OTAs del día. En el APK preview, `usePro` falla cerrado = **Free para todos salvo que tengan fila en `entitlements`** (el override dev es solo `__DEV__`). Por eso se le dio Pro manual al user (para recuperar la IA en su device de prueba). **Las 4 edges de IA siguen SIN el gate redeployado** → todavía sirven IA a cualquiera con JWT.
 - **Tests:** 120 `bun test` verdes. `type-check:app` limpio. `lint:app` 0 errores (5 warnings pre-existentes).
@@ -56,7 +67,6 @@
   - **Portón de IA server-side** `supabase/functions/_shared/ai-gate.ts` (`requireProAi`): chequea `is_pro` (402 si no) + cuota diaria 50 (`consume_ai_quota`, 429). **Cableado en las 4 edges de IA** (financial-advisor, monthly-summary, categorize-batch, categorize-transaction — a esta última se le agregó cliente supabase con auth header). **Falta redeployar las 4 + `_shared`.**
   - **Cliente:** `lib/hooks/use-pro.ts` (`usePro()` → rpc `is_pro`, **falla cerrado** = Free; override dev en `lib/store/pro.ts`, solo `__DEV__`) + `app/paywall.tsx` (modal premium, planes anual/mensual, compra STUB hasta RevenueCat, atajo dev para forzar Pro/Free) + `components/ProLock.tsx`. Gateado: advisor, monthly-summary (query `enabled=isPro`), banner "Categorizar con IA" + "Sugerir categoría con IA" → paywall, badges PRO + card de upsell en `more.tsx`.
   - **Webhook RevenueCat** `supabase/functions/revenuecat-webhook/index.ts` (`verify_jwt=false`, autenticado por `REVENUECAT_WEBHOOK_SECRET` en header Authorization) → upsert `entitlements` con service_role. Resuelve Pro por tipo de evento (EXPIRATION/REFUND/PAUSED=inactivo) + vencimiento. **Requiere que el cliente haga `Purchases.logIn(supabaseUserId)`** para que `app_user_id` = UUID Supabase. **Falta deploy + setear el secret + configurar el webhook en RevenueCat (Fase 2).**
-  - **`usePro` usa cast `as unknown` para `rpc("is_pro")`** (los tipos generados no la conocen hasta regenerar `database.types` post-migración).
 - **🔴 IMPORTANTE — secuencia de release:** la Fase 1 NO debe salir por OTA suelta. El cliente gatea a TODOS a Free hasta que (a) ✅ se aplique `0012` (hecho s11), (b) se redeployen las edges con el gate, y (c) exista forma de otorgar Pro (hoy solo grant manual SQL; RevenueCat = Fase 2). **OJO:** el gating de Fase 1 YA salió a `preview` en los OTAs de la sesión 11 (el OTA empaqueta el working tree, no el commit), así que en preview todos quedan Free salvo fila en `entitlements`. **Shippear Fase 1 a producción junto con Fase 2 (rebuild con RevenueCat+AdMob).** Los bug-fixes/mejoras visuales SÍ son OTA-eables por separado.
 - **Tests:** 120 `bun test` verdes. `type-check:app` limpio. `lint:app` 0 errores (5 warnings pre-existentes).
 - **Fase 2 (pendiente, requiere rebuild + cuentas del user):** crear AdMob + RevenueCat, instalar `react-native-purchases` + `react-native-google-mobile-ads`, webhook RevenueCat→edge→`entitlements`, anuncios + UMP, política de privacidad + Data Safety, íconos definitivos.
@@ -267,5 +277,6 @@ Si cambia la anon key: `eas env:create --environment preview --name EXPO_PUBLIC_
 | 9 | Alertas cotización + insights + simulador + categorías custom + CI/ESLint | ✅ (pendiente validar en device) |
 | 10 | Monetización (freemium ads + Pro con IA, RevenueCat) + fixes device | 🚧 Fase 1: `0012` aplicada + Pro manual al user; falta redeploy edges con gate + Fase 2 (ads+IAP+rebuild) |
 | 11 | Mejoras UX OTA-safe: movimientos por fecha + filtro categoría + empty states con CTA + card "Primeros pasos" | ✅ commiteado/OTA (pendiente validar en device) |
+| 12 | Cierre Fase 1: commit del batch + `database.types` regenerado (sin cast) | ✅ (falta redeploy de las 4 edges con gate — bloqueado, pide OK del user) |
 
-*Última actualización: 2026-06-09 (sesión 11: mejoras UX OTA-safe + `0012` aplicada + Pro manual al user). Historial detallado por sesión/sprint en el git log.*
+*Última actualización: 2026-06-09 (sesión 12: Fase 1 commiteada + types regenerados; falta redeploy de edges con gate). Historial detallado por sesión/sprint en el git log.*
