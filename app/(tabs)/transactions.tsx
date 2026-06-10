@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, SectionList, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,7 +11,8 @@ import { StateMessage } from "../../components/StateMessage";
 import { TransactionItem } from "../../components/TransactionItem";
 import { useMonthlyBalance } from "../../lib/hooks/use-monthly-balance";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
-import { useCategorizeBatch, useDeleteTransaction, useTransactions } from "../../lib/hooks/use-transactions";
+import { type Transaction, useCategorizeBatch, useDeleteTransaction, useTransactions } from "../../lib/hooks/use-transactions";
+import { usePro } from "../../lib/hooks/use-pro";
 import { categoryById } from "../../lib/categories";
 import { confirmDelete } from "../../lib/confirm";
 import { Card, Fab, ScreenTitle } from "../../components/ui";
@@ -25,32 +26,95 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "expense", label: "Gastos" },
 ];
 
+// Sentinel para el chip "Sin categoría" del filtro por categoría (F1): no es un
+// id real de categoría, así que lo distinguimos del null = "todas".
+const NO_CATEGORY = "__none__";
+
+// Agrupa por día para las secciones (V1). Trabajamos con el string YYYY-MM-DD
+// crudo (no `new Date()`) para evitar el corrimiento de zona horaria: en AR
+// (UTC-3) `new Date("2026-06-09")` cae el día anterior 21:00.
+const sectionDateFmt = new Intl.DateTimeFormat("es-AR", { weekday: "short", day: "numeric", month: "short" });
+const sectionDateYearFmt = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short", year: "numeric" });
+
+function ymd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function sectionTitle(key: string, now: Date): string {
+  if (key === ymd(now)) return "Hoy";
+  if (key === ymd(new Date(now.getTime() - 86_400_000))) return "Ayer";
+  // Local midnight para formatear sin corrimiento de zona.
+  const d = new Date(`${key}T00:00:00`);
+  const fmt = d.getFullYear() === now.getFullYear() ? sectionDateFmt : sectionDateYearFmt;
+  return fmt.format(d).replace(".", "");
+}
+
 export default function TransactionsScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
+  const [catFilter, setCatFilter] = useState<string | null>(null); // null = todas
   const [query, setQuery] = useState("");
   const { data: txs, isLoading, isError, refetch } = useTransactions();
   const monthly = useMonthlyBalance();
   const { refreshing, onRefresh } = usePullRefresh();
   const del = useDeleteTransaction();
   const categorize = useCategorizeBatch();
+  const { isPro } = usePro();
 
   const filtered = useMemo(() => {
     if (!txs) return [];
     const q = query.trim().toLowerCase();
     return txs.filter((t) => {
       if (filter !== "all" && t.type !== filter) return false;
+      if (catFilter === NO_CATEGORY) {
+        if (t.category) return false;
+      } else if (catFilter && t.category !== catFilter) {
+        return false;
+      }
       if (!q) return true;
       const catLabel = categoryById(t.category)?.label ?? "";
       const haystack = `${t.merchant ?? ""} ${t.description ?? ""} ${catLabel}`.toLowerCase();
       return haystack.includes(q);
     });
-  }, [txs, filter, query]);
+  }, [txs, filter, catFilter, query]);
+
+  // Secciones por día (V1). `filtered` ya viene ordenado por fecha desc (la query
+  // ordena por date, created_at), así que las secciones quedan en orden.
+  const sections = useMemo(() => {
+    const now = new Date();
+    const groups: { key: string; title: string; data: Transaction[] }[] = [];
+    let current: { key: string; title: string; data: Transaction[] } | null = null;
+    for (const t of filtered) {
+      const key = t.date.slice(0, 10);
+      if (!current || current.key !== key) {
+        current = { key, title: sectionTitle(key, now), data: [] };
+        groups.push(current);
+      }
+      current.data.push(t);
+    }
+    return groups;
+  }, [filtered]);
+
+  // Categorías presentes en los datos (para los chips de filtro), ordenadas por
+  // frecuencia. Incluye el sentinel "sin categoría" si hay movimientos sin clasificar.
+  const presentCategories = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const t of txs ?? []) {
+      const key = t.category ?? NO_CATEGORY;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
+  }, [txs]);
 
   const uncategorized = useMemo(() => (txs ?? []).filter((t) => !t.category).length, [txs]);
 
   function runCategorize() {
     if (categorize.isPending) return;
+    // La categorización con IA es Pro: si no es Pro, lo mandamos al paywall.
+    if (!isPro) {
+      router.push("/paywall");
+      return;
+    }
     categorize.mutate(undefined, {
       onSuccess: (r) =>
         Alert.alert(
@@ -101,6 +165,8 @@ export default function TransactionsScreen() {
               key={f.value}
               style={[styles.chip, filter === f.value && styles.chipActive]}
               onPress={() => setFilter(f.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: filter === f.value }}
             >
               <Text style={[styles.chipText, filter === f.value && styles.chipTextActive]}>
                 {f.label}
@@ -108,6 +174,33 @@ export default function TransactionsScreen() {
             </Pressable>
           ))}
         </View>
+
+        {presentCategories.length >= 2 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.catRow}
+            keyboardShouldPersistTaps="handled"
+          >
+            <CatChip
+              label="Todas"
+              active={catFilter === null}
+              onPress={() => setCatFilter(null)}
+            />
+            {presentCategories.map((id) => {
+              const cat = id === NO_CATEGORY ? null : categoryById(id);
+              const label = id === NO_CATEGORY ? "📦 Sin categoría" : `${cat?.icon ?? "📦"} ${cat?.label ?? id}`;
+              return (
+                <CatChip
+                  key={id}
+                  label={label}
+                  active={catFilter === id}
+                  onPress={() => setCatFilter(catFilter === id ? null : id)}
+                />
+              );
+            })}
+          </ScrollView>
+        ) : null}
 
         {uncategorized > 0 ? (
           <Pressable
@@ -119,26 +212,30 @@ export default function TransactionsScreen() {
             {categorize.isPending ? (
               <ActivityIndicator color={colors.primaryBright} size="small" />
             ) : (
-              <Ionicons name="sparkles" size={16} color={colors.primaryBright} />
+              <Ionicons name={isPro ? "sparkles" : "lock-closed"} size={16} color={colors.primaryBright} />
             )}
             <Text style={styles.aiBannerText}>
               {categorize.isPending
                 ? "Categorizando con IA…"
-                : `${uncategorized} sin categoría · Categorizar con IA`}
+                : `${uncategorized} sin categoría · Categorizar con IA${isPro ? "" : " (Pro)"}`}
             </Text>
           </Pressable>
         ) : null}
       </View>
 
-      <FlatList
-        data={filtered}
+      <SectionList
+        sections={sections}
         keyExtractor={(t) => t.id}
+        stickySectionHeadersEnabled
         ListHeaderComponent={
           <View style={styles.listHeader}>
             <RecurringBanner />
             <SpendingBreakdown />
           </View>
         }
+        renderSectionHeader={({ section }) => (
+          <Text style={styles.sectionHeader}>{section.title}</Text>
+        )}
         renderItem={({ item }) => (
           <TransactionItem
             tx={item}
@@ -158,16 +255,38 @@ export default function TransactionsScreen() {
             <StateMessage kind="error" message="No pude cargar los movimientos." onRetry={() => refetch()} />
           ) : isLoading ? (
             <RowsSkeleton count={6} />
-          ) : query.trim() || filter !== "all" ? (
+          ) : query.trim() || filter !== "all" || catFilter ? (
             <StateMessage kind="empty" message="Ningún movimiento coincide con la búsqueda o el filtro." />
           ) : (
-            <StateMessage kind="empty" message="Todavía no hay movimientos. Agregá el primero." />
+            <StateMessage
+              kind="empty"
+              message="Todavía no hay movimientos. Agregá el primero."
+              actionLabel="Cargar movimiento"
+              actionIcon="add"
+              onAction={() => router.push("/modals/add-transaction")}
+            />
           )
         }
       />
 
       <Fab label="Nuevo" onPress={() => router.push("/modals/add-transaction")} />
     </SafeAreaView>
+  );
+}
+
+// Chip compacto del filtro por categoría (fila horizontal scrolleable).
+function CatChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      style={[styles.catChip, active && styles.catChipActive]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+    >
+      <Text style={[styles.catChipText, active && styles.catChipTextActive]} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -231,7 +350,26 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
   chipText: { color: colors.textMuted, fontSize: 13, fontWeight: "600" },
   chipTextActive: { color: "#FFFFFF" },
+  catRow: { gap: spacing.xs, paddingVertical: 2, paddingRight: spacing.xl },
+  catChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceDark,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  catChipActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+  catChipText: { color: colors.textSecondary, fontSize: 12, fontWeight: "600" },
+  catChipTextActive: { color: colors.primaryBright },
   list: { paddingHorizontal: spacing.xl, paddingBottom: 120, flexGrow: 1 },
   listHeader: { gap: spacing.md, paddingBottom: spacing.md },
+  sectionHeader: {
+    ...typography.overline,
+    color: colors.textMuted,
+    backgroundColor: colors.backgroundDark,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
+  },
   separator: { height: 1, backgroundColor: colors.borderSoft, marginVertical: 2 },
 });
