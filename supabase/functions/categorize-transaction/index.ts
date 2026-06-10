@@ -27,7 +27,9 @@
 // ============================================
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
+import { requireProAi } from "../_shared/ai-gate.ts";
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -89,6 +91,20 @@ Deno.serve(async (req: Request) => {
   if (!apiKey) {
     return json({ error: "Server misconfigured: ANTHROPIC_API_KEY missing" }, 500);
   }
+
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return json({ error: "Missing Authorization header" }, 401);
+  }
+
+  // La IA es Pro: verificar entitlement + cuota antes de gastar tokens.
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } },
+  );
+  const gate = await requireProAi(supabase);
+  if (gate) return gate;
 
   let body: CategorizeRequest;
   try {

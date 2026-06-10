@@ -7,7 +7,9 @@ import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { ProLock } from "../components/ProLock";
 import { StateMessage } from "../components/StateMessage";
+import { usePro } from "../lib/hooks/use-pro";
 import { currentPeriod, useMonthlySummary } from "../lib/hooks/use-monthly-summary";
 import { monthLabel } from "../lib/projection";
 import { colors, radius, spacing, typography, shadow } from "../lib/theme";
@@ -15,7 +17,9 @@ import { colors, radius, spacing, typography, shadow } from "../lib/theme";
 export default function MonthlySummaryScreen() {
   const router = useRouter();
   const period = currentPeriod();
-  const { data, isLoading, isFetching, isError, refetch } = useMonthlySummary(period);
+  const { isPro } = usePro();
+  // No llamamos a la IA si no es Pro (la query queda deshabilitada → no gasta).
+  const { data, isLoading, isFetching, isError, refetch } = useMonthlySummary(period, isPro);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -51,7 +55,12 @@ export default function MonthlySummaryScreen() {
         <Text style={styles.title}>Resumen de {monthLabel(period)}</Text>
         <Text style={styles.subtitle}>Tu mes financiero, contado por la IA con tus números reales.</Text>
 
-        {isLoading || (isFetching && !data) ? (
+        {!isPro ? (
+          <ProLock
+            title="El resumen del mes es Pro"
+            subtitle="La IA analiza tus movimientos, los compara con el mes anterior y con la inflación. Desbloquealo con Mi Platica Pro."
+          />
+        ) : isLoading || (isFetching && !data) ? (
           <View style={styles.loading}>
             <ActivityIndicator color={colors.primaryBright} />
             <Text style={styles.loadingText}>Analizando tus movimientos…</Text>

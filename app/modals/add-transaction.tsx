@@ -7,6 +7,7 @@ import { categoryById } from "../../lib/categories";
 import { useCategoriesByGroup } from "../../lib/hooks/use-categories";
 import { useAccounts } from "../../lib/hooks/use-accounts";
 import { useCategorizeTransaction } from "../../lib/hooks/use-categorize-transaction";
+import { usePro } from "../../lib/hooks/use-pro";
 import { useCreateTransaction } from "../../lib/hooks/use-create-transaction";
 import { useTransactions, useUpdateTransaction } from "../../lib/hooks/use-transactions";
 import { useRecurringStore } from "../../lib/store/recurring";
@@ -30,6 +31,7 @@ export default function AddTransactionModal() {
   const create = useCreateTransaction();
   const update = useUpdateTransaction();
   const categorize = useCategorizeTransaction();
+  const { isPro } = usePro();
 
   const [type, setType] = useState<TxType>("expense");
   const [amount, setAmount] = useState("");
@@ -74,6 +76,11 @@ export default function AddTransactionModal() {
   const availableCategories = useCategoriesByGroup(categoryGroup);
 
   async function suggestWithAI() {
+    // La sugerencia con IA es Pro: si no es Pro, lo mandamos al paywall.
+    if (!isPro) {
+      router.push("/paywall");
+      return;
+    }
     if (!description.trim() || !amount.trim() || !selectedAccount) {
       Alert.alert("Faltan datos", "Necesito descripción, monto y cuenta para sugerir categoría.");
       return;
@@ -183,8 +190,8 @@ export default function AddTransactionModal() {
         onPress={suggestWithAI}
         disabled={categorize.isPending}
       >
-        <Ionicons name="sparkles" size={16} color={colors.primaryBright} />
-        <Text style={styles.aiBtnText}>{categorize.isPending ? "Pensando…" : "Sugerir categoría con IA"}</Text>
+        <Ionicons name={isPro ? "sparkles" : "lock-closed"} size={16} color={colors.primaryBright} />
+        <Text style={styles.aiBtnText}>{categorize.isPending ? "Pensando…" : `Sugerir categoría con IA${isPro ? "" : " (Pro)"}`}</Text>
       </Pressable>
 
       <FormField label="Cuenta" hint={accounts.data?.length ? undefined : "Agregá una cuenta desde el dashboard."}>

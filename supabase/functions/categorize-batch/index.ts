@@ -17,6 +17,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
+import { requireProAi } from "../_shared/ai-gate.ts";
 
 const MODEL = "claude-sonnet-4-6";
 const MAX_TX = 200; // tope por invocación (el cliente puede volver a llamar)
@@ -68,6 +69,10 @@ Deno.serve(async (req: Request) => {
   );
   const { data: userData, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userData.user) return json({ error: "Invalid session" }, 401);
+
+  // La IA es Pro: verificar entitlement + cuota antes de gastar tokens.
+  const gate = await requireProAi(userClient);
+  if (gate) return gate;
   const ownerId = userData.user.id;
 
   const admin = createClient(

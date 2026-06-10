@@ -79,6 +79,7 @@ function AuthGate() {
       <Stack.Screen name="insights" />
       <Stack.Screen name="invest-sim" />
       <Stack.Screen name="categories" />
+      <Stack.Screen name="paywall" options={{ presentation: "modal" }} />
       <Stack.Screen name="modals" options={{ presentation: "modal" }} />
     </Stack>
   );

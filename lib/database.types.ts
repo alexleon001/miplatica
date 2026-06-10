@@ -74,6 +74,24 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_daily: {
+        Row: {
+          count: number
+          day: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          day?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          day?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       asset_prices: {
         Row: {
           fetched_at: string
@@ -182,6 +200,33 @@ export type Database = {
           remaining_amount?: number
           total_amount?: number
           type?: string
+        }
+        Relationships: []
+      }
+      entitlements: {
+        Row: {
+          expires_at: string | null
+          is_pro: boolean
+          product_id: string | null
+          store: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          is_pro?: boolean
+          product_id?: string | null
+          store?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          is_pro?: boolean
+          product_id?: string | null
+          store?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -406,6 +451,30 @@ export type Database = {
         }
         Relationships: []
       }
+      projection_income: {
+        Row: {
+          amount_ars: number
+          created_at: string
+          month: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_ars: number
+          created_at?: string
+          month: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_ars?: number
+          created_at?: string
+          month?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       projection_items: {
         Row: {
           amount: number
@@ -456,30 +525,6 @@ export type Database = {
           payment_method?: string
           recurrence?: string
           start_month?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      projection_income: {
-        Row: {
-          amount_ars: number
-          created_at: string
-          month: string
-          owner_id: string
-          updated_at: string
-        }
-        Insert: {
-          amount_ars: number
-          created_at?: string
-          month: string
-          owner_id: string
-          updated_at?: string
-        }
-        Update: {
-          amount_ars?: number
-          created_at?: string
-          month?: string
-          owner_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -631,6 +676,38 @@ export type Database = {
       }
     }
     Functions: {
+      consume_ai_quota: { Args: { p_limit: number }; Returns: boolean }
+      is_pro: { Args: never; Returns: boolean }
+      mp_get_tokens: {
+        Args: { p_key: string; p_owner: string }
+        Returns: {
+          access_token: string
+          expires_at: string
+          mp_user_id: string
+          refresh_token: string
+        }[]
+      }
+      mp_store_connection: {
+        Args: {
+          p_access: string
+          p_expires: string
+          p_key: string
+          p_mp_user: string
+          p_owner: string
+          p_refresh: string
+          p_scope: string
+        }
+        Returns: undefined
+      }
+      recompute_budget: {
+        Args: {
+          p_category: string
+          p_month: number
+          p_owner: string
+          p_year: number
+        }
+        Returns: undefined
+      }
       refresh_positions: { Args: never; Returns: number }
     }
     Enums: {

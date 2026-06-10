@@ -12,7 +12,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { ProLock } from "../components/ProLock";
 import { type AdvisorMessage, useAdvisor } from "../lib/hooks/use-advisor";
+import { usePro } from "../lib/hooks/use-pro";
 import { useAdvisorChatStore } from "../lib/store/advisor";
 import { useKeyboardHeight } from "../lib/hooks/use-keyboard-height";
 import { colors, radius, spacing, typography } from "../lib/theme";
@@ -26,6 +28,7 @@ const SUGGESTIONS = [
 
 export default function AdvisorScreen() {
   const router = useRouter();
+  const { isPro } = usePro();
   const advisor = useAdvisor();
   // Historial persistido (sobrevive al cierre de la app). Ver lib/store/advisor.
   const messages = useAdvisorChatStore((s) => s.messages);
@@ -96,7 +99,7 @@ export default function AdvisorScreen() {
           <Ionicons name="sparkles" size={15} color={colors.primaryBright} />
           <Text style={styles.title}>Asesor IA</Text>
         </View>
-        {messages.length > 0 ? (
+        {isPro && messages.length > 0 ? (
           <Pressable onPress={confirmClear} hitSlop={12} accessibilityLabel="Nueva conversación">
             <Text style={styles.clear}>Limpiar</Text>
           </Pressable>
@@ -105,6 +108,12 @@ export default function AdvisorScreen() {
         )}
       </View>
 
+      {!isPro ? (
+        <ProLock
+          title="El asesor IA es Pro"
+          subtitle="Chateá sobre tu plata con un asesor que ve tus cuentas, inversiones y deudas reales. Desbloquealo con Mi Platica Pro."
+        />
+      ) : (
       <View style={{ flex: 1, marginBottom: kbHeight }}>
         {messages.length === 0 ? (
           <View style={styles.empty}>
@@ -169,6 +178,7 @@ export default function AdvisorScreen() {
           </Pressable>
         </View>
       </View>
+      )}
     </SafeAreaView>
   );
 }

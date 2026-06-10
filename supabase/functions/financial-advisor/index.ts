@@ -23,6 +23,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
+import { requireProAi } from "../_shared/ai-gate.ts";
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -82,6 +83,10 @@ Deno.serve(async (req: Request) => {
     Deno.env.get("SUPABASE_ANON_KEY")!,
     { global: { headers: { Authorization: authHeader } } },
   );
+
+  // La IA es Pro: verificar entitlement + cuota antes de gastar tokens.
+  const gate = await requireProAi(supabase);
+  if (gate) return gate;
 
   let contextBlock: string;
   try {

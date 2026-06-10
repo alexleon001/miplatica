@@ -12,7 +12,7 @@ export function currentPeriod(now: Date = new Date()): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export function useMonthlySummary(period: string) {
+export function useMonthlySummary(period: string, enabled = true) {
   return useQuery({
     queryKey: ["monthly-summary", period],
     queryFn: async (): Promise<MonthlySummary> => {
@@ -23,6 +23,8 @@ export function useMonthlySummary(period: string) {
       if (!data?.summary) throw new Error("No se pudo generar el resumen");
       return data;
     },
+    // La IA es Pro: si el usuario no es Pro, no disparamos la query (no gasta tokens).
+    enabled,
     staleTime: 1000 * 60 * 60 * 6, // 6 h: el mes no cambia tan rápido
     gcTime: 1000 * 60 * 60 * 24,
     retry: 1,

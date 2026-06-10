@@ -9,6 +9,7 @@ import { SavingsGoalsList } from "../../components/SavingsGoalsList";
 import { CtaButton, IconChip, ScreenTitle, SectionLabel } from "../../components/ui";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth";
+import { usePro } from "../../lib/hooks/use-pro";
 import { useProfile } from "../../lib/hooks/use-profile";
 import { useNotifPrefsStore } from "../../lib/store/notif-prefs";
 import { transactionsToCsv } from "../../lib/csv-export";
@@ -20,6 +21,7 @@ export default function MoreScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const { data: profile } = useProfile();
+  const { isPro } = usePro();
   const notif = useNotifPrefsStore();
 
   async function signOut() {
@@ -56,11 +58,28 @@ export default function MoreScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <ScreenTitle>Más</ScreenTitle>
 
+        {!isPro ? (
+          <Pressable
+            style={({ pressed }) => [styles.proUpsell, pressed && { opacity: 0.9 }]}
+            onPress={() => router.push("/paywall")}
+            accessibilityRole="button"
+            accessibilityLabel="Ver Mi Platica Pro"
+          >
+            <IconChip icon="sparkles" tint={colors.primaryBright} size={44} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.proUpsellTitle}>Mejorá a Mi Platica Pro</Text>
+              <Text style={styles.proUpsellSubtitle}>Desbloqueá toda la IA y sacá los anuncios</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.primaryBright} />
+          </Pressable>
+        ) : null}
+
         <FeatureCard
           icon="sparkles"
           tint={colors.primary}
           title="Asesor financiero IA"
           subtitle="Chateá sobre tu plata con contexto real"
+          pro={!isPro}
           onPress={() => router.push("/advisor")}
         />
         <FeatureCard
@@ -75,6 +94,7 @@ export default function MoreScreen() {
           tint={colors.primaryBright}
           title="Resumen del mes"
           subtitle="Qué pasó con tu plata este mes, contado por la IA"
+          pro={!isPro}
           onPress={() => router.push("/monthly-summary")}
         />
         <FeatureCard
@@ -233,12 +253,14 @@ function FeatureCard({
   tint,
   title,
   subtitle,
+  pro,
   onPress,
 }: {
   icon: IoniconName;
   tint: string;
   title: string;
   subtitle: string;
+  pro?: boolean;
   onPress: () => void;
 }) {
   return (
@@ -248,7 +270,14 @@ function FeatureCard({
     >
       <IconChip icon={icon} tint={tint} size={44} />
       <View style={{ flex: 1 }}>
-        <Text style={styles.featureTitle}>{title}</Text>
+        <View style={styles.featureTitleRow}>
+          <Text style={styles.featureTitle}>{title}</Text>
+          {pro ? (
+            <View style={styles.proBadge}>
+              <Text style={styles.proBadgeText}>PRO</Text>
+            </View>
+          ) : null}
+        </View>
         <Text style={styles.featureSubtitle}>{subtitle}</Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
@@ -299,6 +328,22 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     ...shadow.sm,
   },
+  featureTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   featureTitle: { ...typography.heading, color: colors.textPrimary },
   featureSubtitle: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  proBadge: { backgroundColor: colors.primarySoft, paddingHorizontal: spacing.sm, paddingVertical: 1, borderRadius: radius.full },
+  proBadgeText: { color: colors.primaryBright, fontWeight: "800", fontSize: 10, letterSpacing: 0.8 },
+  proUpsell: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.primaryBright + "55",
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    ...shadow.sm,
+  },
+  proUpsellTitle: { ...typography.heading, color: colors.textPrimary },
+  proUpsellSubtitle: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
 });
