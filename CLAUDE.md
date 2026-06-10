@@ -27,6 +27,19 @@
 
 ---
 
+## Estado actual — sesión 13 (2026-06-10)
+
+**Foco: Fase 2 lado código completo — scaffolding cliente RevenueCat + AdMob, OTA-safe.**
+
+- **Commiteado en `main` local `f2ecd6a` (falta `git push`, lo corre el user):** SDKs instalados (`react-native-purchases` 10.2.2 + `react-native-google-mobile-ads` 16.3.3 — **NATIVAS, requieren rebuild**). Todo el acceso pasa por `require()` guardado (import estático crashearía el boot del APK viejo vía OTA): sin módulo nativo o sin env config, degrada a stub/nada → **OTA-safe en el APK actual**.
+- **`lib/purchases.ts`**: configure + `logIn(supabaseUserId)` sincronizado con la sesión en `_layout.tsx`; offerings/purchase/restore. API key por `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` (sin valor = capa apagada). **El entitlement en RevenueCat debe llamarse `pro`**.
+- **`app/paywall.tsx`**: compra real + "Restaurar compras" + precios de la tienda (priceString) pisando los hardcodeados; sin RevenueCat conserva el stub. `refreshProSoon()` (en `use-pro.ts`) invalida `is_pro` a los 0/4/12 s (tolera latencia del webhook).
+- **`lib/ads.ts` + `components/AdBanner.tsx`**: init del SDK + consentimiento UMP **lazy, solo cuando un Free monta un anuncio** (los Pro jamás ven el form). Unit ID por `EXPO_PUBLIC_ADMOB_BANNER_ANDROID` (literal `test` = TestIds de Google; sin valor fuera de `__DEV__` = sin anuncios). Banner al pie del dashboard.
+- **`app.json`**: config plugin de AdMob con **App IDs SAMPLE de Google como placeholder** — 🔴 reemplazar `androidAppId` por el real ANTES del rebuild (App ID inválido crashea Android al abrir; el sample es válido para builds de dev).
+- **`docs/privacy-policy.md`** (es-AR) para Play Data Safety + AdMob — falta hostearla en una URL pública.
+- **Tests:** 120 `bun test` verdes · `type-check:app` limpio · `lint:app` 0 errores (5 warnings pre-existentes).
+- **🔴 Para cerrar Fase 2 falta (bloqueado en valores del user, cuentas ya creadas):** (1) AdMob App ID + unit IDs y RevenueCat public key + entitlement `pro` + productos en Play + offering `default`; (2) setear `REVENUECAT_WEBHOOK_SECRET` (ya generado, ver memoria de monetización) + deploy del edge `revenuecat-webhook` + configurar webhook en el panel RC; (3) env vars EAS + reemplazar App ID en `app.json`; (4) **UN solo rebuild** (`eas build -p android --profile preview`).
+
 ## Estado actual — sesión 12 (2026-06-09)
 
 **Foco: cerrar Fase 1 — batch commiteado + `database.types` regenerado + edges de IA redeployadas con el gate (OK del user).**
@@ -146,7 +159,9 @@
 | `EXPO_PUBLIC_APP_ENV` | cliente `.env` + `eas.json/preview env` | ✅ |
 | `ANTHROPIC_API_KEY` | **Edge Functions** (`supabase secrets set`) | ✅ seteada y verificada en device |
 | `MP_CLIENT_ID` / `MP_CLIENT_SECRET` / `MP_REDIRECT_URI` / `MP_TOKEN_KEY` | **Edge Functions** | ✅ seteados; falta validar flujo en device |
-| `REVENUECAT_WEBHOOK_SECRET` | **Edge Functions** (webhook RevenueCat) | ⏳ Fase 2 — setear y configurar el mismo valor en el panel de RevenueCat |
+| `REVENUECAT_WEBHOOK_SECRET` | **Edge Functions** (webhook RevenueCat) | ⏳ Fase 2 — secret ya generado (ver memoria); setear y configurar el mismo valor en el panel de RevenueCat |
+| `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` | cliente `.env` + EAS env | ⏳ Fase 2 — public key `goog_...` del panel RC (sin valor = compras en stub) |
+| `EXPO_PUBLIC_ADMOB_BANNER_ANDROID` | cliente `.env` + EAS env | ⏳ Fase 2 — unit ID del banner (literal `test` = TestIds de Google; sin valor = sin anuncios) |
 
 > Regla #2: API keys sensibles **JAMÁS** en el cliente. Solo la anon publishable (diseñada para exponerse) viaja al bundle.
 
@@ -277,8 +292,8 @@ Si cambia la anon key: `eas env:create --environment preview --name EXPO_PUBLIC_
 | 7 | Refresh visual (design system) + proyección + FCI + gradiente | ✅ (pendiente validar en device) |
 | 8 | Proyección avanzada + alertas presupuesto + resumen IA + sparkline + extras | ✅ shipped (pendiente validar en device) |
 | 9 | Alertas cotización + insights + simulador + categorías custom + CI/ESLint | ✅ (pendiente validar en device) |
-| 10 | Monetización (freemium ads + Pro con IA, RevenueCat) + fixes device | 🚧 Fase 1: `0012` aplicada + Pro manual al user; falta redeploy edges con gate + Fase 2 (ads+IAP+rebuild) |
+| 10 | Monetización (freemium ads + Pro con IA, RevenueCat) + fixes device | 🚧 Fase 1 ✅ server-side completa (s12) · Fase 2 scaffolding cliente ✅ (s13); faltan valores de paneles + webhook secret/deploy + rebuild |
 | 11 | Mejoras UX OTA-safe: movimientos por fecha + filtro categoría + empty states con CTA + card "Primeros pasos" | ✅ commiteado/OTA (pendiente validar en device) |
 | 12 | Cierre Fase 1: commit del batch + `database.types` regenerado (sin cast) + redeploy de las 4 edges con gate | ✅ server-side completo (pendiente validar 402/paywall en device) |
 
-*Última actualización: 2026-06-09 (sesión 12: Fase 1 commiteada + types regenerados + 4 edges de IA redeployadas con gate Pro). Historial detallado por sesión/sprint en el git log.*
+*Última actualización: 2026-06-10 (sesión 13: Fase 2 scaffolding cliente RevenueCat+AdMob commiteado, OTA-safe vía require() guardado; falta valores de paneles + rebuild). Historial detallado por sesión/sprint en el git log.*
