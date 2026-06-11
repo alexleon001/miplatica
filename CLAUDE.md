@@ -38,7 +38,9 @@
 - **`app.json`**: config plugin de AdMob con **App IDs SAMPLE de Google como placeholder** — 🔴 reemplazar `androidAppId` por el real ANTES del rebuild (App ID inválido crashea Android al abrir; el sample es válido para builds de dev).
 - **`docs/privacy-policy.md`** (es-AR) para Play Data Safety + AdMob — falta hostearla en una URL pública.
 - **Tests:** 120 `bun test` verdes · `type-check:app` limpio · `lint:app` 0 errores (5 warnings pre-existentes).
-- **🔴 Para cerrar Fase 2 falta (bloqueado en valores del user, cuentas ya creadas):** (1) AdMob App ID + unit IDs y RevenueCat public key + entitlement `pro` + productos en Play + offering `default`; (2) setear `REVENUECAT_WEBHOOK_SECRET` (ya generado, ver memoria de monetización) + deploy del edge `revenuecat-webhook` + configurar webhook en el panel RC; (3) env vars EAS + reemplazar App ID en `app.json`; (4) **UN solo rebuild** (`eas build -p android --profile preview`).
+- **🆕 Valores de paneles recibidos y cableados (mismo día):** AdMob App ID real en `app.json` (`f55f07f`); banner unit ID en EAS env (`preview`=`test` TestIds, `production`=unit real `.../7632106257`); RC public key `goog_YDDN...` en `.env` + EAS env preview/production. En el panel RC el user armó: productos `pro_monthly:monthly` + `pro_annual:annual`, entitlement **`pro`**, offering `default` con $rc_monthly/$rc_annual.
+- **🆕 REBUILD EAS LANZADO:** build `960d0f60` (android, profile `preview`), log confirma las 3 env de EAS cargadas. Al terminar: instalar el APK nuevo (mismo runtime `0.1.0`, mismo canal `preview`; los módulos nativos de ads/IAP recién existen en este APK).
+- **🔴 Para cerrar Fase 2 falta:** (1) deploy del edge `revenuecat-webhook` — **bloqueado por el clasificador, requiere OK explícito del user** (pedido); (2) user: setear `REVENUECAT_WEBHOOK_SECRET` (CLI interactiva, secret ya generado — ver memoria) + configurar el webhook en panel RC (URL + Authorization); (3) suscripciones en **Play Console** (`pro_monthly`/base `monthly` US$2,49 · `pro_annual`/base `annual` US$19,99 — requiere app subida a un track de testing interno); (4) hostear `docs/privacy-policy.md`.
 
 ## Estado actual — sesión 12 (2026-06-09)
 
@@ -160,8 +162,8 @@
 | `ANTHROPIC_API_KEY` | **Edge Functions** (`supabase secrets set`) | ✅ seteada y verificada en device |
 | `MP_CLIENT_ID` / `MP_CLIENT_SECRET` / `MP_REDIRECT_URI` / `MP_TOKEN_KEY` | **Edge Functions** | ✅ seteados; falta validar flujo en device |
 | `REVENUECAT_WEBHOOK_SECRET` | **Edge Functions** (webhook RevenueCat) | ⏳ Fase 2 — secret ya generado (ver memoria); setear y configurar el mismo valor en el panel de RevenueCat |
-| `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` | cliente `.env` + EAS env | ⏳ Fase 2 — public key `goog_...` del panel RC (sin valor = compras en stub) |
-| `EXPO_PUBLIC_ADMOB_BANNER_ANDROID` | cliente `.env` + EAS env | ⏳ Fase 2 — unit ID del banner (literal `test` = TestIds de Google; sin valor = sin anuncios) |
+| `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` | cliente `.env` + EAS env | ✅ `goog_YDDN...` en `.env` + EAS preview/production |
+| `EXPO_PUBLIC_ADMOB_BANNER_ANDROID` | cliente `.env` + EAS env | ✅ `preview`/`.env`=`test` (TestIds); `production`=unit real (clicks propios en ads reales = tráfico inválido) |
 
 > Regla #2: API keys sensibles **JAMÁS** en el cliente. Solo la anon publishable (diseñada para exponerse) viaja al bundle.
 
@@ -292,8 +294,8 @@ Si cambia la anon key: `eas env:create --environment preview --name EXPO_PUBLIC_
 | 7 | Refresh visual (design system) + proyección + FCI + gradiente | ✅ (pendiente validar en device) |
 | 8 | Proyección avanzada + alertas presupuesto + resumen IA + sparkline + extras | ✅ shipped (pendiente validar en device) |
 | 9 | Alertas cotización + insights + simulador + categorías custom + CI/ESLint | ✅ (pendiente validar en device) |
-| 10 | Monetización (freemium ads + Pro con IA, RevenueCat) + fixes device | 🚧 Fase 1 ✅ server-side completa (s12) · Fase 2 scaffolding cliente ✅ (s13); faltan valores de paneles + webhook secret/deploy + rebuild |
+| 10 | Monetización (freemium ads + Pro con IA, RevenueCat) + fixes device | 🚧 Fase 1 ✅ (s12) · Fase 2 cliente ✅ + paneles ✅ + rebuild lanzado (s13); falta webhook (deploy+secret+panel RC) + subs en Play Console |
 | 11 | Mejoras UX OTA-safe: movimientos por fecha + filtro categoría + empty states con CTA + card "Primeros pasos" | ✅ commiteado/OTA (pendiente validar en device) |
 | 12 | Cierre Fase 1: commit del batch + `database.types` regenerado (sin cast) + redeploy de las 4 edges con gate | ✅ server-side completo (pendiente validar 402/paywall en device) |
 
-*Última actualización: 2026-06-10 (sesión 13: Fase 2 scaffolding cliente RevenueCat+AdMob commiteado, OTA-safe vía require() guardado; falta valores de paneles + rebuild). Historial detallado por sesión/sprint en el git log.*
+*Última actualización: 2026-06-10 (sesión 13: Fase 2 cliente + valores de paneles cableados + rebuild `960d0f60` lanzado; webhook pendiente de OK p/ deploy + secret). Historial detallado por sesión/sprint en el git log.*
