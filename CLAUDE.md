@@ -75,11 +75,7 @@
 
 **Foco: monetización (freemium ads + Pro con IA) + fixes visuales reportados en device.** Decisiones tomadas (todas recomendadas): IA = Pro, anuncios banner+interstitial+rewarded, pasarela **RevenueCat**. Ver `memory/project_monetization.md`.
 
-- **4 bug-fixes (JS puro, OTA-safe, sin commitear):**
-  1. **Simulador de inversiones** — `num()` en `app/invest-sim.tsx` borraba TODOS los puntos como miles → "2.5" caía a 25 (inflación 25% mensual reventaba todo: "real -99.1%", MEP +21076%). Ahora distingue decimal (`2.5`) de miles (`100.000`).
-  2. **Evolución patrimonio** (`NetWorthChart.tsx`) — ocultar el % cuando la base no es positiva (patrimonio negativo daba `-1383.3%` sin sentido). Se mantiene el delta absoluto.
-  3. **Texto fuera del botón** (`CtaButton` en `ui.tsx`) — `flexShrink:1` + `numberOfLines={2}` + centrado.
-  4. **Gradiente del home** (`gradients.brand` en `theme.ts`) — 4 paradas violeta→índigo→teal, más vibrante.
+- **4 bug-fixes (commit `c3d239c`, OTA'd):** invest-sim `num()` distingue decimal de miles ("2.5" caía a 25) · `NetWorthChart` oculta % con base no positiva · `CtaButton` wrap/centrado · gradiente home 4 paradas.
 - **Monetización Fase 1 (andamiaje, sin deploy todavía):**
   - **Migración `0012_entitlements`** (✅ APLICADA 2026-06-09, sesión 11): tabla `entitlements` (RLS owner-read, escribe service_role) + `is_pro()` + `ai_usage_daily` + `consume_ai_quota(p_limit)`. SECURITY DEFINER, `search_path=public`.
   - **Portón de IA server-side** `supabase/functions/_shared/ai-gate.ts` (`requireProAi`): chequea `is_pro` (402 si no) + cuota diaria 50 (`consume_ai_quota`, 429). **Cableado en las 4 edges de IA** (financial-advisor, monthly-summary, categorize-batch, categorize-transaction — a esta última se le agregó cliente supabase con auth header). ✅ Redeployadas con el gate en sesión 12.
@@ -91,15 +87,12 @@
 
 ## Estado actual — sesión 9 (2026-06-05)
 
-- **4 features nuevas, todas OTA-safe (JS puro, local-first), sin commitear todavía** (push lo corre el user):
-  1. **Alertas de cotización** — `lib/rate-alerts.ts` (puro, edge-trigger/histéresis con re-armado) + `lib/store/rate-alerts.ts` + `lib/hooks/use-rate-alerts.ts` (notif local al cruzar umbral, mismo patrón que budget-alerts) + pantalla `app/rate-alerts.tsx` + toggle en notif-prefs (`rateAlerts`). Entry en `more.tsx`. **Gotcha:** `applyTriggered` conserva la referencia del array si nada cambió (evita loop de renders).
-  2. **Insights de gastos** — `lib/insights.ts` (puro: `monthlyTotals`/`categoryMovers`/`spendTrend`, multi-moneda con null-propagation) + `lib/hooks/use-insights.ts` (últimos 6 meses) + `app/insights.tsx` (gráfico barras gasto/ingreso con Views puras + tendencia + qué cambió). Entry en `more.tsx`.
-  3. **Simulador de inversiones** — `lib/invest-sim.ts` (puro: `simulate` compara plazo fijo/FCI MM/dólar MEP, rendimiento real ajustado por inflación; `suggestedMonthlyInflation` del IPC; `realAnnualRate` Fisher) + `app/invest-sim.tsx` (tasas editables, USD vía MEP). Entry en `more.tsx`.
-  4. **Categorías personalizadas** — registry mutable en `lib/categories.ts` (`registerCustomCategories`/`isBuiltInCategory`; `categoryById`/`categoriesByGroup` ahora mergean custom) + `lib/store/custom-categories.ts` (local, registra en rehidratación) + `lib/hooks/use-categories.ts` (`useCategoriesByGroup` reactivo para chips) + `app/categories.tsx` (alta con emoji/color/grupo). `add-transaction`/`add-budget` usan el hook. Store referenciado en `(tabs)/_layout.tsx` para registro temprano. **Caveat:** local por dispositivo (una tx con categoría custom guarda su id en DB pero en otro device cae a "sin categoría"); la IA sigue sugiriendo sólo built-in.
-- **Tests:** 120 `bun test` verdes (+35: rate-alerts, insights, invest-sim, categories). `type-check:app` limpio.
-- **Commiteado en `main` local:** `0ea1830` (features) + `2dddde9` (docs). **Falta `git push`** (lo corre el user).
-- **🆕 OTA al canal `preview` PUBLICADO** (update group `9aaf63ee`, runtime `0.1.0`, android+ios, commit `2dddde9`) — sobre el APK `c368dc3e`. El device lo levanta reabriendo 2 veces.
-- **🔴 Falta validar en device las 4 features** (entradas nuevas en "Más"): alertas de cotización (crear umbral, ver aviso al cruzar), insights (gráfico 6 meses + qué cambió), simulador (comparar plazo fijo/FCI/MEP), categorías custom (crear y usarla en un movimiento/presupuesto).
+- **4 features OTA-safe** (commits `0ea1830`+`2dddde9`, OTA `9aaf63ee` sobre APK `c368dc3e`), todas con entry en "Más":
+  1. **Alertas de cotización** — `lib/rate-alerts.ts` (edge-trigger/histéresis) + store/hook (notif local al cruzar umbral) + `app/rate-alerts.tsx` + toggle notif-prefs. **Gotcha:** `applyTriggered` conserva la referencia del array si nada cambió (evita loop de renders).
+  2. **Insights de gastos** — `lib/insights.ts` (`monthlyTotals`/`categoryMovers`/`spendTrend`) + `app/insights.tsx` (barras 6 meses + qué cambió).
+  3. **Simulador de inversiones** — `lib/invest-sim.ts` (plazo fijo vs FCI MM vs MEP, real por inflación, `frenchPayment` Fisher) + `app/invest-sim.tsx`.
+  4. **Categorías personalizadas** — registry mutable en `lib/categories.ts` + `lib/store/custom-categories.ts` (registra en rehidratación; referenciado en `(tabs)/_layout.tsx`) + `use-categories.ts`. **Caveat:** locales por device (en otro device la tx cae a "sin categoría"); la IA solo sugiere built-in.
+- **🔴 Falta validar en device las 4 features.**
 
 ## Estado actual — cierre sesión 8 (2026-06-04)
 
