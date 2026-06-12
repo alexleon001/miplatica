@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +16,9 @@ import { transactionsToCsv } from "../../lib/csv-export";
 import { colors, radius, spacing, typography, shadow } from "../../lib/theme";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
+
+// Requisito de Google Play: la política debe ser accesible desde la app.
+const PRIVACY_POLICY_URL = "https://miplatica.vercel.app/";
 
 export default function MoreScreen() {
   const router = useRouter();
@@ -216,6 +219,15 @@ export default function MoreScreen() {
             <Text style={styles.btnText}>Cerrar sesión</Text>
           </Pressable>
         </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.legalLink, pressed && { opacity: 0.7 }]}
+          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+          accessibilityRole="link"
+          accessibilityLabel="Ver política de privacidad"
+        >
+          <Text style={styles.legalLinkText}>Política de privacidad</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -346,4 +358,6 @@ const styles = StyleSheet.create({
   },
   proUpsellTitle: { ...typography.heading, color: colors.textPrimary },
   proUpsellSubtitle: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  legalLink: { alignSelf: "center", paddingVertical: spacing.sm },
+  legalLinkText: { ...typography.caption, color: colors.textMuted, textDecorationLine: "underline" },
 });

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de Privacidad — Mi Platica</title>
+<meta name="description" content="Política de privacidad de Mi Platica, la app de finanzas personales con inteligencia argentina.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --fg: #1c1c28;
+    --muted: #5b5b6b;
+    --accent: #4f46e5;
+    --border: #e4e4ef;
+    --table-head: #f4f4fa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12121a;
+      --fg: #ececf4;
+      --muted: #9b9bb0;
+      --accent: #8b85f4;
+      --border: #2c2c3c;
+      --table-head: #1c1c2a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
+  h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 4px; }
+  h2 { font-size: 1.25rem; margin: 36px 0 12px; }
+  h3 { font-size: 1.05rem; margin: 24px 0 8px; }
+  p, li { color: var(--fg); }
+  .updated { color: var(--muted); margin: 0 0 28px; }
+  a { color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.95rem; }
+  th, td { text-align: left; padding: 8px 10px; border: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--table-head); }
+  footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Política de Privacidad — Mi Platica</h1>
+  <p class="updated"><strong>Última actualización: 10 de junio de 2026</strong></p>
+
+  <p>Mi Platica ("la app") es una aplicación de finanzas personales desarrollada por Alexander León ("nosotros"). Esta política explica qué datos recopilamos, para qué los usamos y con quién los compartimos. Al usar la app, aceptás esta política.</p>
+  <p><strong>Contacto:</strong> <a href="mailto:alexanderleon001@gmail.com">alexanderleon001@gmail.com</a></p>
+
+  <h2>1. Datos que recopilamos</h2>
+
+  <h3>Datos de cuenta</h3>
+  <ul>
+    <li><strong>Email y contraseña</strong> (la contraseña se almacena hasheada, nunca en texto plano), usados únicamente para crear y autenticar tu cuenta.</li>
+    <li><strong>Nombre y preferencias</strong> que cargás en el onboarding (moneda preferida, tipo de dólar, ingreso mensual estimado).</li>
+  </ul>
+
+  <h3>Datos financieros que vos cargás</h3>
+  <ul>
+    <li>Cuentas, movimientos (gastos/ingresos), inversiones, deudas, metas de ahorro, presupuestos y proyecciones de pago.</li>
+    <li>Estos datos son tuyos: los cargás vos (o los importás vos, p. ej. CSV de tu broker) y se usan exclusivamente para mostrarte tu información dentro de la app.</li>
+  </ul>
+
+  <h3>Datos de Mercado Pago (opcional)</h3>
+  <ul>
+    <li>Si conectás tu cuenta de Mercado Pago (flujo OAuth oficial), sincronizamos tus <strong>pagos aprobados</strong> para registrarlos como movimientos. Los tokens de acceso se guardan <strong>cifrados</strong>. Nunca vemos tu contraseña de Mercado Pago. Podés desconectar la integración cuando quieras.</li>
+  </ul>
+
+  <h3>Datos de uso de IA</h3>
+  <ul>
+    <li>Si usás las funciones de inteligencia artificial (asesor, resumen mensual, categorización automática), un resumen de tus datos financieros (montos agregados, categorías, descripciones de movimientos) se envía a <strong>Anthropic</strong> (proveedor del modelo Claude) para generar la respuesta. Anthropic no usa estos datos para entrenar sus modelos según sus términos de servicio API.</li>
+    <li>Registramos un contador diario de llamadas de IA por usuario para aplicar límites de uso.</li>
+  </ul>
+
+  <h3>Datos de suscripción (Mi Platica Pro)</h3>
+  <ul>
+    <li>Las compras se procesan a través de <strong>Google Play</strong> y se gestionan con <strong>RevenueCat</strong>. Recibimos el estado de tu suscripción (activa/vencida) asociado a tu ID de usuario. No vemos ni almacenamos datos de tu tarjeta.</li>
+  </ul>
+
+  <h3>Publicidad (solo usuarios Free)</h3>
+  <ul>
+    <li>La versión gratuita muestra anuncios mediante <strong>Google AdMob</strong>. AdMob puede recopilar identificadores de publicidad del dispositivo y datos de uso para mostrar anuncios (personalizados o no, según tu consentimiento). Donde la ley lo exige, pedimos tu consentimiento mediante el formulario de Google (UMP) antes de mostrar anuncios. Los usuarios Pro no ven anuncios.</li>
+  </ul>
+
+  <h2>2. Para qué usamos los datos</h2>
+  <ul>
+    <li>Mostrarte tus finanzas (patrimonio, movimientos, inversiones, proyecciones).</li>
+    <li>Generar análisis y sugerencias con IA cuando vos lo pedís.</li>
+    <li>Sincronizar tus pagos de Mercado Pago si conectaste tu cuenta.</li>
+    <li>Gestionar tu suscripción Pro.</li>
+    <li>Mostrar anuncios en la versión gratuita.</li>
+  </ul>
+  <p><strong>No vendemos tus datos.</strong> No compartimos tus datos financieros con terceros salvo los procesadores listados abajo, y solo en la medida necesaria para que la app funcione.</p>
+
+  <h2>3. Dónde se almacenan los datos</h2>
+  <p>Tus datos se almacenan en <strong>Supabase</strong> (PostgreSQL gestionado), en servidores ubicados en <strong>São Paulo, Brasil (región AWS sa-east-1)</strong>, protegidos con aislamiento por usuario (Row Level Security): cada usuario solo puede leer y escribir sus propios datos.</p>
+  <p>Algunas preferencias (configuración de notificaciones, categorías personalizadas, historial de chat del asesor) se guardan <strong>localmente en tu dispositivo</strong> y no salen de él.</p>
+
+  <h2>4. Procesadores de datos (terceros)</h2>
+  <table>
+    <thead>
+      <tr><th>Servicio</th><th>Para qué</th><th>Datos que recibe</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Supabase</td><td>Base de datos y autenticación</td><td>Email, datos financieros que cargás</td></tr>
+      <tr><td>Anthropic (Claude)</td><td>Funciones de IA</td><td>Resumen de tus datos financieros al usar la IA</td></tr>
+      <tr><td>Mercado Pago</td><td>Sincronización de pagos (opcional)</td><td>Autorización OAuth que vos otorgás</td></tr>
+      <tr><td>RevenueCat / Google Play</td><td>Suscripciones Pro</td><td>ID de usuario, estado de la suscripción</td></tr>
+      <tr><td>Google AdMob</td><td>Anuncios (solo Free)</td><td>Identificadores de publicidad del dispositivo</td></tr>
+    </tbody>
+  </table>
+  <p>Las cotizaciones (dólar, acciones, FCI, inflación) se consultan a APIs públicas <strong>sin enviar ningún dato personal tuyo</strong>.</p>
+
+  <h2>5. Tus derechos</h2>
+  <ul>
+    <li><strong>Acceso y portabilidad:</strong> podés exportar tus movimientos a CSV desde la app.</li>
+    <li><strong>Rectificación:</strong> podés editar o borrar cualquier dato desde la app.</li>
+    <li><strong>Eliminación:</strong> podés pedir la eliminación completa de tu cuenta y todos tus datos escribiendo a <a href="mailto:alexanderleon001@gmail.com">alexanderleon001@gmail.com</a>. Procesamos las solicitudes dentro de los 30 días.</li>
+    <li><strong>Revocar Mercado Pago:</strong> podés desvincular la app desde tu cuenta de Mercado Pago en cualquier momento.</li>
+  </ul>
+
+  <h2>6. Seguridad</h2>
+  <ul>
+    <li>Toda la comunicación viaja cifrada (HTTPS/TLS).</li>
+    <li>Tokens de terceros (Mercado Pago) cifrados en reposo.</li>
+    <li>Las claves de API de los servicios de IA viven solo en el servidor, nunca en tu dispositivo.</li>
+  </ul>
+
+  <h2>7. Menores</h2>
+  <p>La app no está dirigida a menores de 13 años y no recopilamos datos de menores a sabiendas.</p>
+
+  <h2>8. Cambios a esta política</h2>
+  <p>Si cambiamos esta política de forma sustancial, lo vamos a avisar dentro de la app. La versión vigente siempre está disponible en esta página.</p>
+
+  <h2>9. Aviso sobre la IA</h2>
+  <p>Las respuestas del asesor y los resúmenes generados por IA son <strong>orientativos</strong> y no constituyen asesoramiento financiero, impositivo ni legal profesional.</p>
+
+  <footer>Mi Platica — Tus finanzas, con inteligencia argentina.</footer>
+</main>
+</body>
+</html>

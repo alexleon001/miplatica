@@ -90,3 +90,5 @@ supabase/.env
 # EAS / Expo
 expo-env.d.ts
 .expo/types/
+
+.vercel
