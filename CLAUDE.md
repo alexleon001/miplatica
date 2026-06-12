@@ -36,9 +36,9 @@
 - **Link "Política de privacidad" al pie de Más** (`Linking.openURL`; Play exige acceso in-app). OTA-safe. Commit `16828d8`.
 - **✅ Secret `REVENUECAT_WEBHOOK_SECRET` confirmado seteado** (probe POST con Authorization falsa → 401; sin secret daría 500 "misconfigured"). Webhook operativo a la espera de eventos.
 - **✅ Build `960d0f60` FINISHED** (android `preview`, runtime `0.1.0`, expira 2026-06-25) — primer APK con los módulos nativos de ads/IAP. Falta instalarlo en el device.
-- **🔴 Webhook en panel RC SIN guardar** (confirmado por el user hoy): RevenueCat → Integrations → Webhooks → URL `https://jgszdxqhrbpfjqtqqlpw.supabase.co/functions/v1/revenuecat-webhook` + header Authorization = el secret `rcwh_…` (valor exacto en `memory/project_monetization.md` — NO acá: repo público), Both environments, todos los eventos. Al guardar, tocar "Send test event" → debe loguear 200 `{"ok":true,"ignored":"TEST"}` en el edge.
+- **✅ Webhook RC verificado END-TO-END:** el webhook del panel ("Supabase entitlements") tenía la URL bien pero el header Authorization VACÍO (por eso nunca llegaba nada); el user lo cargó (secret en `memory/project_monetization.md` — NO acá: repo público) y el "Send test event" dio **200 en el edge** (verificado en logs). Circuito RevenueCat → Supabase `entitlements` operativo.
 - **Tests:** 120 `bun test` verdes · `type-check:app` limpio · `lint:app` 0 errores (5 warnings pre-existentes).
-- **🔴 Pendiente:** (1) webhook en panel RC + test event; (2) instalar APK `960d0f60` y validar en device: banner test al pie del dashboard (Free) · 402→paywall en IA · IA OK con Pro manual · paywall con stub de compra (esperado sin subs en Play); (3) **Play Console**: subir AAB a track de testing interno + crear subs `pro_monthly` (base `monthly`, ~US$2,49) y `pro_annual` (base `annual`, ~US$19,99) — recién ahí el paywall carga packages; (4) `git push` (14+ commits; dispara el redeploy de la página, esperado); (5) menores: íconos definitivos, interstitial/rewarded (JS puro, OTA-eable post-rebuild).
+- **🔴 Pendiente:** (1) instalar APK `960d0f60` y validar en device: banner test al pie del dashboard (Free) · 402→paywall en IA · IA OK con Pro manual · paywall con stub de compra (esperado sin subs en Play); (2) **Play Console**: subir AAB a track de testing interno + crear subs `pro_monthly` (base `monthly`, ~US$2,49) y `pro_annual` (base `annual`, ~US$19,99) — recién ahí el paywall carga packages y la compra sandbox puebla `entitlements` vía el webhook ya verificado; (3) `git push` (15+ commits; dispara el redeploy de la página, esperado); (4) menores: íconos definitivos, interstitial/rewarded (JS puro, OTA-eable post-rebuild).
 
 ## Historial operativo condensado (sesiones 8–13; detalle en git log)
 
@@ -91,7 +91,7 @@
 | `EXPO_PUBLIC_APP_ENV` | cliente `.env` + `eas.json/preview env` | ✅ |
 | `ANTHROPIC_API_KEY` | **Edge Functions** (`supabase secrets set`) | ✅ seteada y verificada en device |
 | `MP_CLIENT_ID` / `MP_CLIENT_SECRET` / `MP_REDIRECT_URI` / `MP_TOKEN_KEY` | **Edge Functions** | ✅ seteados; falta validar flujo en device |
-| `REVENUECAT_WEBHOOK_SECRET` | **Edge Functions** (webhook RevenueCat) | ✅ seteado (verificado s14: 401 con auth falsa). 🔴 Falta cargar el MISMO valor como header Authorization en panel RC |
+| `REVENUECAT_WEBHOOK_SECRET` | **Edge Functions** (webhook RevenueCat) | ✅ seteado y cargado como Authorization en panel RC; test event → 200 verificado (s14) |
 | `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` | cliente `.env` + EAS env | ✅ `goog_YDDN...` en `.env` + EAS preview/production |
 | `EXPO_PUBLIC_ADMOB_BANNER_ANDROID` | cliente `.env` + EAS env | ✅ `preview`/`.env`=`test` (TestIds); `production`=unit real (clicks propios en ads reales = tráfico inválido) |
 
@@ -224,8 +224,8 @@ Si cambia la anon key: `eas env:create --environment preview --name EXPO_PUBLIC_
 | 7 | Refresh visual (design system) + proyección + FCI + gradiente | ✅ (pendiente validar en device) |
 | 8 | Proyección avanzada + alertas presupuesto + resumen IA + sparkline + extras | ✅ shipped (pendiente validar en device) |
 | 9 | Alertas cotización + insights + simulador + categorías custom + CI/ESLint | ✅ (pendiente validar en device) |
-| 10 | Monetización (freemium ads + Pro con IA, RevenueCat) + fixes device | 🚧 Fase 1 ✅ (s12) · Fase 2 código+secret+build ✅ + privacy policy live (s14); falta webhook en panel RC + subs en Play Console + validar device |
+| 10 | Monetización (freemium ads + Pro con IA, RevenueCat) + fixes device | 🚧 Fase 1 ✅ (s12) · Fase 2 código+build+webhook end-to-end ✅ + privacy policy live (s14); falta subs en Play Console + validar device |
 | 11 | Mejoras UX OTA-safe: movimientos por fecha + filtro categoría + empty states con CTA + card "Primeros pasos" | ✅ commiteado/OTA (pendiente validar en device) |
 | 12 | Cierre Fase 1: commit del batch + `database.types` regenerado (sin cast) + redeploy de las 4 edges con gate | ✅ server-side completo (pendiente validar 402/paywall en device) |
 
-*Última actualización: 2026-06-11 (sesión 14: privacy policy live en miplatica.vercel.app + link in-app + secret webhook verificado + build `960d0f60` FINISHED; falta panel RC + Play Console + validación en device). Historial detallado por sesión/sprint en el git log.*
+*Última actualización: 2026-06-11 (sesión 14: privacy policy live en miplatica.vercel.app + link in-app + webhook RC verificado end-to-end (test event 200) + build `960d0f60` FINISHED; falta Play Console + validación en device). Historial detallado por sesión/sprint en el git log.*
