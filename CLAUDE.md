@@ -24,97 +24,33 @@
 
 **Repo:** `https://github.com/alexleon001/miplatica.git` · **Org Supabase:** `alexleon001` (`lfzwokjsazkhznvyvzbk`)
 **Project URL:** `https://jgszdxqhrbpfjqtqqlpw.supabase.co` · **EAS projectId:** `1740d928-8419-49ff-9875-80fd4376a6ea` (owner `alexleon001`)
+**Privacy policy:** `https://miplatica.vercel.app/` (Vercel proyecto `miplatica`, sirve `web/`; redeploy automático en cada push a `main`)
 
 ---
 
-## Estado actual — sesión 13 (2026-06-10)
+## Estado actual — sesión 14 (2026-06-11)
 
-**Foco: Fase 2 lado código completo — scaffolding cliente RevenueCat + AdMob, OTA-safe.**
+**Foco: política de privacidad hosteada + verificación secret/build + link legal in-app + condensar este archivo.**
 
-- **Commiteado en `main` local `f2ecd6a` (falta `git push`, lo corre el user):** SDKs instalados (`react-native-purchases` 10.2.2 + `react-native-google-mobile-ads` 16.3.3 — **NATIVAS, requieren rebuild**). Todo el acceso pasa por `require()` guardado (import estático crashearía el boot del APK viejo vía OTA): sin módulo nativo o sin env config, degrada a stub/nada → **OTA-safe en el APK actual**.
-- **`lib/purchases.ts`**: configure + `logIn(supabaseUserId)` sincronizado con la sesión en `_layout.tsx`; offerings/purchase/restore. API key por `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` (sin valor = capa apagada). **El entitlement en RevenueCat debe llamarse `pro`**.
-- **`app/paywall.tsx`**: compra real + "Restaurar compras" + precios de la tienda (priceString) pisando los hardcodeados; sin RevenueCat conserva el stub. `refreshProSoon()` (en `use-pro.ts`) invalida `is_pro` a los 0/4/12 s (tolera latencia del webhook).
-- **`lib/ads.ts` + `components/AdBanner.tsx`**: init del SDK + consentimiento UMP **lazy, solo cuando un Free monta un anuncio** (los Pro jamás ven el form). Unit ID por `EXPO_PUBLIC_ADMOB_BANNER_ANDROID` (literal `test` = TestIds de Google; sin valor fuera de `__DEV__` = sin anuncios). Banner al pie del dashboard.
-- **`app.json`**: config plugin de AdMob con **App IDs SAMPLE de Google como placeholder** — 🔴 reemplazar `androidAppId` por el real ANTES del rebuild (App ID inválido crashea Android al abrir; el sample es válido para builds de dev).
-- **`docs/privacy-policy.md`** (es-AR) para Play Data Safety + AdMob — falta hostearla en una URL pública.
+- **✅ Política de privacidad LIVE: `https://miplatica.vercel.app/`** — `web/index.html` (HTML estático es-AR, mismo contenido que `docs/privacy-policy.md`) en Vercel, proyecto `miplatica` (cuenta `alexleon001`, CLI autenticado vía device-flow). `.vercelignore` limita el upload del CLI a `web/` + `vercel.json` (**gotcha:** usar la forma `/*` + `!/web`; con `*` + `!web/**` Vercel NO re-incluye y sube 1 solo archivo → 404); `vercel.json` con `installCommand`/`buildCommand` vacíos + `outputDirectory=web` para que los deploys git-triggered tampoco intenten buildear el app Expo. **El CLI conectó la integración GitHub: cada `git push` a `main` redeploya la página.** Verificado: la raíz sirve la política y nada del fuente quedó expuesto (404 en package.json/app.json/lib/.env).
+- **Link "Política de privacidad" al pie de Más** (`Linking.openURL`; Play exige acceso in-app). OTA-safe. Commit `16828d8`.
+- **✅ Secret `REVENUECAT_WEBHOOK_SECRET` confirmado seteado** (probe POST con Authorization falsa → 401; sin secret daría 500 "misconfigured"). Webhook operativo a la espera de eventos.
+- **✅ Build `960d0f60` FINISHED** (android `preview`, runtime `0.1.0`, expira 2026-06-25) — primer APK con los módulos nativos de ads/IAP. Falta instalarlo en el device.
+- **🔴 Webhook en panel RC SIN guardar** (confirmado por el user hoy): RevenueCat → Integrations → Webhooks → URL `https://jgszdxqhrbpfjqtqqlpw.supabase.co/functions/v1/revenuecat-webhook` + header Authorization = el secret `rcwh_…` (valor exacto en `memory/project_monetization.md` — NO acá: repo público), Both environments, todos los eventos. Al guardar, tocar "Send test event" → debe loguear 200 `{"ok":true,"ignored":"TEST"}` en el edge.
 - **Tests:** 120 `bun test` verdes · `type-check:app` limpio · `lint:app` 0 errores (5 warnings pre-existentes).
-- **🆕 Valores de paneles recibidos y cableados (mismo día):** AdMob App ID real en `app.json` (`f55f07f`); banner unit ID en EAS env (`preview`=`test` TestIds, `production`=unit real `.../7632106257`); RC public key `goog_YDDN...` en `.env` + EAS env preview/production. En el panel RC el user armó: productos `pro_monthly:monthly` + `pro_annual:annual`, entitlement **`pro`**, offering `default` con $rc_monthly/$rc_annual.
-- **🆕 REBUILD EAS LANZADO:** build `960d0f60` (android, profile `preview`), log confirma las 3 env de EAS cargadas. Al terminar: instalar el APK nuevo (mismo runtime `0.1.0`, mismo canal `preview`; los módulos nativos de ads/IAP recién existen en este APK).
-- **🆕 Edge `revenuecat-webhook` DEPLOYADO** (v1 ACTIVE, `verify_jwt=false`, con OK explícito del user). Single file, sin `_shared`. Falla cerrado sin el secret.
-- **🔴 Queda para mañana:** (1) confirmar que el user terminó: secret `REVENUECAT_WEBHOOK_SECRET` (vía **Dashboard → Settings → Edge Functions** — la CLI `supabase login` falla non-TTY dentro de Claude Code) y webhook guardado en panel RC (URL + Authorization `rcwh_…`, Both environments, estaba a mitad del form); (2) bajar/instalar APK del build `960d0f60` (quedó IN_PROGRESS al cierre); (3) validar en device: banner test al pie del dashboard (Free) + 402→paywall + IA con Pro manual; (4) suscripciones en **Play Console** (`pro_monthly`/base `monthly` ~US$2,49 · `pro_annual`/base `annual` ~US$19,99 — exige app subida a track de testing interno; hasta entonces el paywall muestra stub = degradación esperada); (5) hostear `docs/privacy-policy.md`; (6) `git push` (11 commits). CLAUDE.md está a ~39,8k chars — **condensar próxima sesión**.
+- **🔴 Pendiente:** (1) webhook en panel RC + test event; (2) instalar APK `960d0f60` y validar en device: banner test al pie del dashboard (Free) · 402→paywall en IA · IA OK con Pro manual · paywall con stub de compra (esperado sin subs en Play); (3) **Play Console**: subir AAB a track de testing interno + crear subs `pro_monthly` (base `monthly`, ~US$2,49) y `pro_annual` (base `annual`, ~US$19,99) — recién ahí el paywall carga packages; (4) `git push` (14+ commits; dispara el redeploy de la página, esperado); (5) menores: íconos definitivos, interstitial/rewarded (JS puro, OTA-eable post-rebuild).
 
-## Estado actual — sesión 12 (2026-06-09)
+## Historial operativo condensado (sesiones 8–13; detalle en git log)
 
-**Foco: cerrar Fase 1 — batch commiteado + `database.types` regenerado + edges de IA redeployadas con el gate (OK del user).**
-
-- **Commiteado en `main` local (falta `git push`, lo corre el user):**
-  - `4d7627d` — **Fase 1 completa**: migración `0012` + `_shared/ai-gate.ts` + gate cableado en las 4 edges de IA + webhook RevenueCat + `usePro`/paywall/ProLock + gating cliente (advisor, monthly-summary, categorización IA, badges en Más) + `database.types` regenerado.
-  - `5943d39` — movimientos agrupados por fecha + filtro por categoría (V1+F1 de sesión 11, ahora sí commiteados).
-- **`database.types.ts` regenerado vía MCP** (`entitlements`/`ai_usage_daily`/`is_pro`/`consume_ai_quota` ya tipados) y **cast `as unknown` eliminado de `usePro`**.
-- **Tests:** 120 `bun test` verdes · `type-check:app` limpio · `lint:app` 0 errores (5 warnings pre-existentes). **Working tree limpio.**
-- **✅ Las 4 edges de IA REDEPLOYADAS con el gate** (vía MCP, con OK explícito del user): `categorize-transaction` v8 · `categorize-batch` v2 · `monthly-summary` v2 · `financial-advisor` v9, todas ACTIVE, `verify_jwt=true`. **Fase 1 server-side COMPLETA**: la IA ahora exige Pro (402) + cuota 50/día (429). El user conserva IA por su Pro manual. Layout del deploy MCP: `files=[{"<fn>/index.ts"},{"_shared/ai-gate.ts"}]` + `entrypoint_path="<fn>/index.ts"` (así resuelve el import relativo `../_shared/`).
-- **El webhook RevenueCat NO se deploya todavía** (Fase 2, requiere `REVENUECAT_WEBHOOK_SECRET`).
-- **🔴 Pendiente validar en device:** con Pro manual, asesor/resumen/categorización IA siguen funcionando; con override dev en Free, las edges devuelven 402 → paywall.
-
-## Estado actual — sesión 11 (2026-06-09)
-
-**Foco: mejoras visuales/funcionales OTA-safe + darle Pro al user + cerrar los bug-fixes.**
-
-- **Commiteado en `main` local (falta `git push`, lo corre el user):**
-  - `c3d239c` — los **4 bug-fixes** de sesión 10 (invest-sim `num()`, NetWorthChart %, CtaButton wrap, gradiente). OTA-safe.
-  - `ecaa374` — **V4 + V3**: `components/FirstSteps.tsx` + `lib/store/first-steps.ts` (checklist de activación en el dashboard: cuenta→movimiento→presupuesto, derivado de datos en vivo, se auto-oculta al completar/descartar) + `StateMessage` con CTA opcional (`actionLabel`/`onAction`/`actionIcon`) cableada en empty states de inversiones/deudas/movimientos.
-- **V1 + F1 (ya en el OTA):** `app/(tabs)/transactions.tsx` usa **`SectionList` agrupando por fecha** ("Hoy/Ayer/fecha"; parsea el `YYYY-MM-DD` crudo para evitar corrimiento de zona AR) + **filtro por categoría** (chips horizontales de las categorías presentes + "Sin categoría", combina con el filtro de tipo). Commiteado en sesión 12 (`5943d39`).
-- **OTAs del día al canal `preview`** (sobre APK `c368dc3e`, runtime `0.1.0`, android+ios): `3cb7a3c4` (bug-fixes) + `889d4b38` (las 4 mejoras V1/F1/V3/V4). Reabrir la app 2 veces para aplicar.
-- **🆕 Migración `0012_entitlements` APLICADA** en prod (vía MCP). Existen `entitlements` + `is_pro()` + `ai_usage_daily` + `consume_ai_quota()`. (`database.types` regenerado en sesión 12.)
-- **🆕 User con Pro manual:** fila en `entitlements` (`user_id 9fcdac6f-e19d-414b-aff2-96d417fa344d`, `is_pro=true`, `store='manual'`, sin vencimiento). Para quitarlo: `update entitlements set is_pro=false where store='manual'`.
-- **🔴 GOTCHA OTA (importante):** `eas update` empaqueta el **working tree**, no el commit. Como el gating de Fase 1 está sin commitear pero presente en el tree, **ya salió al canal `preview`** en los OTAs del día. En el APK preview, `usePro` falla cerrado = **Free para todos salvo que tengan fila en `entitlements`** (el override dev es solo `__DEV__`). Por eso se le dio Pro manual al user (para recuperar la IA en su device de prueba). ~~Las 4 edges de IA siguen SIN el gate redeployado~~ → **redeployadas con gate en sesión 12**.
-- **Tests:** 120 `bun test` verdes. `type-check:app` limpio. `lint:app` 0 errores (5 warnings pre-existentes).
-- **🔴 Pendiente validar en device:** las 4 mejoras nuevas (movimientos agrupados por fecha + filtro categoría, empty states con botón, card "Primeros pasos") + que el Pro manual desbloquee asesor/resumen/categorización IA.
-
-## Estado actual — sesión 10 en curso (2026-06-08)
-
-**Foco: monetización (freemium ads + Pro con IA) + fixes visuales reportados en device.** Decisiones tomadas (todas recomendadas): IA = Pro, anuncios banner+interstitial+rewarded, pasarela **RevenueCat**. Ver `memory/project_monetization.md`.
-
-- **4 bug-fixes (commit `c3d239c`, OTA'd):** invest-sim `num()` distingue decimal de miles ("2.5" caía a 25) · `NetWorthChart` oculta % con base no positiva · `CtaButton` wrap/centrado · gradiente home 4 paradas.
-- **Monetización Fase 1 (andamiaje, sin deploy todavía):**
-  - **Migración `0012_entitlements`** (✅ APLICADA 2026-06-09, sesión 11): tabla `entitlements` (RLS owner-read, escribe service_role) + `is_pro()` + `ai_usage_daily` + `consume_ai_quota(p_limit)`. SECURITY DEFINER, `search_path=public`.
-  - **Portón de IA server-side** `supabase/functions/_shared/ai-gate.ts` (`requireProAi`): chequea `is_pro` (402 si no) + cuota diaria 50 (`consume_ai_quota`, 429). **Cableado en las 4 edges de IA** (financial-advisor, monthly-summary, categorize-batch, categorize-transaction — a esta última se le agregó cliente supabase con auth header). ✅ Redeployadas con el gate en sesión 12.
-  - **Cliente:** `lib/hooks/use-pro.ts` (`usePro()` → rpc `is_pro`, **falla cerrado** = Free; override dev en `lib/store/pro.ts`, solo `__DEV__`) + `app/paywall.tsx` (modal premium, planes anual/mensual, compra STUB hasta RevenueCat, atajo dev para forzar Pro/Free) + `components/ProLock.tsx`. Gateado: advisor, monthly-summary (query `enabled=isPro`), banner "Categorizar con IA" + "Sugerir categoría con IA" → paywall, badges PRO + card de upsell en `more.tsx`.
-  - **Webhook RevenueCat** `supabase/functions/revenuecat-webhook/index.ts` (`verify_jwt=false`, autenticado por `REVENUECAT_WEBHOOK_SECRET` en header Authorization) → upsert `entitlements` con service_role. Resuelve Pro por tipo de evento (EXPIRATION/REFUND/PAUSED=inactivo) + vencimiento. **Requiere que el cliente haga `Purchases.logIn(supabaseUserId)`** para que `app_user_id` = UUID Supabase. **Falta deploy + setear el secret + configurar el webhook en RevenueCat (Fase 2).**
-- **🔴 IMPORTANTE — secuencia de release:** la Fase 1 NO debe salir por OTA suelta. El cliente gatea a TODOS a Free hasta que (a) ✅ se aplique `0012` (hecho s11), (b) ✅ se redeployen las edges con el gate (hecho s12), y (c) exista forma de otorgar Pro (hoy solo grant manual SQL; RevenueCat = Fase 2). **OJO:** el gating de Fase 1 YA salió a `preview` en los OTAs de la sesión 11 (el OTA empaqueta el working tree, no el commit), así que en preview todos quedan Free salvo fila en `entitlements`. **Shippear Fase 1 a producción junto con Fase 2 (rebuild con RevenueCat+AdMob).** Los bug-fixes/mejoras visuales SÍ son OTA-eables por separado.
-- **Tests:** 120 `bun test` verdes. `type-check:app` limpio. `lint:app` 0 errores (5 warnings pre-existentes).
-- **Fase 2 (pendiente, requiere rebuild + cuentas del user):** crear AdMob + RevenueCat, instalar `react-native-purchases` + `react-native-google-mobile-ads`, webhook RevenueCat→edge→`entitlements`, anuncios + UMP, política de privacidad + Data Safety, íconos definitivos.
-
-## Estado actual — sesión 9 (2026-06-05)
-
-- **4 features OTA-safe** (commits `0ea1830`+`2dddde9`, OTA `9aaf63ee` sobre APK `c368dc3e`), todas con entry en "Más":
-  1. **Alertas de cotización** — `lib/rate-alerts.ts` (edge-trigger/histéresis) + store/hook (notif local al cruzar umbral) + `app/rate-alerts.tsx` + toggle notif-prefs. **Gotcha:** `applyTriggered` conserva la referencia del array si nada cambió (evita loop de renders).
-  2. **Insights de gastos** — `lib/insights.ts` (`monthlyTotals`/`categoryMovers`/`spendTrend`) + `app/insights.tsx` (barras 6 meses + qué cambió).
-  3. **Simulador de inversiones** — `lib/invest-sim.ts` (plazo fijo vs FCI MM vs MEP, real por inflación, `frenchPayment` Fisher) + `app/invest-sim.tsx`.
-  4. **Categorías personalizadas** — registry mutable en `lib/categories.ts` + `lib/store/custom-categories.ts` (registra en rehidratación; referenciado en `(tabs)/_layout.tsx`) + `use-categories.ts`. **Caveat:** locales por device (en otro device la tx cae a "sin categoría"); la IA solo sugiere built-in.
-- **🔴 Falta validar en device las 4 features.**
-
-## Estado actual — cierre sesión 8 (2026-06-04)
-
-- **Pusheado a `main`** hasta `30eadd3`. Edge `monthly-summary` DEPLOYADO (ACTIVE v1, vía MCP).
-- **APK preview:** `c368dc3e` (runtime `0.1.0`, sesión 7 baked-in + `expo-linear-gradient` nativo). Previos: `de26cdb7`, `fa3d3965`, `2a8ddb8c`, `11dda3ab`.
-- **OTAs vigentes al canal `preview`** (sobre `c368dc3e`, JS puro): los de sesión 7 (`fee9f3d3`, `0463f788`, `4b37dea0`) + sesión 8 `956c74b6` + fix FABs `2158d13c` (último, commit `30eadd3`). **El device levanta reabriendo la app 2 veces** (1ra baja, 2da aplica) y matando la app de verdad (en MIUI/HyperOS bloquearla en recientes).
-- **Todo lo nuevo es OTA-safe** (JS puro, sin deps nativas nuevas) → no requiere rebuild. Excepción nativa pendiente de rebuild: `expo-linear-gradient` (ya en `c368dc3e`).
-- **Tests:** 85 `bun test` verdes. `type-check:app` limpio.
-- **Decisión transversal:** features que necesitan persistencia van **local-first** (Zustand+AsyncStorage); el único backend nuevo de sesión 8 es el edge `monthly-summary`.
-
-### 🔴 Pendiente de validar en device (sesión 9)
-
-1. **OTA `2158d13c` (fix FABs):** (a) Movimientos — desglose expandido, "Total del mes" se ve completo y el FAB "+ Nuevo" no lo tapa (desglose + banner recurrentes movidos al `ListHeaderComponent` del FlatList); (b) Proyección — FAB "+ Gasto" despegado de la barra del sistema (`Fab` acepta `bottomInset`).
-2. **Resto de sesión 8:** proyección (auto-split cuotas, editar/borrar visible, checklist pagado, compartir, duplicar), alertas de presupuesto (80/100% + banner dashboard), **resumen mensual IA (¡probar que el edge responda!)**, sparkline de patrimonio (≥2 días de aperturas), desglose por categoría, prefs de notif, búsqueda, export CSV, recurrentes.
-3. **Pendientes de sesión 7 (nunca validados):** refresh visual completo, selector de FCI con fondo real, proyección con saldo acumulado + aviso "te quedás sin efectivo en X", fix gasto puntual que ya no se repite, lag al cambiar de tab.
-4. **Sesiones previas sin validar en device:** camino feliz general (CRUD 4 entidades, import CSV, presupuestos, portafolio, recordatorios), flujo MP OAuth completo en device, "real +Y%" de inflación, deep-links de notif.
-
-**Observación del user (4/6):** 44 movimientos sin categoría y "Otros" = 94% del gasto → sugerir tocar "Categorizar con IA" (`categorize-batch`) para que el desglose y el resumen IA sean útiles.
-
-**Gotchas:** recurrentes — el mes que los creás no aparecen en el banner (ya quedan registrados; los ofrece desde el mes siguiente). Sparkline — arranca vacío hasta 2 días de snapshots. Export CSV — va como texto por el share sheet (archivo real = dep nativa futura `expo-file-system`/`expo-sharing`).
-
-**Bloqueado por el user:** Auth social Google/Apple (credenciales OAuth).
+- **Fase 1 monetización server-side (completa s12):** migración `0012` aplicada · `_shared/ai-gate.ts` (`requireProAi`: 402 sin Pro, 429 cuota 50/día) deployado en las 4 edges de IA (`categorize-transaction` v8 · `categorize-batch` v2 · `monthly-summary` v2 · `financial-advisor` v9, `verify_jwt=true`). **Layout deploy MCP con `_shared`:** `files=[{"<fn>/index.ts"},{"_shared/ai-gate.ts"}]` + `entrypoint_path="<fn>/index.ts"`.
+- **Fase 2 cliente (completa s13, `f2ecd6a`):** `react-native-purchases` 10.2.2 + `react-native-google-mobile-ads` 16.3.3 (NATIVAS) accedidas solo vía `require()` guardado → OTA-safe (sin módulo/env degrada a stub/sin ads). `lib/purchases.ts` (configure + `logIn(supabaseUserId)` sync con la sesión en `_layout`; **el entitlement RC se llama `pro`**) · paywall con compra real/restore/precios de tienda + `refreshProSoon` (invalida `is_pro` a 0/4/12 s por latencia del webhook) · `lib/ads.ts` + `AdBanner` (UMP lazy solo cuando un Free monta un anuncio; `EXPO_PUBLIC_ADMOB_BANNER_ANDROID`: literal `test`=TestIds de Google, vacío fuera de `__DEV__`=sin anuncios) · AdMob App ID real en `app.json` (`f55f07f`). Panel RC armado: productos `pro_monthly:monthly`/`pro_annual:annual`, entitlement `pro`, offering `default`. Edge `revenuecat-webhook` v1 ACTIVE (`verify_jwt=false`, auth = header Authorization == secret, falla cerrado).
+- **User con Pro manual:** fila en `entitlements` (`user_id 9fcdac6f-e19d-414b-aff2-96d417fa344d`, `store='manual'`, sin vencimiento). Quitar: `update entitlements set is_pro=false where store='manual'`.
+- **🔴 GOTCHA OTA:** `eas update` empaqueta el **working tree**, no el commit. El gating de Fase 1 ya salió a `preview` (s11): ahí todos quedan Free salvo fila en `entitlements` (`usePro` falla cerrado; override dev solo `__DEV__`). **Fase 1+2 van a producción juntas (rebuild).** Bug-fixes/UI sí son OTA-eables sueltos.
+- **APKs preview:** `960d0f60` (s13, primero con ads/IAP nativos) ← `c368dc3e` (s8, `expo-linear-gradient`). Un OTA se aplica reabriendo la app 2 veces (matándola de verdad; en MIUI/HyperOS bloquearla en recientes).
+- **🔴 Backlog de validación en device (s7–s13, casi nada corrido):** monetización (banner/402/paywall/Pro manual) · s11 (movimientos agrupados por fecha + filtro categoría, empty states con CTA, card "Primeros pasos") · s9 (alertas de cotización, insights, simulador, categorías custom) · s8 (proyección avanzada, alertas de presupuesto 80/100%, resumen mensual IA, sparkline, export CSV, recurrentes, prefs notif, fix FABs) · s7 (refresh visual, selector FCI real, saldo acumulado + aviso "te quedás sin efectivo en X") · previos (camino feliz CRUD, import CSV, MP OAuth en device, "real +Y%", deep-links de notif).
+- **Gotchas UX:** recurrentes no aparecen en el banner el mes en que se crean · sparkline vacío hasta ≥2 días de snapshots · export CSV sale como texto por el share sheet · categorías custom son locales por device (la IA solo sugiere built-in).
+- **Observación del user (4/6):** 44 movimientos sin categoría y "Otros"=94% del gasto → correr "Categorizar con IA" para que desglose/resumen sirvan.
+- **Bloqueado por el user:** Auth social Google/Apple (credenciales OAuth).
 
 ---
 
@@ -155,7 +91,7 @@
 | `EXPO_PUBLIC_APP_ENV` | cliente `.env` + `eas.json/preview env` | ✅ |
 | `ANTHROPIC_API_KEY` | **Edge Functions** (`supabase secrets set`) | ✅ seteada y verificada en device |
 | `MP_CLIENT_ID` / `MP_CLIENT_SECRET` / `MP_REDIRECT_URI` / `MP_TOKEN_KEY` | **Edge Functions** | ✅ seteados; falta validar flujo en device |
-| `REVENUECAT_WEBHOOK_SECRET` | **Edge Functions** (webhook RevenueCat) | ⏳ Fase 2 — secret ya generado (ver memoria); setear y configurar el mismo valor en el panel de RevenueCat |
+| `REVENUECAT_WEBHOOK_SECRET` | **Edge Functions** (webhook RevenueCat) | ✅ seteado (verificado s14: 401 con auth falsa). 🔴 Falta cargar el MISMO valor como header Authorization en panel RC |
 | `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` | cliente `.env` + EAS env | ✅ `goog_YDDN...` en `.env` + EAS preview/production |
 | `EXPO_PUBLIC_ADMOB_BANNER_ANDROID` | cliente `.env` + EAS env | ✅ `preview`/`.env`=`test` (TestIds); `production`=unit real (clicks propios en ads reales = tráfico inválido) |
 
@@ -288,8 +224,8 @@ Si cambia la anon key: `eas env:create --environment preview --name EXPO_PUBLIC_
 | 7 | Refresh visual (design system) + proyección + FCI + gradiente | ✅ (pendiente validar en device) |
 | 8 | Proyección avanzada + alertas presupuesto + resumen IA + sparkline + extras | ✅ shipped (pendiente validar en device) |
 | 9 | Alertas cotización + insights + simulador + categorías custom + CI/ESLint | ✅ (pendiente validar en device) |
-| 10 | Monetización (freemium ads + Pro con IA, RevenueCat) + fixes device | 🚧 Fase 1 ✅ (s12) · Fase 2 cliente ✅ + paneles ✅ + rebuild lanzado (s13); falta webhook (deploy+secret+panel RC) + subs en Play Console |
+| 10 | Monetización (freemium ads + Pro con IA, RevenueCat) + fixes device | 🚧 Fase 1 ✅ (s12) · Fase 2 código+secret+build ✅ + privacy policy live (s14); falta webhook en panel RC + subs en Play Console + validar device |
 | 11 | Mejoras UX OTA-safe: movimientos por fecha + filtro categoría + empty states con CTA + card "Primeros pasos" | ✅ commiteado/OTA (pendiente validar en device) |
 | 12 | Cierre Fase 1: commit del batch + `database.types` regenerado (sin cast) + redeploy de las 4 edges con gate | ✅ server-side completo (pendiente validar 402/paywall en device) |
 
-*Última actualización: 2026-06-10 (sesión 13: Fase 2 cliente + valores de paneles cableados + rebuild `960d0f60` lanzado; webhook pendiente de OK p/ deploy + secret). Historial detallado por sesión/sprint en el git log.*
+*Última actualización: 2026-06-11 (sesión 14: privacy policy live en miplatica.vercel.app + link in-app + secret webhook verificado + build `960d0f60` FINISHED; falta panel RC + Play Console + validación en device). Historial detallado por sesión/sprint en el git log.*
