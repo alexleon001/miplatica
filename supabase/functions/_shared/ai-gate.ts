@@ -11,6 +11,10 @@
 // consume_ai_quota(). Devuelve una Response de error si NO debe seguir, o null si
 // está habilitado.
 //
+// Sin Pro, antes de devolver 402 se intenta consumir 1 crédito de rewarded ad
+// (consume_ai_reward_credit, migración 0013). Si el RPC no existe todavía o
+// falla, se degrada al 402 de siempre (fail closed, nunca 500 por esto).
+//
 // Códigos: 402 pro_required · 429 rate_limited · 500 si falla el chequeo.
 
 export const DAILY_AI_LIMIT = 50; // llamadas de IA por usuario por día
@@ -22,10 +26,13 @@ export async function requireProAi(supabase: any): Promise<Response | null> {
     return gateJson({ error: "entitlement_check_failed", detail: proErr.message }, 500);
   }
   if (!pro) {
-    return gateJson(
-      { error: "pro_required", message: "Esta función es parte de Mi Platica Pro." },
-      402,
-    );
+    const { data: credited, error: creditErr } = await supabase.rpc("consume_ai_reward_credit");
+    if (creditErr || !credited) {
+      return gateJson(
+        { error: "pro_required", message: "Esta función es parte de Mi Platica Pro." },
+        402,
+      );
+    }
   }
 
   const { data: allowed, error: quotaErr } = await supabase.rpc("consume_ai_quota", {
