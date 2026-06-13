@@ -10,6 +10,7 @@ import { useCategorizeTransaction } from "../../lib/hooks/use-categorize-transac
 import { usePro } from "../../lib/hooks/use-pro";
 import { useCreateTransaction } from "../../lib/hooks/use-create-transaction";
 import { useTransactions, useUpdateTransaction } from "../../lib/hooks/use-transactions";
+import { maybeShowInterstitial } from "../../lib/interstitial";
 import { useRecurringStore } from "../../lib/store/recurring";
 import { colors, radius, spacing } from "../../lib/theme";
 
@@ -151,6 +152,8 @@ export default function AddTransactionModal() {
         }
       }
       router.back();
+      // Acción que califica para el tope de interstitials (solo alta, no edición).
+      if (!editing) maybeShowInterstitial(isPro);
     } catch (e) {
       Alert.alert("Ups", e instanceof Error ? e.message : "No pude guardar la transacción.");
     }

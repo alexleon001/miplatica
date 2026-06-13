@@ -12,7 +12,7 @@
 
 import { Platform } from "react-native";
 
-type AdsModule = typeof import("react-native-google-mobile-ads");
+export type AdsModule = typeof import("react-native-google-mobile-ads");
 
 let mod: AdsModule | null | undefined;
 
@@ -27,15 +27,32 @@ export function getAdsModule(): AdsModule | null {
   return mod;
 }
 
-export function bannerAdUnitId(): string | null {
+function unitIdFor(kind: "BANNER" | "INTERSTITIAL" | "REWARDED", raw: string | undefined): string | null {
   const ads = getAdsModule();
   if (!ads) return null;
-  const raw = Platform.select({
+  if (raw === "test" || (__DEV__ && !raw)) return ads.TestIds[kind];
+  return raw || null;
+}
+
+export function bannerAdUnitId(): string | null {
+  return unitIdFor("BANNER", Platform.select({
     android: process.env.EXPO_PUBLIC_ADMOB_BANNER_ANDROID,
     ios: process.env.EXPO_PUBLIC_ADMOB_BANNER_IOS,
-  });
-  if (raw === "test" || (__DEV__ && !raw)) return ads.TestIds.BANNER;
-  return raw || null;
+  }));
+}
+
+export function interstitialAdUnitId(): string | null {
+  return unitIdFor("INTERSTITIAL", Platform.select({
+    android: process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID,
+    ios: process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS,
+  }));
+}
+
+export function rewardedAdUnitId(): string | null {
+  return unitIdFor("REWARDED", Platform.select({
+    android: process.env.EXPO_PUBLIC_ADMOB_REWARDED_ANDROID,
+    ios: process.env.EXPO_PUBLIC_ADMOB_REWARDED_IOS,
+  }));
 }
 
 let initPromise: Promise<boolean> | null = null;
