@@ -1,9 +1,9 @@
 // Rewarded ads (Sprint 10 Fase 2) — puente Free→Pro ("mirá un anuncio = 1 uso
-// de IA"). Por ahora SOLO el helper client-side, sin UI que lo llame: otorgar
-// el uso de IA requiere un crédito server-side en ai-gate (sin eso el edge
-// sigue devolviendo 402 y el anuncio no compraría nada). Cablear la UI junto
-// con ese cambio. Carga on-demand: el usuario lo pide explícitamente, la
-// espera de carga es aceptable.
+// de IA"). Helper de bajo nivel: muestra el anuncio y resuelve el resultado. El
+// crédito en sí lo maneja lib/hooks/use-reward-credits.ts (otorga server-side
+// vía grant_ai_reward_credit tras EARNED_REWARD; el ai-gate lo consume antes del
+// 402). Carga on-demand: el usuario lo pide explícitamente, la espera de carga
+// es aceptable.
 
 import { ensureAdsReady, getAdsModule, rewardedAdUnitId } from "./ads";
 
