@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ProLock } from "../components/ProLock";
+import { RewardCreditsChip } from "../components/RewardCreditsChip";
 import { type AdvisorMessage, useAdvisor } from "../lib/hooks/use-advisor";
 import { usePro } from "../lib/hooks/use-pro";
 import { invalidateRewardCredits, useRewardCredits } from "../lib/hooks/use-reward-credits";
@@ -125,6 +126,12 @@ export default function AdvisorScreen() {
           <View style={{ width: 56 }} />
         )}
       </View>
+
+      {reward.credits > 0 && !isPro ? (
+        <View style={styles.chipRow}>
+          <RewardCreditsChip credits={reward.credits} isPro={isPro} />
+        </View>
+      ) : null}
 
       {!canUseAi && messages.length === 0 ? (
         <ProLock
@@ -282,6 +289,7 @@ const styles = StyleSheet.create({
   bubbleAssistantText: { color: colors.textPrimary, fontSize: 15, lineHeight: 21 },
   typing: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   typingText: { color: colors.textMuted, fontSize: 14 },
+  chipRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   adHint: {
     flexDirection: "row",
     alignItems: "center",

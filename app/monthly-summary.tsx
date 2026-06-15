@@ -9,6 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ProLock } from "../components/ProLock";
+import { RewardCreditsChip } from "../components/RewardCreditsChip";
 import { StateMessage } from "../components/StateMessage";
 import { usePro } from "../lib/hooks/use-pro";
 import { invalidateRewardCredits, useRewardCredits } from "../lib/hooks/use-reward-credits";
@@ -81,6 +82,7 @@ export default function MonthlySummaryScreen() {
 
         <Text style={styles.title}>Resumen de {monthLabel(period)}</Text>
         <Text style={styles.subtitle}>Tu mes financiero, contado por la IA con tus números reales.</Text>
+        <RewardCreditsChip credits={reward.credits} isPro={isPro} />
 
         {!hasAccess ? (
           <ProLock
