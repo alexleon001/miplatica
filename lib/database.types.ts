@@ -74,6 +74,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_reward_credits: {
+        Row: {
+          credits: number
+          granted_on: string | null
+          granted_today: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          credits?: number
+          granted_on?: string | null
+          granted_today?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          credits?: number
+          granted_on?: string | null
+          granted_today?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_usage_daily: {
         Row: {
           count: number
@@ -677,6 +701,8 @@ export type Database = {
     }
     Functions: {
       consume_ai_quota: { Args: { p_limit: number }; Returns: boolean }
+      consume_ai_reward_credit: { Args: never; Returns: boolean }
+      grant_ai_reward_credit: { Args: never; Returns: boolean }
       is_pro: { Args: never; Returns: boolean }
       mp_get_tokens: {
         Args: { p_key: string; p_owner: string }

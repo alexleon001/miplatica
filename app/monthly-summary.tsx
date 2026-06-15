@@ -3,13 +3,15 @@
 // agrega los números server-side) y cachea el resultado. Botón "Actualizar"
 // fuerza un refetch.
 
-import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ProLock } from "../components/ProLock";
 import { StateMessage } from "../components/StateMessage";
 import { usePro } from "../lib/hooks/use-pro";
+import { invalidateRewardCredits, useRewardCredits } from "../lib/hooks/use-reward-credits";
 import { currentPeriod, useMonthlySummary } from "../lib/hooks/use-monthly-summary";
 import { monthLabel } from "../lib/projection";
 import { colors, radius, spacing, typography, shadow } from "../lib/theme";
@@ -18,8 +20,33 @@ export default function MonthlySummaryScreen() {
   const router = useRouter();
   const period = currentPeriod();
   const { isPro } = usePro();
-  // No llamamos a la IA si no es Pro (la query queda deshabilitada → no gasta).
-  const { data, isLoading, isFetching, isError, refetch } = useMonthlySummary(period, isPro);
+  // Puente Free→Pro: un crédito de rewarded ad alcanza para un resumen.
+  const reward = useRewardCredits({ enabled: !isPro });
+  // Acceso a la IA: Pro, con crédito, o ya tenemos el resumen (ya se "pagó").
+  const canCall = isPro || reward.credits > 0;
+  // No llamamos a la IA sin acceso (la query queda deshabilitada → no gasta).
+  const { data, isLoading, isFetching, isError, refetch } = useMonthlySummary(period, canCall);
+  const hasAccess = canCall || data != null;
+
+  // Cada resumen generado consumió un crédito server-side (si no es Pro):
+  // refrescamos el saldo. Una vez por resumen distinto.
+  const settledRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isPro && data && settledRef.current !== data.summary) {
+      settledRef.current = data.summary;
+      invalidateRewardCredits();
+    }
+  }, [isPro, data]);
+
+  async function handleWatchAd() {
+    const result = await reward.watchAdForCredit();
+    if (result === "no_credit") {
+      Alert.alert("Por hoy no", "Llegaste al tope de usos gratis de hoy. Probá mañana o pasate a Pro.");
+    } else if (result === "unavailable") {
+      Alert.alert("Anuncio no disponible", "No pudimos cargar el anuncio. Probá de nuevo en un rato.");
+    }
+    // earned → la query se habilita sola y genera el resumen; dismissed → sin acción.
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -55,10 +82,12 @@ export default function MonthlySummaryScreen() {
         <Text style={styles.title}>Resumen de {monthLabel(period)}</Text>
         <Text style={styles.subtitle}>Tu mes financiero, contado por la IA con tus números reales.</Text>
 
-        {!isPro ? (
+        {!hasAccess ? (
           <ProLock
             title="El resumen del mes es Pro"
             subtitle="La IA analiza tus movimientos, los compara con el mes anterior y con la inflación. Desbloquealo con Mi Platica Pro."
+            onWatchAd={reward.adsAvailable ? handleWatchAd : undefined}
+            watching={reward.watching}
           />
         ) : isLoading || (isFetching && !data) ? (
           <View style={styles.loading}>

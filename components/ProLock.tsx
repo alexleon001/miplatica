@@ -1,12 +1,26 @@
 // Estado "bloqueado por Pro" para las pantallas de IA (Sprint 10: monetización).
 // Se muestra cuando usePro() devuelve Free. CTA → paywall. OTA-safe (JS puro).
+//
+// Puente Free→Pro (rewarded ads): cuando la pantalla pasa onWatchAd, además del
+// CTA al paywall ofrecemos "mirá un anuncio y usá la IA una vez". La pantalla
+// dueña otorga el crédito server-side (useRewardCredits) y desbloquea al ganarlo.
 
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radius, spacing, typography, shadow } from "../lib/theme";
 
-export function ProLock({ title, subtitle }: { title: string; subtitle: string }) {
+export function ProLock({
+  title,
+  subtitle,
+  onWatchAd,
+  watching = false,
+}: {
+  title: string;
+  subtitle: string;
+  onWatchAd?: () => void;
+  watching?: boolean;
+}) {
   const router = useRouter();
   return (
     <View style={styles.wrap}>
@@ -24,6 +38,25 @@ export function ProLock({ title, subtitle }: { title: string; subtitle: string }
         <Ionicons name="lock-open-outline" size={16} color="#FFFFFF" />
         <Text style={styles.ctaText}>Desbloquear con Pro</Text>
       </Pressable>
+      {onWatchAd ? (
+        <>
+          <Text style={styles.or}>o probala gratis</Text>
+          <Pressable
+            style={({ pressed }) => [styles.adCta, (pressed || watching) && { opacity: 0.7 }]}
+            onPress={onWatchAd}
+            disabled={watching}
+            accessibilityRole="button"
+            accessibilityLabel="Mirá un anuncio para usar la IA una vez"
+          >
+            {watching ? (
+              <ActivityIndicator size="small" color={colors.primaryBright} />
+            ) : (
+              <Ionicons name="play-circle-outline" size={16} color={colors.primaryBright} />
+            )}
+            <Text style={styles.adCtaText}>Mirá un anuncio y usala una vez</Text>
+          </Pressable>
+        </>
+      ) : null}
     </View>
   );
 }
@@ -48,4 +81,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md, paddingHorizontal: spacing.xl, marginTop: spacing.sm, ...shadow.md,
   },
   ctaText: { color: "#FFFFFF", fontWeight: "800", fontSize: 15 },
+  or: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
+  adCta: {
+    flexDirection: "row", alignItems: "center", gap: spacing.xs,
+    backgroundColor: colors.surfaceDark, borderRadius: radius.full,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.xl,
+    borderWidth: 1, borderColor: colors.primaryBright + "55",
+  },
+  adCtaText: { color: colors.primaryBright, fontWeight: "700", fontSize: 14 },
 });

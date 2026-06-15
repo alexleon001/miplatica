@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ProLock } from "../components/ProLock";
 import { type AdvisorMessage, useAdvisor } from "../lib/hooks/use-advisor";
 import { usePro } from "../lib/hooks/use-pro";
+import { invalidateRewardCredits, useRewardCredits } from "../lib/hooks/use-reward-credits";
 import { useAdvisorChatStore } from "../lib/store/advisor";
 import { useKeyboardHeight } from "../lib/hooks/use-keyboard-height";
 import { colors, radius, spacing, typography } from "../lib/theme";
@@ -29,6 +30,9 @@ const SUGGESTIONS = [
 export default function AdvisorScreen() {
   const router = useRouter();
   const { isPro } = usePro();
+  // Puente Free→Pro: cada crédito de rewarded ad paga un mensaje al asesor.
+  const reward = useRewardCredits({ enabled: !isPro });
+  const canUseAi = isPro || reward.credits > 0;
   const advisor = useAdvisor();
   // Historial persistido (sobrevive al cierre de la app). Ver lib/store/advisor.
   const messages = useAdvisorChatStore((s) => s.messages);
@@ -50,6 +54,8 @@ export default function AdvisorScreen() {
   async function send(text: string) {
     const content = text.trim();
     if (!content || advisor.isPending) return;
+    // Sin crédito ni Pro no gastamos: el hint de "mirá un anuncio" guía al usuario.
+    if (!canUseAi) return;
 
     const next: AdvisorMessage[] = [...messages, { role: "user", content }];
     setMessages(next);
@@ -59,6 +65,8 @@ export default function AdvisorScreen() {
     try {
       const reply = await advisor.mutateAsync(next);
       setMessages([...next, { role: "assistant", content: reply }]);
+      // El mensaje consumió un crédito server-side (si no es Pro): refrescamos.
+      if (!isPro) invalidateRewardCredits();
     } catch (e) {
       setMessages([
         ...next,
@@ -82,6 +90,16 @@ export default function AdvisorScreen() {
     ]);
   }
 
+  async function handleWatchAd() {
+    const result = await reward.watchAdForCredit();
+    if (result === "no_credit") {
+      Alert.alert("Por hoy no", "Llegaste al tope de usos gratis de hoy. Probá mañana o pasate a Pro.");
+    } else if (result === "unavailable") {
+      Alert.alert("Anuncio no disponible", "No pudimos cargar el anuncio. Probá de nuevo en un rato.");
+    }
+    // earned → reward.credits sube y se habilita el envío; dismissed → sin acción.
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -99,7 +117,7 @@ export default function AdvisorScreen() {
           <Ionicons name="sparkles" size={15} color={colors.primaryBright} />
           <Text style={styles.title}>Asesor IA</Text>
         </View>
-        {isPro && messages.length > 0 ? (
+        {messages.length > 0 ? (
           <Pressable onPress={confirmClear} hitSlop={12} accessibilityLabel="Nueva conversación">
             <Text style={styles.clear}>Limpiar</Text>
           </Pressable>
@@ -108,10 +126,12 @@ export default function AdvisorScreen() {
         )}
       </View>
 
-      {!isPro ? (
+      {!canUseAi && messages.length === 0 ? (
         <ProLock
           title="El asesor IA es Pro"
           subtitle="Chateá sobre tu plata con un asesor que ve tus cuentas, inversiones y deudas reales. Desbloquealo con Mi Platica Pro."
+          onWatchAd={reward.adsAvailable ? handleWatchAd : undefined}
+          watching={reward.watching}
         />
       ) : (
       <View style={{ flex: 1, marginBottom: kbHeight }}>
@@ -154,6 +174,27 @@ export default function AdvisorScreen() {
           />
         )}
 
+        {!canUseAi ? (
+          <Pressable
+            style={({ pressed }) => [styles.adHint, (pressed || reward.watching) && { opacity: 0.7 }]}
+            onPress={handleWatchAd}
+            disabled={reward.watching || !reward.adsAvailable}
+            accessibilityRole="button"
+            accessibilityLabel="Mirá un anuncio para enviar otro mensaje"
+          >
+            {reward.watching ? (
+              <ActivityIndicator size="small" color={colors.primaryBright} />
+            ) : (
+              <Ionicons name="play-circle-outline" size={18} color={colors.primaryBright} />
+            )}
+            <Text style={styles.adHintText}>
+              {reward.adsAvailable
+                ? "Mirá un anuncio para enviar otro mensaje"
+                : "Pasate a Pro para seguir chateando"}
+            </Text>
+          </Pressable>
+        ) : null}
+
         <View style={styles.inputBar}>
           <TextInput
             style={styles.input}
@@ -163,15 +204,15 @@ export default function AdvisorScreen() {
             onChangeText={setInput}
             multiline
             onSubmitEditing={() => send(input)}
-            editable={!advisor.isPending}
+            editable={!advisor.isPending && canUseAi}
           />
           <Pressable
             style={({ pressed }) => [
               styles.sendBtn,
-              (pressed || advisor.isPending || !input.trim()) && { opacity: 0.5 },
+              (pressed || advisor.isPending || !input.trim() || !canUseAi) && { opacity: 0.5 },
             ]}
             onPress={() => send(input)}
-            disabled={advisor.isPending || !input.trim()}
+            disabled={advisor.isPending || !input.trim() || !canUseAi}
             accessibilityLabel="Enviar mensaje"
           >
             <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
@@ -241,6 +282,21 @@ const styles = StyleSheet.create({
   bubbleAssistantText: { color: colors.textPrimary, fontSize: 15, lineHeight: 21 },
   typing: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   typingText: { color: colors.textMuted, fontSize: 14 },
+  adHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceDark,
+    borderWidth: 1,
+    borderColor: colors.primaryBright + "44",
+  },
+  adHintText: { color: colors.primaryBright, fontWeight: "700", fontSize: 13 },
   inputBar: {
     flexDirection: "row",
     alignItems: "flex-end",
