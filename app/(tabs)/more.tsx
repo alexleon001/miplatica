@@ -78,6 +78,13 @@ export default function MoreScreen() {
         ) : null}
 
         <FeatureCard
+          icon="people-outline"
+          tint={colors.primary}
+          title="Gastos compartidos"
+          subtitle="Dividí viajes, convivencia y salidas; calculamos quién le debe a quién"
+          onPress={() => router.push("/groups")}
+        />
+        <FeatureCard
           icon="sparkles"
           tint={colors.primary}
           title="Asesor financiero IA"

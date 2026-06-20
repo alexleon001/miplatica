@@ -284,6 +284,128 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          default_currency: string
+          id: string
+          is_archived: boolean
+          kind: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          default_currency?: string
+          id?: string
+          is_archived?: boolean
+          kind?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          default_currency?: string
+          id?: string
+          is_archived?: boolean
+          kind?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      expense_splits: {
+        Row: {
+          amount_ars: number
+          expense_id: string
+          id: string
+          member_id: string
+          share: number | null
+        }
+        Insert: {
+          amount_ars: number
+          expense_id: string
+          id?: string
+          member_id: string
+          share?: number | null
+        }
+        Update: {
+          amount_ars?: number
+          expense_id?: string
+          id?: string
+          member_id?: string
+          share?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_splits_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "shared_expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_splits_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "group_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_members: {
+        Row: {
+          created_at: string
+          display_name: string
+          email: string | null
+          group_id: string
+          id: string
+          invite_token: string
+          joined_at: string | null
+          last_reminded_at: string | null
+          role: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          email?: string | null
+          group_id: string
+          id?: string
+          invite_token?: string
+          joined_at?: string | null
+          last_reminded_at?: string | null
+          role?: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          email?: string | null
+          group_id?: string
+          id?: string
+          invite_token?: string
+          joined_at?: string | null
+          last_reminded_at?: string | null
+          role?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "expense_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inflation: {
         Row: {
           fetched_at: string
@@ -592,6 +714,140 @@ export type Database = {
         }
         Relationships: []
       }
+      settlements: {
+        Row: {
+          amount_ars: number
+          created_at: string
+          created_by: string
+          currency: string
+          date: string
+          from_member: string
+          group_id: string
+          id: string
+          note: string | null
+          recorded_transaction_id: string | null
+          to_member: string
+        }
+        Insert: {
+          amount_ars: number
+          created_at?: string
+          created_by: string
+          currency?: string
+          date?: string
+          from_member: string
+          group_id: string
+          id?: string
+          note?: string | null
+          recorded_transaction_id?: string | null
+          to_member: string
+        }
+        Update: {
+          amount_ars?: number
+          created_at?: string
+          created_by?: string
+          currency?: string
+          date?: string
+          from_member?: string
+          group_id?: string
+          id?: string
+          note?: string | null
+          recorded_transaction_id?: string | null
+          to_member?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlements_from_member_fkey"
+            columns: ["from_member"]
+            isOneToOne: false
+            referencedRelation: "group_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlements_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "expense_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlements_recorded_transaction_id_fkey"
+            columns: ["recorded_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlements_to_member_fkey"
+            columns: ["to_member"]
+            isOneToOne: false
+            referencedRelation: "group_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_expenses: {
+        Row: {
+          amount_ars: number
+          amount_usd: number | null
+          category: string | null
+          created_at: string
+          created_by: string
+          currency: string
+          date: string
+          description: string
+          group_id: string
+          id: string
+          paid_by: string
+          split_type: string
+          usd_rate_used: number | null
+        }
+        Insert: {
+          amount_ars: number
+          amount_usd?: number | null
+          category?: string | null
+          created_at?: string
+          created_by: string
+          currency?: string
+          date?: string
+          description: string
+          group_id: string
+          id?: string
+          paid_by: string
+          split_type?: string
+          usd_rate_used?: number | null
+        }
+        Update: {
+          amount_ars?: number
+          amount_usd?: number | null
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: string
+          date?: string
+          description?: string
+          group_id?: string
+          id?: string
+          paid_by?: string
+          split_type?: string
+          usd_rate_used?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_expenses_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "expense_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_expenses_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "group_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string
@@ -700,9 +956,16 @@ export type Database = {
       }
     }
     Functions: {
+      claim_group_invites: { Args: never; Returns: number }
       consume_ai_quota: { Args: { p_limit: number }; Returns: boolean }
       consume_ai_reward_credit: { Args: never; Returns: boolean }
+      create_expense_group: {
+        Args: { p_currency?: string; p_kind?: string; p_name: string }
+        Returns: string
+      }
       grant_ai_reward_credit: { Args: never; Returns: boolean }
+      is_group_member: { Args: { p_group: string }; Returns: boolean }
+      is_group_owner: { Args: { p_group: string }; Returns: boolean }
       is_pro: { Args: never; Returns: boolean }
       mp_get_tokens: {
         Args: { p_key: string; p_owner: string }
@@ -724,6 +987,13 @@ export type Database = {
           p_scope: string
         }
         Returns: undefined
+      }
+      my_group_balances: {
+        Args: never
+        Returns: {
+          group_id: string
+          net: number
+        }[]
       }
       recompute_budget: {
         Args: {

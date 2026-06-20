@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "../lib/auth";
+import { claimGroupInvites } from "../lib/hooks/use-group-members";
 import { useProfile } from "../lib/hooks/use-profile";
 import { syncPurchasesUser } from "../lib/purchases";
 import { QueryProvider } from "../lib/query-provider";
@@ -47,6 +48,9 @@ function AuthGate() {
   const userId = session?.user.id ?? null;
   useEffect(() => {
     void syncPurchasesUser(userId);
+    // Modelo híbrido de gastos compartidos: al loguearse, vincula los miembros
+    // "fantasma" cuyo email coincide con el del usuario (invitaciones pendientes).
+    if (userId) void claimGroupInvites();
   }, [userId]);
 
   useEffect(() => {
@@ -88,6 +92,7 @@ function AuthGate() {
       <Stack.Screen name="insights" />
       <Stack.Screen name="invest-sim" />
       <Stack.Screen name="categories" />
+      <Stack.Screen name="groups" />
       <Stack.Screen name="paywall" options={{ presentation: "modal" }} />
       <Stack.Screen name="modals" options={{ presentation: "modal" }} />
     </Stack>

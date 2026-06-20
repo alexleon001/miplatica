@@ -9,6 +9,7 @@ import { ExchangeRatesBar } from "../../components/ExchangeRatesBar";
 import { FirstSteps } from "../../components/FirstSteps";
 import { NetWorthCard } from "../../components/NetWorthCard";
 import { NetWorthChart } from "../../components/NetWorthChart";
+import { SharedExpensesCard } from "../../components/SharedExpensesCard";
 import { UpcomingReminders } from "../../components/UpcomingReminders";
 import { useAuth } from "../../lib/auth";
 import { useFreshNetWorth } from "../../lib/hooks/use-net-worth";
@@ -68,6 +69,7 @@ export default function DashboardScreen() {
         <NetWorthCard />
         <NetWorthChart />
         <AccountsList />
+        <SharedExpensesCard />
 
         <View style={styles.ratesSection}>
           <Text style={styles.ratesLabel}>Tipo de cambio hoy</Text>
