@@ -1,12 +1,13 @@
-// Héroe del dashboard: card de patrimonio neto. Superficie indigo profunda con
-// glow + blob de acento para jerarquía visual. Usa MoneyAmount → reacciona al
-// CurrencyToggle. Si la query carga o no hay row aún (usuario sin movimientos),
-// muestra ceros (la vista v_net_worth no devuelve fila si nada existe).
+// Héroe del dashboard: card de patrimonio neto. Superficie oscura elevada con un
+// borde indigo sutil + glow para jerarquía visual (antes era un gradiente
+// indigo→teal, pero el tramo claro dejaba el monto sin contraste y dependía de un
+// módulo nativo). Usa MoneyAmount → reacciona al CurrencyToggle. Si la query carga
+// o no hay row aún (usuario sin movimientos), muestra ceros (la vista v_net_worth
+// no devuelve fila si nada existe).
 
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFreshNetWorth } from "../lib/hooks/use-net-worth";
-import { BrandGradient } from "./BrandGradient";
 import { MoneyAmount } from "./MoneyAmount";
 import { Skeleton } from "./Skeleton";
 import { StateMessage } from "./StateMessage";
@@ -21,9 +22,7 @@ export function NetWorthCard() {
   const netUsd = data?.net_usd ?? 0;
 
   return (
-    // El gradiente ES la card (sin overflow:hidden ni blobs → mucho más liviano al
-    // scrollear; antes forzaba render offscreen cada frame en Android).
-    <BrandGradient style={styles.card}>
+    <View style={styles.card}>
       <View style={styles.labelRow}>
         <Ionicons name="sparkles" size={13} color={colors.primaryBright} />
         <Text style={styles.label}>Patrimonio neto</Text>
@@ -47,7 +46,7 @@ export function NetWorthCard() {
           <Row icon="card-outline" tint={colors.negative} label="Deudas" ars={data.debts_ars} usd={data.debts_usd} negative />
         </View>
       ) : null}
-    </BrandGradient>
+    </View>
   );
 }
 
@@ -81,11 +80,12 @@ function Row({
 
 const styles = StyleSheet.create({
   card: {
+    backgroundColor: colors.surfaceElevated,
     borderRadius: radius.xl,
     padding: spacing.xl,
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.primaryBright + "33",
+    borderColor: colors.primary + "55",
     ...shadow.glow,
   },
   labelRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     gap: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.10)",
+    borderTopColor: colors.border,
     paddingTop: spacing.lg,
   },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
