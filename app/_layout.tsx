@@ -12,20 +12,40 @@ import {
   type UsdType,
   useCurrencyStore,
 } from "../lib/store/currency";
-import { colors } from "../lib/colors";
+import { ThemeProvider, useTheme } from "../lib/theme-context";
 
 export default function RootLayout() {
   return (
     <QueryProvider>
-      <AuthProvider>
-        <StatusBar style="light" />
-        <AuthGate />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ThemedStatusBar />
+          <AuthGate />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryProvider>
   );
 }
 
+// Luminancia aproximada de un hex (#RRGGBB) → 0..255. Para decidir íconos de la
+// status bar / contraste sin depender de strings.
+function brightness(hex: string): number {
+  const h = hex.replace("#", "");
+  if (h.length !== 6) return 0;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
+// La barra de estado sigue el modo del tema (texto claro en oscuro, oscuro en claro).
+function ThemedStatusBar() {
+  const c = useTheme();
+  return <StatusBar style={brightness(c.bg) < 128 ? "light" : "dark"} />;
+}
+
 function AuthGate() {
+  const c = useTheme();
   const { session, loading } = useAuth();
   const profileQuery = useProfile();
   const router = useRouter();
@@ -74,16 +94,16 @@ function AuthGate() {
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: colors.backgroundDark,
+          backgroundColor: c.bg,
         }}
       >
-        <ActivityIndicator color={colors.primary} size="large" />
+        <ActivityIndicator color={c.accent} size="large" />
       </View>
     );
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.backgroundDark } }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="advisor" />
