@@ -2,6 +2,7 @@ import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Switch, Text,
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { AppearanceSettings } from "../../components/AppearanceSettings";
 import { BudgetsList } from "../../components/BudgetsList";
 import { MercadoPagoConnect } from "../../components/MercadoPagoConnect";
 import { RecurringList } from "../../components/RecurringList";
@@ -167,6 +168,11 @@ export default function MoreScreen() {
             variant="outline"
             onPress={exportMonthCsv}
           />
+        </View>
+
+        <View style={styles.section}>
+          <SectionLabel>Apariencia</SectionLabel>
+          <AppearanceSettings />
         </View>
 
         <View style={styles.section}>

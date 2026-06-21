@@ -34,7 +34,7 @@
 ## Plan de fases
 
 - **Fase 0 — Fundación del theming.** ✅ HECHA.
-- **Fase 1 — Apariencia + Selector en vivo.** ⏳ EN CURSO. Sección "Apariencia" en *Más* (cards Esmeralda/Terracota con swatches + segmented Claro/Oscuro/Auto) escribiendo `useAppearanceStore`. Implementa `Selector en vivo.dc.html`.
+- **Fase 1 — Apariencia + Selector en vivo.** ✅ HECHA. `components/AppearanceSettings.tsx` (cards Esmeralda/Terracota con swatches + check + segmented Claro/Oscuro/Auto, usa `useTheme()` y escribe `useAppearanceStore`); agregado en *Más* arriba de Notificaciones. Implementa `Selector en vivo.dc.html`. NOTA: hasta migrar las pantallas (Fases 2-9), cambiar el tema solo se ve en el propio selector + chrome ya migrado.
 - **Fase 2 — Patrimonio (home / `app/(tabs)/index.tsx` + NetWorthCard, CurrencyToggle, NetWorthChart, AccountsList, ExchangeRatesBar).** Layout B.
 - **Fase 3 — Movimientos (`app/(tabs)/transactions.tsx` + TransactionItem, SpendingBreakdown, banners).**
 - **Fase 4 — Inversiones (`app/(tabs)/investments.tsx` + PnLBadge, distribución).**
