@@ -25,17 +25,20 @@ export function useGroups() {
 }
 
 // Saldo neto del usuario por grupo (>0 le deben, <0 debe). Un RPC, sin N+1.
+// Devolvemos un objeto plano (no un Map): el persister de TanStack Query serializa
+// a JSON y un Map rehidrata como {} (perdiendo .get/.values y crasheando los
+// consumidores). Un Record sobrevive el round-trip.
 export function useMyGroupBalances() {
   return useQuery({
     queryKey: ["groups", "balances"],
     queryFn: async () => {
       const { data, error } = await gdb.rpc("my_group_balances");
       if (error) throw error;
-      const map = new Map<string, number>();
+      const byGroup: Record<string, number> = {};
       for (const row of (data ?? []) as { group_id: string; net: number }[]) {
-        map.set(row.group_id, Number(row.net));
+        byGroup[row.group_id] = Number(row.net);
       }
-      return map;
+      return byGroup;
     },
   });
 }

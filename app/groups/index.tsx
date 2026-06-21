@@ -57,7 +57,7 @@ export default function GroupsScreen() {
           renderItem={({ item }) => (
             <GroupRow
               group={item}
-              net={balances.data?.get(item.id) ?? 0}
+              net={balances.data?.[item.id] ?? 0}
               onPress={() => router.push(`/groups/${item.id}`)}
             />
           )}

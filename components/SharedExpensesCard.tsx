@@ -19,7 +19,7 @@ export function SharedExpensesCard() {
   if (groups.isLoading || !groups.data) return null;
 
   const hasGroups = groups.data.length > 0;
-  const net = [...(balances.data?.values() ?? [])].reduce((s, n) => s + n, 0);
+  const net = Object.values(balances.data ?? {}).reduce((s, n) => s + n, 0);
   const atEven = Math.abs(net) < 0.5;
   const positive = net > 0;
 
