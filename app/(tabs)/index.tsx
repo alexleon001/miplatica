@@ -16,15 +16,10 @@ import { useFreshNetWorth } from "../../lib/hooks/use-net-worth";
 import { useProfile } from "../../lib/hooks/use-profile";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
 import { useNetWorthHistoryStore } from "../../lib/store/networth-history";
-import { colors, radius, spacing, typography } from "../../lib/theme";
-
-const fechaFmt = new Intl.DateTimeFormat("es-AR", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-});
+import { useTheme } from "../../lib/theme-context";
 
 export default function DashboardScreen() {
+  const c = useTheme();
   const { session } = useAuth();
   const { data: profile } = useProfile();
   const { refreshing, onRefresh } = usePullRefresh();
@@ -33,38 +28,30 @@ export default function DashboardScreen() {
   const name = profile?.name?.trim() || session?.user.email?.split("@")[0] || "";
   const initial = (name || "?").charAt(0).toUpperCase();
 
-  // Snapshot diario del patrimonio (un punto por día) para el mini-gráfico de
-  // evolución. Local; se va llenando a medida que el usuario abre la app.
+  // Snapshot diario del patrimonio para el mini-gráfico de evolución.
   useEffect(() => {
     if (netWorth?.net_ars != null) recordNetWorth(netWorth.net_ars, netWorth.net_usd ?? null);
   }, [netWorth?.net_ars, netWorth?.net_usd, recordNetWorth]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]} edges={["top"]}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} />
         }
       >
         <View style={styles.header}>
-          <View style={styles.headerText}>
-            <View style={styles.brandRow}>
-              <Text style={styles.brand}>Mi Platica</Text>
-              <View style={styles.brandDot} />
-            </View>
-            <Text style={styles.greeting}>Hola{name ? `, ${name}` : ""} 👋</Text>
-            <Text style={styles.date}>{fechaFmt.format(new Date())}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.brand, { color: c.textDim }]}>Mi Plática</Text>
+            <Text style={[styles.greeting, { color: c.text }]}>Hola, {name || "👋"}</Text>
           </View>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initial}</Text>
+          <View style={[styles.avatar, { borderColor: c.border }]}>
+            <Text style={[styles.avatarText, { color: c.text }]}>{initial}</Text>
           </View>
         </View>
 
-        {/* El patrimonio (héroe) va primero: es el dato que el usuario viene a ver.
-            Los avisos contextuales (primeros pasos, recordatorios, presupuesto)
-            quedan debajo para no empujar el héroe fuera de la primera pantalla. */}
         <CurrencyToggle />
         <NetWorthCard />
         <NetWorthChart />
@@ -74,8 +61,8 @@ export default function DashboardScreen() {
         <AccountsList />
         <SharedExpensesCard />
 
-        <View style={styles.ratesSection}>
-          <Text style={styles.ratesLabel}>Tipo de cambio hoy</Text>
+        <View style={{ gap: 12, paddingTop: 4 }}>
+          <Text style={[styles.ratesLabel, { color: c.textDim }]}>Tipo de cambio hoy</Text>
           <ExchangeRatesBar />
         </View>
 
@@ -86,26 +73,19 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: spacing.xl, gap: spacing.lg },
-  header: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
-  headerText: { gap: 2, flex: 1 },
-  brandRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 },
-  brand: { color: colors.primaryBright, fontSize: 14, fontWeight: "800", letterSpacing: 0.5 },
-  brandDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent },
-  greeting: { ...typography.title, color: colors.textPrimary },
-  date: { ...typography.caption, color: colors.textMuted, textTransform: "capitalize" },
+  safe: { flex: 1 },
+  container: { padding: 22, gap: 20 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  brand: { fontSize: 10.5, fontWeight: "600", letterSpacing: 0.5, marginBottom: 5 },
+  greeting: { fontSize: 21, fontWeight: "600", letterSpacing: -0.4 },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.primary + "55",
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { color: colors.primaryBright, fontSize: 18, fontWeight: "800" },
-  ratesSection: { gap: spacing.sm, marginTop: spacing.xs },
-  ratesLabel: { ...typography.overline, color: colors.textMuted },
+  avatarText: { fontSize: 13, fontWeight: "600" },
+  ratesLabel: { fontSize: 10, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase" },
 });

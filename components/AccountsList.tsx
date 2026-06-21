@@ -1,54 +1,58 @@
+// Mis cuentas — rediseño "Línea": label MIS CUENTAS + filas (caja de icono con
+// borde fino + nombre/subtítulo + saldo) separadas por hairline. useTheme().
+
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAccounts, useDeleteAccount } from "../lib/hooks/use-accounts";
 import { confirmDelete } from "../lib/confirm";
+import { useTheme } from "../lib/theme-context";
 import { MoneyAmount } from "./MoneyAmount";
 import { RowsSkeleton } from "./Skeleton";
-import { colors, radius, spacing, typography, shadow } from "../lib/theme";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
-const TYPE_META: Record<string, { label: string; icon: IoniconName; tint: string }> = {
-  wallet: { label: "Billetera", icon: "phone-portrait-outline", tint: colors.accent },
-  bank: { label: "Banco", icon: "business-outline", tint: colors.ars },
-  broker: { label: "Broker", icon: "trending-up-outline", tint: colors.usd },
-  cash: { label: "Efectivo", icon: "cash-outline", tint: colors.positive },
-  crypto: { label: "Cripto", icon: "logo-bitcoin", tint: colors.warning },
+const TYPE_META: Record<string, { label: string; icon: IoniconName }> = {
+  wallet: { label: "Billetera", icon: "phone-portrait-outline" },
+  bank: { label: "Banco", icon: "business-outline" },
+  broker: { label: "Broker", icon: "trending-up-outline" },
+  cash: { label: "Efectivo", icon: "cash-outline" },
+  crypto: { label: "Cripto", icon: "logo-bitcoin" },
 };
 
 export function AccountsList() {
+  const c = useTheme();
   const { data: accounts, isLoading } = useAccounts();
   const router = useRouter();
   const del = useDeleteAccount();
 
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionLabel}>Mis cuentas</Text>
+    <View style={{ gap: 14, paddingTop: 4 }}>
+      <Text style={[styles.label, { color: c.textDim }]}>Mis cuentas</Text>
 
       {isLoading ? (
         <RowsSkeleton count={2} />
       ) : !accounts || accounts.length === 0 ? (
         <View style={styles.empty}>
-          <Ionicons name="wallet-outline" size={28} color={colors.textMuted} />
-          <Text style={styles.muted}>Todavía no agregaste cuentas. Empezá con la primera.</Text>
+          <Ionicons name="wallet-outline" size={26} color={c.textFaint} />
+          <Text style={[styles.muted, { color: c.textDim }]}>Todavía no agregaste cuentas. Empezá con la primera.</Text>
         </View>
       ) : (
         accounts.map((acc, i) => {
-          const meta = TYPE_META[acc.type] ?? { label: acc.type, icon: "ellipse-outline" as IoniconName, tint: colors.textMuted };
+          const meta = TYPE_META[acc.type] ?? { label: acc.type, icon: "ellipse-outline" as IoniconName };
           return (
             <Pressable
               key={acc.id}
               onPress={() => router.push({ pathname: "/modals/add-account", params: { id: acc.id } })}
               onLongPress={() => confirmDelete(acc.name, () => del.mutate(acc.id))}
-              style={({ pressed }) => [styles.row, i > 0 && styles.rowDivider, pressed && { opacity: 0.6 }]}
+              style={({ pressed }) => [styles.row, i > 0 && { borderTopWidth: 1, borderTopColor: c.border, paddingTop: 14 }, pressed && { opacity: 0.6 }]}
             >
-              <View style={[styles.iconChip, { backgroundColor: meta.tint + "22" }]}>
-                <Ionicons name={meta.icon} size={18} color={meta.tint} />
+              <View style={[styles.iconBox, { borderColor: c.border }]}>
+                <Ionicons name={meta.icon} size={16} color={c.accent} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.accountName}>{acc.name}</Text>
-                <Text style={styles.accountType}>
+                <Text style={[styles.accountName, { color: c.text }]}>{acc.name}</Text>
+                <Text style={[styles.accountType, { color: c.textDim }]}>
                   {meta.label} · {acc.currency}
                 </Text>
               </View>
@@ -63,49 +67,24 @@ export function AccountsList() {
       )}
 
       <Pressable
-        style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
+        style={({ pressed }) => [styles.cta, pressed && { opacity: 0.6 }]}
         onPress={() => router.push("/modals/add-account")}
       >
-        <Ionicons name="add" size={18} color={colors.primaryBright} />
-        <Text style={styles.ctaText}>Agregar cuenta</Text>
+        <Ionicons name="add" size={17} color={c.accent} />
+        <Text style={[styles.ctaText, { color: c.accent }]}>Agregar cuenta</Text>
       </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  section: {
-    backgroundColor: colors.surfaceDark,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.md,
-    ...shadow.sm,
-  },
-  sectionLabel: { ...typography.overline, color: colors.textMuted },
-  empty: { alignItems: "center", gap: spacing.sm, paddingVertical: spacing.md },
-  muted: { ...typography.caption, color: colors.textMuted, textAlign: "center" },
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  rowDivider: { borderTopWidth: 1, borderTopColor: colors.borderSoft, paddingTop: spacing.md },
-  iconChip: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  accountName: { ...typography.bodyStrong, color: colors.textPrimary },
-  accountType: { ...typography.caption, color: colors.textMuted, marginTop: 1 },
-  cta: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xs,
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    marginTop: spacing.xs,
-  },
-  ctaText: { color: colors.primaryBright, fontWeight: "700", fontSize: 14 },
+  label: { fontSize: 10, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase" },
+  empty: { alignItems: "center", gap: 8, paddingVertical: 12 },
+  muted: { fontSize: 13, textAlign: "center" },
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
+  iconBox: { width: 34, height: 34, borderRadius: 9, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
+  accountName: { fontSize: 14, fontWeight: "600" },
+  accountType: { fontSize: 11, marginTop: 1 },
+  cta: { flexDirection: "row", alignItems: "center", gap: 6, paddingTop: 6 },
+  ctaText: { fontWeight: "600", fontSize: 14 },
 });

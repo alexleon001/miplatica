@@ -1,49 +1,41 @@
-// Héroe del dashboard: card de patrimonio neto. Superficie oscura elevada con un
-// borde indigo sutil + glow para jerarquía visual (antes era un gradiente
-// indigo→teal, pero el tramo claro dejaba el monto sin contraste y dependía de un
-// módulo nativo). Usa MoneyAmount → reacciona al CurrencyToggle. Si la query carga
-// o no hay row aún (usuario sin movimientos), muestra ceros (la vista v_net_worth
-// no devuelve fila si nada existe).
+// Patrimonio neto — rediseño "Línea" (versión B): SIN caja. Label PATRIMONIO NETO,
+// número grande tabular, y 3 filas (Activos / Inversiones / Deudas) separadas por
+// divisores hairline. Acento sólo donde corresponde; Deudas en --neg. useTheme().
 
 import { StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useFreshNetWorth } from "../lib/hooks/use-net-worth";
+import { useTheme } from "../lib/theme-context";
 import { MoneyAmount } from "./MoneyAmount";
 import { Skeleton } from "./Skeleton";
 import { StateMessage } from "./StateMessage";
-import { colors, radius, spacing, typography, shadow } from "../lib/theme";
-
-type IoniconName = keyof typeof Ionicons.glyphMap;
 
 export function NetWorthCard() {
+  const c = useTheme();
   const { data, isLoading, isError, refetch } = useFreshNetWorth();
 
   const netArs = data?.net_ars ?? 0;
   const netUsd = data?.net_usd ?? 0;
 
   return (
-    <View style={styles.card}>
-      <View style={styles.labelRow}>
-        <Ionicons name="sparkles" size={13} color={colors.primaryBright} />
-        <Text style={styles.label}>Patrimonio neto</Text>
-      </View>
+    <View style={{ gap: 10 }}>
+      <Text style={[styles.label, { color: c.textDim }]}>Patrimonio neto</Text>
 
       {isError ? (
         <StateMessage kind="error" message="No pude cargar el patrimonio." onRetry={() => refetch()} />
       ) : isLoading ? (
-        <View style={styles.loadingWrap}>
-          <Skeleton width={220} height={42} />
-          <Skeleton width={150} height={18} />
+        <View style={{ gap: 8 }}>
+          <Skeleton width={220} height={40} />
+          <Skeleton width={150} height={16} />
         </View>
       ) : (
         <MoneyAmount ars={netArs} usd={netUsd} size="lg" />
       )}
 
       {data ? (
-        <View style={styles.breakdown}>
-          <Row icon="wallet-outline" tint={colors.ars} label="Activos en cuentas" ars={data.accounts_ars} usd={data.accounts_usd} />
-          <Row icon="trending-up-outline" tint={colors.usd} label="Inversiones" ars={data.investments_ars} usd={data.investments_usd} />
-          <Row icon="card-outline" tint={colors.negative} label="Deudas" ars={data.debts_ars} usd={data.debts_usd} negative />
+        <View style={{ marginTop: 6 }}>
+          <Row label="Activos en cuentas" ars={data.accounts_ars} usd={data.accounts_usd} border={c.border} dim={c.textDim} />
+          <Row label="Inversiones" ars={data.investments_ars} usd={data.investments_usd} border={c.border} dim={c.textDim} />
+          <Row label="Deudas" ars={data.debts_ars} usd={data.debts_usd} border={c.border} dim={c.textDim} negative />
         </View>
       ) : null}
     </View>
@@ -51,61 +43,36 @@ export function NetWorthCard() {
 }
 
 function Row({
-  icon,
-  tint,
   label,
   ars,
   usd,
+  border,
+  dim,
   negative,
 }: {
-  icon: IoniconName;
-  tint: string;
   label: string;
   ars: number | null;
   usd: number | null;
+  border: string;
+  dim: string;
   negative?: boolean;
 }) {
   return (
-    <View style={styles.row}>
-      <View style={styles.rowLeft}>
-        <View style={[styles.iconChip, { backgroundColor: tint + "22" }]}>
-          <Ionicons name={icon} size={14} color={tint} />
-        </View>
-        <Text style={styles.rowLabel}>{label}</Text>
-      </View>
+    <View style={[styles.row, { borderTopColor: border }]}>
+      <Text style={[styles.rowLabel, { color: dim }]}>{label}</Text>
       <MoneyAmount ars={ars} usd={usd} size="sm" tone={negative ? "negative" : "default"} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.primary + "55",
-    ...shadow.glow,
-  },
-  labelRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  label: { ...typography.overline, color: colors.primaryBright },
-  loadingWrap: { gap: spacing.sm, marginVertical: 2 },
-  breakdown: {
-    marginTop: spacing.sm,
-    gap: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.md,
-  },
-  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  rowLeft: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flex: 1 },
-  iconChip: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.sm,
+  label: { fontSize: 10, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase" },
+  row: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    borderTopWidth: 1,
   },
-  rowLabel: { ...typography.caption, color: colors.textSecondary },
+  rowLabel: { fontSize: 14 },
 });

@@ -1,10 +1,10 @@
 // Componente único para renderizar montos. Consume useCurrencyStore para decidir
-// si mostrar ARS, USD o ambas. Centraliza el formato es-AR (siempre).
-// Patrón: pasale ambos amounts (ars + usd) y el componente decide qué mostrar.
+// si mostrar ARS, USD o ambas, y useTheme para el color vivo del rediseño "Línea".
+// Centraliza el formato es-AR (siempre) y los números tabulares (tabular-nums).
 
 import { StyleSheet, Text, View } from "react-native";
 import { useCurrencyStore } from "../lib/store/currency";
-import { colors } from "../lib/colors";
+import { useTheme } from "../lib/theme-context";
 
 type Size = "sm" | "md" | "lg" | "xl";
 type Tone = "default" | "positive" | "negative" | "warning";
@@ -35,18 +35,13 @@ const SIZES: Record<Size, { primary: number; secondary: number }> = {
   xl: { primary: 40, secondary: 18 },
 };
 
-function toneColor(tone: Tone): string {
-  switch (tone) {
-    case "positive": return colors.positive;
-    case "negative": return colors.negative;
-    case "warning":  return colors.warning;
-    default:         return colors.textPrimary;
-  }
-}
-
 export function MoneyAmount({ ars, usd, size = "md", tone = "default" }: MoneyAmountProps) {
+  const c = useTheme();
   const display = useCurrencyStore((s) => s.display);
   const { primary, secondary } = SIZES[size];
+
+  const toneColor = (t: Tone): string =>
+    t === "positive" ? c.pos : t === "negative" ? c.neg : t === "warning" ? c.warn : c.text;
   const primaryColor = toneColor(tone);
 
   const showArs = display === "ars" || display === "both";
@@ -55,8 +50,6 @@ export function MoneyAmount({ ars, usd, size = "md", tone = "default" }: MoneyAm
   const arsText = ars == null ? "—" : arsFmt.format(ars);
   const usdText = usd == null ? "—" : usdFmt.format(usd);
 
-  // `numberOfLines={1}` + `adjustsFontSizeToFit` evita que un monto largo se parta
-  // en dos líneas (p. ej. el "Balance" en columnas angostas).
   if (display === "ars") {
     return (
       <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.primary, { fontSize: primary, color: primaryColor }]}>
@@ -75,14 +68,13 @@ export function MoneyAmount({ ars, usd, size = "md", tone = "default" }: MoneyAm
   return (
     <View style={styles.stack}>
       {showArs && (
-        <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.primary, { fontSize: primary, color: tone === "default" ? colors.ars : primaryColor }]}>
+        <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.primary, { fontSize: primary, color: tone === "default" ? c.text : primaryColor }]}>
           {arsText}
         </Text>
       )}
-      {/* Ocultamos la línea secundaria USD cuando no hay dato: un "—" debajo de cada
-          monto es puro ruido (sobre todo en la lista de movimientos). */}
+      {/* Ocultamos la línea secundaria USD cuando no hay dato (evita "—" de relleno). */}
       {showUsd && usd != null && (
-        <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.secondary, { fontSize: secondary, color: tone === "default" ? colors.usd : primaryColor }]}>
+        <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.secondary, { fontSize: secondary, color: tone === "default" ? c.textDim : primaryColor }]}>
           {usdText}
         </Text>
       )}
@@ -92,6 +84,6 @@ export function MoneyAmount({ ars, usd, size = "md", tone = "default" }: MoneyAm
 
 const styles = StyleSheet.create({
   stack: { gap: 2 },
-  primary: { fontWeight: "700" },
-  secondary: { fontWeight: "500" },
+  primary: { fontWeight: "600", fontVariant: ["tabular-nums"] },
+  secondary: { fontWeight: "500", fontVariant: ["tabular-nums"] },
 });
