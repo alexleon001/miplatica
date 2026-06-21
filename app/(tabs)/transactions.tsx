@@ -49,11 +49,19 @@ function sectionTitle(key: string, now: Date): string {
   return fmt.format(d).replace(".", "");
 }
 
+// Etiqueta de un chip de categoría (con ícono); NO_CATEGORY = "sin categoría".
+function catChipLabel(id: string): string {
+  if (id === NO_CATEGORY) return "📦 Sin categoría";
+  const cat = categoryById(id);
+  return `${cat?.icon ?? "📦"} ${cat?.label ?? id}`;
+}
+
 export default function TransactionsScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
   const [catFilter, setCatFilter] = useState<string | null>(null); // null = todas
   const [query, setQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const { data: txs, isLoading, isError, refetch } = useTransactions();
   const monthly = useMonthlyBalance();
   const { refreshing, onRefresh } = usePullRefresh();
@@ -107,6 +115,8 @@ export default function TransactionsScreen() {
   }, [txs]);
 
   const uncategorized = useMemo(() => (txs ?? []).filter((t) => !t.category).length, [txs]);
+  const typeLabel = FILTERS.find((f) => f.value === filter)?.label ?? "Todos";
+  const activeFilterCount = (filter !== "all" ? 1 : 0) + (catFilter ? 1 : 0);
 
   function runCategorize() {
     if (categorize.isPending) return;
@@ -159,47 +169,74 @@ export default function TransactionsScreen() {
           ) : null}
         </View>
 
-        <View style={styles.filters}>
-          {FILTERS.map((f) => (
-            <Pressable
-              key={f.value}
-              style={[styles.chip, filter === f.value && styles.chipActive]}
-              onPress={() => setFilter(f.value)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: filter === f.value }}
-            >
-              <Text style={[styles.chipText, filter === f.value && styles.chipTextActive]}>
-                {f.label}
-              </Text>
-            </Pressable>
-          ))}
+        {/* Filtros plegables: por defecto solo el botón "Filtrar" + los filtros
+            activos (si los hay), para que la lista quede lo más arriba posible. */}
+        <View style={styles.filterBar}>
+          <Pressable
+            style={({ pressed }) => [styles.filterBtn, (showFilters || activeFilterCount > 0) && styles.filterBtnOn, pressed && { opacity: 0.8 }]}
+            onPress={() => setShowFilters((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel="Mostrar filtros"
+          >
+            <Ionicons name="options-outline" size={16} color={activeFilterCount > 0 ? colors.primaryBright : colors.textMuted} />
+            <Text style={[styles.filterBtnText, activeFilterCount > 0 && { color: colors.primaryBright }]}>Filtrar</Text>
+            {activeFilterCount > 0 ? (
+              <View style={styles.filterBadge}>
+                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+              </View>
+            ) : null}
+            <Ionicons name={showFilters ? "chevron-up" : "chevron-down"} size={14} color={colors.textMuted} />
+          </Pressable>
+
+          {!showFilters && filter !== "all" ? (
+            <ActiveChip label={typeLabel} onClear={() => setFilter("all")} />
+          ) : null}
+          {!showFilters && catFilter ? (
+            <ActiveChip label={catChipLabel(catFilter)} onClear={() => setCatFilter(null)} />
+          ) : null}
         </View>
 
-        {presentCategories.length >= 2 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.catRow}
-            keyboardShouldPersistTaps="handled"
-          >
-            <CatChip
-              label="Todas"
-              active={catFilter === null}
-              onPress={() => setCatFilter(null)}
-            />
-            {presentCategories.map((id) => {
-              const cat = id === NO_CATEGORY ? null : categoryById(id);
-              const label = id === NO_CATEGORY ? "📦 Sin categoría" : `${cat?.icon ?? "📦"} ${cat?.label ?? id}`;
-              return (
+        {showFilters ? (
+          <>
+            <View style={styles.filters}>
+              {FILTERS.map((f) => (
+                <Pressable
+                  key={f.value}
+                  style={[styles.chip, filter === f.value && styles.chipActive]}
+                  onPress={() => setFilter(f.value)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: filter === f.value }}
+                >
+                  <Text style={[styles.chipText, filter === f.value && styles.chipTextActive]}>
+                    {f.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {presentCategories.length >= 2 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.catRow}
+                keyboardShouldPersistTaps="handled"
+              >
                 <CatChip
-                  key={id}
-                  label={label}
-                  active={catFilter === id}
-                  onPress={() => setCatFilter(catFilter === id ? null : id)}
+                  label="Todas"
+                  active={catFilter === null}
+                  onPress={() => setCatFilter(null)}
                 />
-              );
-            })}
-          </ScrollView>
+                {presentCategories.map((id) => (
+                  <CatChip
+                    key={id}
+                    label={catChipLabel(id)}
+                    active={catFilter === id}
+                    onPress={() => setCatFilter(catFilter === id ? null : id)}
+                  />
+                ))}
+              </ScrollView>
+            ) : null}
+          </>
         ) : null}
 
         {uncategorized > 0 ? (
@@ -290,6 +327,16 @@ function CatChip({ label, active, onPress }: { label: string; active: boolean; o
   );
 }
 
+// Chip de un filtro activo (mostrado cuando el panel está plegado). Tocarlo lo quita.
+function ActiveChip({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <Pressable style={styles.activeChip} onPress={onClear} accessibilityRole="button" accessibilityLabel={`Quitar filtro ${label}`}>
+      <Text style={styles.activeChipText} numberOfLines={1}>{label}</Text>
+      <Ionicons name="close" size={13} color={colors.primaryBright} />
+    </Pressable>
+  );
+}
+
 function SummaryItem({
   label,
   amount,
@@ -326,6 +373,44 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   searchInput: { flex: 1, color: colors.textPrimary, fontSize: 14, padding: 0 },
+  filterBar: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
+  filterBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceDark,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterBtnOn: { borderColor: colors.primary },
+  filterBtnText: { color: colors.textMuted, fontSize: 13, fontWeight: "600" },
+  filterBadge: {
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterBadgeText: { color: "#FFFFFF", fontSize: 10, fontWeight: "800" },
+  activeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    maxWidth: 200,
+  },
+  activeChipText: { color: colors.primaryBright, fontSize: 12, fontWeight: "600", flexShrink: 1 },
   filters: { flexDirection: "row", gap: spacing.xs },
   aiBanner: {
     flexDirection: "row",

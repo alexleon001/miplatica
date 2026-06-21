@@ -23,17 +23,9 @@ export function NetWorthChart() {
     .map((p) => ({ date: p.date, v: useUsd ? p.usd : p.ars }))
     .filter((x): x is { date: string; v: number } => x.v != null);
 
-  // Necesitamos al menos 2 días para mostrar una evolución.
-  if (series.length < 2) {
-    return (
-      <View style={styles.empty}>
-        <Ionicons name="analytics-outline" size={16} color={colors.textMuted} />
-        <Text style={styles.emptyText}>
-          Tu evolución de patrimonio aparece acá a medida que abrís la app día a día.
-        </Text>
-      </View>
-    );
-  }
+  // Ocultamos el gráfico hasta tener suficientes días: con 2-3 puntos las barras se
+  // ven raras (un par altas y el resto plano). A partir de 5 días ya cuenta algo.
+  if (series.length < 5) return null;
 
   const values = series.map((s) => s.v);
   const bars = chartBars(values);
@@ -111,15 +103,4 @@ const styles = StyleSheet.create({
   },
   barSlot: { flex: 1, justifyContent: "flex-end", alignItems: "stretch" },
   bar: { borderRadius: 2, width: "100%" },
-  empty: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceDark,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-  },
-  emptyText: { ...typography.caption, color: colors.textMuted, flex: 1 },
 });
