@@ -34,9 +34,10 @@ import { requireProAi } from "../_shared/ai-gate.ts";
 const MODEL = "claude-sonnet-4-6";
 
 const CATEGORY_IDS = [
-  "food", "supermarket", "restaurants", "transport", "entertainment",
-  "utilities", "health", "education", "clothing", "tech", "travel",
-  "rent", "other",
+  "food", "supermarket", "restaurants", "transport", "entertainment", "events",
+  "utilities", "electricity", "water", "gas", "internet", "phone",
+  "health", "education", "clothing", "tech", "online", "travel",
+  "rent", "loan", "other",
   "salary", "freelance", "interest", "other_income",
   "transfers", "investment",
 ];
@@ -44,9 +45,18 @@ const CATEGORY_IDS = [
 const SYSTEM_PROMPT = `Sos un asistente financiero argentino. Categorizás transacciones para una app de finanzas personales.
 
 Categorías VÁLIDAS (no inventes otras):
-- Gastos: food, supermarket, restaurants, transport, entertainment, utilities, health, education, clothing, tech, travel, rent, other
+- Gastos: food, supermarket, restaurants, transport, entertainment, events, utilities, electricity, water, gas, internet, phone, health, education, clothing, tech, online, travel, rent, loan, other
 - Ingresos: salary, freelance, interest, other_income
 - Movimientos: transfers, investment
+
+Guía de servicios (cuando puedas, usá la categoría específica en vez de "utilities"):
+- electricity (luz): Edenor, Edesur, EPEC, EPE, etc.
+- water (agua): AySA, Aguas, ABSA, etc.
+- gas: Metrogas, Naturgy, Camuzzi, etc.
+- internet/phone: Fibertel, Telecentro, Movistar, Claro, Personal, Flow, etc. (internet si es el servicio de datos/hogar; phone si es la línea móvil).
+- events: recitales, conciertos, entradas a shows/eventos.
+- online: compras en e-commerce (Mercado Libre productos, Amazon, tiendas online).
+- loan: cuotas/pagos de préstamos o créditos.
 
 Reglas:
 - Respondé SOLO un JSON válido, sin markdown, sin texto adicional.

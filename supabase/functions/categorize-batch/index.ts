@@ -24,8 +24,9 @@ const MAX_TX = 200; // tope por invocación (el cliente puede volver a llamar)
 const CHUNK = 50; // transacciones por llamada a Claude
 
 const EXPENSE_CATS = [
-  "food", "supermarket", "restaurants", "transport", "entertainment",
-  "utilities", "health", "education", "clothing", "tech", "travel", "rent", "other",
+  "food", "supermarket", "restaurants", "transport", "entertainment", "events",
+  "utilities", "electricity", "water", "gas", "internet", "phone",
+  "health", "education", "clothing", "tech", "online", "travel", "rent", "loan", "other",
 ];
 const INCOME_CATS = ["salary", "freelance", "interest", "other_income"];
 const NEUTRAL_CATS = ["transfers", "investment"];
@@ -34,14 +35,15 @@ const ALL_CATS = new Set([...EXPENSE_CATS, ...INCOME_CATS, ...NEUTRAL_CATS]);
 const SYSTEM_PROMPT = `Sos un asistente financiero argentino. Categorizás transacciones en LOTE para una app de finanzas personales.
 
 Categorías VÁLIDAS (no inventes otras):
-- Gastos: food, supermarket, restaurants, transport, entertainment, utilities, health, education, clothing, tech, travel, rent, other
+- Gastos: food, supermarket, restaurants, transport, entertainment, events, utilities, electricity, water, gas, internet, phone, health, education, clothing, tech, online, travel, rent, loan, other
 - Ingresos: salary, freelance, interest, other_income
 - Neutros (sirven para gasto o ingreso): transfers, investment
 
 Reglas:
 - A cada transacción marcada [gasto] asignale una categoría de Gastos o Neutros.
 - A cada transacción marcada [ingreso] asignale una categoría de Ingresos o Neutros.
-- Normalizá comercios conocidos (DIA→supermarket, Uber→transport, farmacia/medicina→health, Netflix/Spotify→entertainment, seguros→utilities, etc.).
+- Normalizá comercios conocidos (DIA→supermarket, Uber→transport, farmacia/medicina→health, Netflix/Spotify→entertainment, recitales/entradas→events, Mercado Libre/Amazon→online, préstamos/créditos→loan).
+- Servicios: usá la categoría específica cuando se reconozca el comercio — Edenor/Edesur/EPEC→electricity, AySA/Aguas→water, Metrogas/Naturgy/Camuzzi→gas, Fibertel/Telecentro/Flow→internet, Movistar/Claro/Personal→phone. Si es un servicio genérico/no identificable, "utilities".
 - Si es ambiguo, usá "other" (gasto) u "other_income" (ingreso).
 - Respondé SOLO un array JSON de strings, una categoría por transacción, EN EL MISMO ORDEN, sin markdown ni texto extra. Ej: ["supermarket","health","transfers"]`;
 
