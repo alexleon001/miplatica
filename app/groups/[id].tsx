@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { Card, CtaButton, IconChip, SectionLabel } from "../../components/ui";
+import { CtaButton, IconChip, SectionLabel } from "../../components/ui";
 import { MoneyAmount } from "../../components/MoneyAmount";
 import { useAuth } from "../../lib/auth";
 import { categoryById } from "../../lib/categories";
@@ -79,21 +79,25 @@ export default function GroupDetailScreen() {
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <Stack.Screen options={{ title: g.name }} />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Acciones */}
+        {/* Acciones: la principal full-width, las secundarias en una fila pareja. */}
+        <CtaButton label="Agregar gasto" icon="add-circle-outline" onPress={() => router.push(`/modals/add-shared-expense?groupId=${g.id}`)} />
         <View style={styles.actions}>
-          <CtaButton label="Agregar gasto" icon="add-circle-outline" onPress={() => router.push(`/modals/add-shared-expense?groupId=${g.id}`)} />
-          <CtaButton label="Saldar" icon="checkmark-done-outline" variant="outline" onPress={() => router.push(`/modals/settle-up?groupId=${g.id}`)} />
-        </View>
-        <View style={styles.actions}>
-          <CtaButton label="Invitar" icon="person-add-outline" variant="outline" onPress={() => router.push(`/modals/invite-member?groupId=${g.id}`)} />
-          <CtaButton label="Compartir" icon="share-outline" variant="outline" onPress={share} />
+          <View style={styles.actionItem}>
+            <CtaButton label="Saldar" icon="checkmark-done-outline" variant="outline" onPress={() => router.push(`/modals/settle-up?groupId=${g.id}`)} />
+          </View>
+          <View style={styles.actionItem}>
+            <CtaButton label="Invitar" icon="person-add-outline" variant="outline" onPress={() => router.push(`/modals/invite-member?groupId=${g.id}`)} />
+          </View>
+          <View style={styles.actionItem}>
+            <CtaButton label="Compartir" icon="share-outline" variant="outline" onPress={share} />
+          </View>
         </View>
 
         {/* Balances simplificados */}
         <View style={styles.section}>
           <SectionLabel>Quién le debe a quién</SectionLabel>
           {transfers.length === 0 ? (
-            <Card><Text style={styles.muted}>¡Están a mano! No hay deudas pendientes.</Text></Card>
+            <Text style={styles.muted}>¡Están a mano! No hay deudas pendientes.</Text>
           ) : (
             transfers.map((t, i) => (
               <View key={`${t.from}-${t.to}-${i}`} style={styles.transfer}>
@@ -137,7 +141,7 @@ export default function GroupDetailScreen() {
         <View style={styles.section}>
           <SectionLabel>Gastos ({expenses.length})</SectionLabel>
           {expenses.length === 0 ? (
-            <Card><Text style={styles.muted}>Todavía no hay gastos. Tocá “Agregar gasto”.</Text></Card>
+            <Text style={styles.muted}>Todavía no hay gastos. Tocá “Agregar gasto”.</Text>
           ) : (
             expenses.map((e) => {
               const cat = categoryById(e.category);
@@ -170,7 +174,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   container: { padding: spacing.xl, gap: spacing.md, paddingBottom: 32 },
-  actions: { flexDirection: "row", gap: spacing.md },
+  actions: { flexDirection: "row", gap: spacing.sm },
+  actionItem: { flex: 1 },
   section: {
     backgroundColor: colors.surfaceDark,
     borderRadius: radius.lg,

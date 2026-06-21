@@ -3,7 +3,7 @@
 // cada grupo. Free: 1 grupo activo; el alta del 2° deriva al paywall.
 
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Fab, IconChip } from "../../components/ui";
@@ -25,6 +25,7 @@ const arsFmt = new Intl.NumberFormat("es-AR", { style: "currency", currency: "AR
 
 export default function GroupsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const groups = useGroups();
   const balances = useMyGroupBalances();
   const { isPro } = usePro();
@@ -63,7 +64,7 @@ export default function GroupsScreen() {
           )}
         />
       )}
-      <Fab label="Nuevo grupo" onPress={() => router.push("/modals/add-group")} />
+      <Fab label="Nuevo grupo" bottomInset={insets.bottom} onPress={() => router.push("/modals/add-group")} />
     </SafeAreaView>
   );
 }

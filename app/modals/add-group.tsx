@@ -6,13 +6,16 @@ import { GROUP_LIMIT_ERROR, useCreateGroup } from "../../lib/hooks/use-groups";
 import type { GroupCurrency, GroupKind } from "../../lib/groups-types";
 
 const KINDS: { value: GroupKind; label: string }[] = [
-  { value: "trip", label: "Viaje" },
-  { value: "household", label: "Convivencia" },
-  { value: "outing", label: "Salida" },
-  { value: "other", label: "Otro" },
+  { value: "trip", label: "✈️ Viaje" },
+  { value: "household", label: "🏠 Convivencia" },
+  { value: "outing", label: "🍻 Salida" },
+  { value: "other", label: "📦 Otro" },
 ];
 
-const CURRENCIES: GroupCurrency[] = ["ARS", "USD"];
+const CURRENCIES: { value: GroupCurrency; label: string }[] = [
+  { value: "ARS", label: "🇦🇷 ARS" },
+  { value: "USD", label: "🇺🇸 USD" },
+];
 
 export default function AddGroupModal() {
   const router = useRouter();
@@ -57,7 +60,7 @@ export default function AddGroupModal() {
       <FormField label="Moneda del grupo">
         <ChipRow>
           {CURRENCIES.map((c) => (
-            <FormChip key={c} label={c} active={currency === c} onPress={() => setCurrency(c)} />
+            <FormChip key={c.value} label={c.label} active={currency === c.value} onPress={() => setCurrency(c.value)} />
           ))}
         </ChipRow>
       </FormField>

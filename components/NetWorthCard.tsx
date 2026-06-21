@@ -36,7 +36,7 @@ export function NetWorthCard() {
           <Skeleton width={150} height={18} />
         </View>
       ) : (
-        <MoneyAmount ars={netArs} usd={netUsd} size="xl" />
+        <MoneyAmount ars={netArs} usd={netUsd} size="lg" />
       )}
 
       {data ? (
@@ -82,8 +82,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surfaceElevated,
     borderRadius: radius.xl,
-    padding: spacing.xl,
-    gap: spacing.sm,
+    padding: spacing.lg,
+    gap: spacing.xs,
     borderWidth: 1,
     borderColor: colors.primary + "55",
     ...shadow.glow,
@@ -92,11 +92,11 @@ const styles = StyleSheet.create({
   label: { ...typography.overline, color: colors.primaryBright },
   loadingWrap: { gap: spacing.sm, marginVertical: 2 },
   breakdown: {
-    marginTop: spacing.md,
-    gap: spacing.md,
+    marginTop: spacing.sm,
+    gap: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.md,
   },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   rowLeft: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flex: 1 },
