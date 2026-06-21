@@ -287,7 +287,7 @@ function FeatureCard({
       style={({ pressed }) => [styles.featureCard, pressed && { opacity: 0.9 }]}
       onPress={onPress}
     >
-      <IconChip icon={icon} tint={tint} size={44} />
+      <IconChip icon={icon} tint={tint} size={38} />
       <View style={{ flex: 1 }}>
         <View style={styles.featureTitleRow}>
           <Text style={styles.featureTitle}>{title}</Text>
@@ -297,7 +297,7 @@ function FeatureCard({
             </View>
           ) : null}
         </View>
-        <Text style={styles.featureSubtitle}>{subtitle}</Text>
+        <Text style={styles.featureSubtitle} numberOfLines={1}>{subtitle}</Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
     </Pressable>
@@ -343,12 +343,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.xs,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     ...shadow.sm,
   },
   featureTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  featureTitle: { ...typography.heading, color: colors.textPrimary },
+  featureTitle: { ...typography.body, fontWeight: "700", color: colors.textPrimary },
   featureSubtitle: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
   proBadge: { backgroundColor: colors.primarySoft, paddingHorizontal: spacing.sm, paddingVertical: 1, borderRadius: radius.full },
   proBadgeText: { color: colors.primaryBright, fontWeight: "800", fontSize: 10, letterSpacing: 0.8 },

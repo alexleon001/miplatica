@@ -27,14 +27,17 @@ export function CurrencyToggle() {
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.row}>
+      {/* Segmented control: se lee como un solo control en vez de 3 chips sueltos. */}
+      <View style={styles.segment}>
         {DISPLAY_OPTIONS.map((opt) => (
           <Pressable
             key={opt.value}
             onPress={() => setDisplay(opt.value)}
-            style={[styles.chip, display === opt.value && styles.chipActive]}
+            style={[styles.segmentItem, display === opt.value && styles.segmentItemActive]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: display === opt.value }}
           >
-            <Text style={[styles.chipText, display === opt.value && styles.chipTextActive]}>
+            <Text style={[styles.segmentText, display === opt.value && styles.segmentTextActive]}>
               {opt.label}
             </Text>
           </Pressable>
@@ -61,18 +64,24 @@ export function CurrencyToggle() {
 
 const styles = StyleSheet.create({
   wrap: { gap: spacing.sm },
-  row: { flexDirection: "row", gap: spacing.xs, flexWrap: "wrap" },
-  chip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
+  segment: {
+    flexDirection: "row",
     backgroundColor: colors.surfaceDark,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.border,
+    padding: 3,
   },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
-  chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  chipTextActive: { color: "#FFFFFF" },
+  segmentItem: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    alignItems: "center",
+  },
+  segmentItemActive: { backgroundColor: colors.primary },
+  segmentText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
+  segmentTextActive: { color: "#FFFFFF" },
+  row: { flexDirection: "row", gap: spacing.xs, flexWrap: "wrap" },
   chipSm: {
     paddingHorizontal: spacing.md,
     paddingVertical: 5,

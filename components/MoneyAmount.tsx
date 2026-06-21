@@ -55,22 +55,34 @@ export function MoneyAmount({ ars, usd, size = "md", tone = "default" }: MoneyAm
   const arsText = ars == null ? "—" : arsFmt.format(ars);
   const usdText = usd == null ? "—" : usdFmt.format(usd);
 
+  // `numberOfLines={1}` + `adjustsFontSizeToFit` evita que un monto largo se parta
+  // en dos líneas (p. ej. el "Balance" en columnas angostas).
   if (display === "ars") {
-    return <Text style={[styles.primary, { fontSize: primary, color: primaryColor }]}>{arsText}</Text>;
+    return (
+      <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.primary, { fontSize: primary, color: primaryColor }]}>
+        {arsText}
+      </Text>
+    );
   }
   if (display === "usd") {
-    return <Text style={[styles.primary, { fontSize: primary, color: primaryColor }]}>{usdText}</Text>;
+    return (
+      <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.primary, { fontSize: primary, color: primaryColor }]}>
+        {usdText}
+      </Text>
+    );
   }
 
   return (
     <View style={styles.stack}>
       {showArs && (
-        <Text style={[styles.primary, { fontSize: primary, color: tone === "default" ? colors.ars : primaryColor }]}>
+        <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.primary, { fontSize: primary, color: tone === "default" ? colors.ars : primaryColor }]}>
           {arsText}
         </Text>
       )}
-      {showUsd && (
-        <Text style={[styles.secondary, { fontSize: secondary, color: tone === "default" ? colors.usd : primaryColor }]}>
+      {/* Ocultamos la línea secundaria USD cuando no hay dato: un "—" debajo de cada
+          monto es puro ruido (sobre todo en la lista de movimientos). */}
+      {showUsd && usd != null && (
+        <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.secondary, { fontSize: secondary, color: tone === "default" ? colors.usd : primaryColor }]}>
           {usdText}
         </Text>
       )}

@@ -62,12 +62,15 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        {/* El patrimonio (héroe) va primero: es el dato que el usuario viene a ver.
+            Los avisos contextuales (primeros pasos, recordatorios, presupuesto)
+            quedan debajo para no empujar el héroe fuera de la primera pantalla. */}
         <CurrencyToggle />
+        <NetWorthCard />
+        <NetWorthChart />
         <FirstSteps />
         <UpcomingReminders />
         <BudgetBanner />
-        <NetWorthCard />
-        <NetWorthChart />
         <AccountsList />
         <SharedExpensesCard />
 
