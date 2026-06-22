@@ -8,9 +8,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCreateTransaction } from "../lib/hooks/use-create-transaction";
 import { useRecurringStore } from "../lib/store/recurring";
 import { currentPeriod, pendingTemplates, templateToTxInput } from "../lib/recurring";
-import { colors, radius, spacing } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import { withAlpha } from "../lib/theme-tokens";
+import { radius, spacing } from "../lib/theme";
 
 export function RecurringBanner() {
+  const c = useTheme();
   const templates = useRecurringStore((s) => s.templates);
   const markRegistered = useRecurringStore((s) => s.markRegistered);
   const create = useCreateTransaction();
@@ -39,17 +42,17 @@ export function RecurringBanner() {
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.banner, (pressed || busy) && { opacity: 0.7 }]}
+      style={({ pressed }) => [styles.banner, { backgroundColor: c.accentSoft, borderColor: withAlpha(c.accent, 0.33) }, (pressed || busy) && { opacity: 0.7 }]}
       onPress={registerAll}
       disabled={busy}
       accessibilityLabel="Registrar gastos recurrentes del mes"
     >
       {busy ? (
-        <ActivityIndicator color={colors.accent} size="small" />
+        <ActivityIndicator color={c.accent} size="small" />
       ) : (
-        <Ionicons name="repeat" size={16} color={colors.accent} />
+        <Ionicons name="repeat" size={16} color={c.accent} />
       )}
-      <Text style={styles.text}>
+      <Text style={[styles.text, { color: c.accent }]}>
         {busy
           ? "Registrando…"
           : `${pending.length} recurrente${pending.length === 1 ? "" : "s"} sin registrar · Registrar este mes`}
@@ -63,12 +66,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
-    backgroundColor: colors.accent + "1A",
     borderWidth: 1,
-    borderColor: colors.accent + "55",
     borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  text: { color: colors.accent, fontSize: 13, fontWeight: "700", flex: 1 },
+  text: { fontSize: 13, fontWeight: "700", flex: 1 },
 });

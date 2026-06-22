@@ -36,7 +36,7 @@
 - **Fase 0 — Fundación del theming.** ✅ HECHA.
 - **Fase 1 — Apariencia + Selector en vivo.** ✅ HECHA. `components/AppearanceSettings.tsx` (cards Esmeralda/Terracota con swatches + check + segmented Claro/Oscuro/Auto, usa `useTheme()` y escribe `useAppearanceStore`); agregado en *Más* arriba de Notificaciones. Implementa `Selector en vivo.dc.html`. NOTA: hasta migrar las pantallas (Fases 2-9), cambiar el tema solo se ve en el propio selector + chrome ya migrado.
 - **Fase 2 — Patrimonio.** ✅ HECHA. Migrados a `useTheme()` + layout B: `app/(tabs)/index.tsx` (header Mi Plática/Hola+avatar, fondo `c.bg`), `CurrencyToggle` (underline tabs + pills de tipo dólar), `NetWorthCard` (sin caja, número grande tabular + 3 filas hairline sin íconos), `NetWorthChart` (themed, gate ≥5d), `AccountsList` (label + filas hairline + icon box con borde), y `MoneyAmount` (primitiva, ahora vive — Fase 8 parcial: todos los montos reaccionan al tema + tabular-nums). PENDIENTE en Patrimonio: banners contextuales (FirstSteps/UpcomingReminders/BudgetBanner/SharedExpensesCard) y `ExchangeRatesBar` siguen con `colors` estático (adoptan paleta pero no cambian en vivo ni son layout B aún) → migrarlos en Fase 8/9.
-- **Fase 3 — Movimientos (`app/(tabs)/transactions.tsx` + TransactionItem, SpendingBreakdown, banners).**
+- **Fase 3 — Movimientos.** ✅ HECHA. Migrados a `useTheme()` + layout B: `app/(tabs)/transactions.tsx` (título themed inline en vez de `ScreenTitle`; resumen Ingresos/Gastos/Balance **sin caja** = fila con divisores hairline verticales; search box `surface2`; chips/filtros/badge/aiBanner con `accent`/`accentContrast`; section headers `overline` sobre `c.bg`; separadores `c.border`), `TransactionItem` (caja de ícono con borde fino + tinte `withAlpha(cat.color)`, sin caja de fondo), `SpendingBreakdown` (sin caja dura → sección con hairline arriba/abajo + `makeStyles(c)`), `RecurringBanner` (banner `accentSoft`/`accent`). Patrón estilos: `useMemo(() => makeStyles(c), [c])`. PENDIENTE: el `Fab` sigue siendo la primitiva estática (`components/ui.tsx`) → adopta paleta base pero no cambia en vivo; se migra en **Fase 8**.
 - **Fase 4 — Inversiones (`app/(tabs)/investments.tsx` + PnLBadge, distribución).**
 - **Fase 5 — Deudas (`app/(tabs)/debts.tsx`).**
 - **Fase 6 — Más (`app/(tabs)/more.tsx`): lista de accesos con divisores hairline (ya tiene Apariencia de Fase 1).**
@@ -50,7 +50,8 @@
 - [x] `lib/theme-tokens.ts`, `lib/store/appearance.ts`, `lib/theme-context.tsx`, `lib/colors.ts`, `app/_layout.tsx`
 - [x] Apariencia selector (`components/AppearanceSettings.tsx`) + entrada en `more.tsx`
 - [x] **Patrimonio**: `(tabs)/index.tsx`, `CurrencyToggle`, `NetWorthCard`, `NetWorthChart`, `AccountsList`, `MoneyAmount`
-- [ ] (tabs) transactions/investments/debts/more + sus componentes
+- [x] **Movimientos**: `(tabs)/transactions.tsx`, `TransactionItem`, `SpendingBreakdown`, `RecurringBanner`
+- [ ] (tabs) investments/debts/more + sus componentes
 - [ ] `app/(tabs)/_layout.tsx` (tab bar)
 - [ ] `components/ui.tsx`, `components/form.tsx`, `components/MoneyAmount.tsx`
 - [ ] groups (index/[id]/modales), advisor, projection, insights, invest-sim, categories, rate-alerts, paywall, monthly-summary, modals/*, (auth)/*

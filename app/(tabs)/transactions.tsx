@@ -15,8 +15,10 @@ import { type Transaction, useCategorizeBatch, useDeleteTransaction, useTransact
 import { usePro } from "../../lib/hooks/use-pro";
 import { categoryById } from "../../lib/categories";
 import { confirmDelete } from "../../lib/confirm";
-import { Card, Fab, ScreenTitle } from "../../components/ui";
-import { colors, radius, spacing, typography } from "../../lib/theme";
+import { Fab } from "../../components/ui";
+import { useTheme } from "../../lib/theme-context";
+import { type Palette, withAlpha } from "../../lib/theme-tokens";
+import { radius, spacing } from "../../lib/theme";
 
 type Filter = "all" | "income" | "expense";
 
@@ -57,6 +59,8 @@ function catChipLabel(id: string): string {
 }
 
 export default function TransactionsScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
   const [catFilter, setCatFilter] = useState<string | null>(null); // null = todas
@@ -140,22 +144,22 @@ export default function TransactionsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
-        <ScreenTitle>Movimientos</ScreenTitle>
+        <Text style={styles.title}>Movimientos</Text>
 
-        <Card style={styles.summary}>
-          <SummaryItem label="Ingresos"  amount={monthly.data?.income_ars}  tone="positive" />
+        <View style={styles.summary}>
+          <SummaryItem label="Ingresos"  amount={monthly.data?.income_ars}  tone="positive" styles={styles} />
           <View style={styles.summaryDivider} />
-          <SummaryItem label="Gastos"    amount={monthly.data?.expense_ars} tone="negative" />
+          <SummaryItem label="Gastos"    amount={monthly.data?.expense_ars} tone="negative" styles={styles} />
           <View style={styles.summaryDivider} />
-          <SummaryItem label="Balance"   amount={monthly.data?.balance_ars} tone="default" />
-        </Card>
+          <SummaryItem label="Balance"   amount={monthly.data?.balance_ars} tone="default" styles={styles} />
+        </View>
 
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={16} color={colors.textMuted} />
+          <Ionicons name="search" size={16} color={c.textDim} />
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar comercio, descripción o categoría…"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={c.textDim}
             value={query}
             onChangeText={setQuery}
             autoCapitalize="none"
@@ -164,7 +168,7 @@ export default function TransactionsScreen() {
           />
           {query.length > 0 ? (
             <Pressable onPress={() => setQuery("")} hitSlop={8} accessibilityLabel="Limpiar búsqueda">
-              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+              <Ionicons name="close-circle" size={18} color={c.textDim} />
             </Pressable>
           ) : null}
         </View>
@@ -178,21 +182,21 @@ export default function TransactionsScreen() {
             accessibilityRole="button"
             accessibilityLabel="Mostrar filtros"
           >
-            <Ionicons name="options-outline" size={16} color={activeFilterCount > 0 ? colors.primaryBright : colors.textMuted} />
-            <Text style={[styles.filterBtnText, activeFilterCount > 0 && { color: colors.primaryBright }]}>Filtrar</Text>
+            <Ionicons name="options-outline" size={16} color={activeFilterCount > 0 ? c.accent : c.textDim} />
+            <Text style={[styles.filterBtnText, activeFilterCount > 0 && { color: c.accent }]}>Filtrar</Text>
             {activeFilterCount > 0 ? (
               <View style={styles.filterBadge}>
                 <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
               </View>
             ) : null}
-            <Ionicons name={showFilters ? "chevron-up" : "chevron-down"} size={14} color={colors.textMuted} />
+            <Ionicons name={showFilters ? "chevron-up" : "chevron-down"} size={14} color={c.textDim} />
           </Pressable>
 
           {!showFilters && filter !== "all" ? (
-            <ActiveChip label={typeLabel} onClear={() => setFilter("all")} />
+            <ActiveChip label={typeLabel} onClear={() => setFilter("all")} styles={styles} accent={c.accent} />
           ) : null}
           {!showFilters && catFilter ? (
-            <ActiveChip label={catChipLabel(catFilter)} onClear={() => setCatFilter(null)} />
+            <ActiveChip label={catChipLabel(catFilter)} onClear={() => setCatFilter(null)} styles={styles} accent={c.accent} />
           ) : null}
         </View>
 
@@ -225,6 +229,7 @@ export default function TransactionsScreen() {
                   label="Todas"
                   active={catFilter === null}
                   onPress={() => setCatFilter(null)}
+                  styles={styles}
                 />
                 {presentCategories.map((id) => (
                   <CatChip
@@ -232,6 +237,7 @@ export default function TransactionsScreen() {
                     label={catChipLabel(id)}
                     active={catFilter === id}
                     onPress={() => setCatFilter(catFilter === id ? null : id)}
+                    styles={styles}
                   />
                 ))}
               </ScrollView>
@@ -247,9 +253,9 @@ export default function TransactionsScreen() {
             accessibilityLabel="Categorizar movimientos con IA"
           >
             {categorize.isPending ? (
-              <ActivityIndicator color={colors.primaryBright} size="small" />
+              <ActivityIndicator color={c.accent} size="small" />
             ) : (
-              <Ionicons name={isPro ? "sparkles" : "lock-closed"} size={16} color={colors.primaryBright} />
+              <Ionicons name={isPro ? "sparkles" : "lock-closed"} size={16} color={c.accent} />
             )}
             <Text style={styles.aiBannerText}>
               {categorize.isPending
@@ -285,7 +291,7 @@ export default function TransactionsScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} />
         }
         ListEmptyComponent={
           isError ? (
@@ -312,7 +318,7 @@ export default function TransactionsScreen() {
 }
 
 // Chip compacto del filtro por categoría (fila horizontal scrolleable).
-function CatChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+function CatChip({ label, active, onPress, styles }: { label: string; active: boolean; onPress: () => void; styles: Styles }) {
   return (
     <Pressable
       style={[styles.catChip, active && styles.catChipActive]}
@@ -328,11 +334,11 @@ function CatChip({ label, active, onPress }: { label: string; active: boolean; o
 }
 
 // Chip de un filtro activo (mostrado cuando el panel está plegado). Tocarlo lo quita.
-function ActiveChip({ label, onClear }: { label: string; onClear: () => void }) {
+function ActiveChip({ label, onClear, styles, accent }: { label: string; onClear: () => void; styles: Styles; accent: string }) {
   return (
     <Pressable style={styles.activeChip} onPress={onClear} accessibilityRole="button" accessibilityLabel={`Quitar filtro ${label}`}>
       <Text style={styles.activeChipText} numberOfLines={1}>{label}</Text>
-      <Ionicons name="close" size={13} color={colors.primaryBright} />
+      <Ionicons name="close" size={13} color={accent} />
     </Pressable>
   );
 }
@@ -341,10 +347,12 @@ function SummaryItem({
   label,
   amount,
   tone,
+  styles,
 }: {
   label: string;
   amount: number | null | undefined;
   tone: "default" | "positive" | "negative";
+  styles: Styles;
 }) {
   return (
     <View style={styles.summaryItem}>
@@ -354,107 +362,115 @@ function SummaryItem({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  header: { padding: spacing.xl, gap: spacing.md },
-  summary: { flexDirection: "row", alignItems: "center" },
-  summaryItem: { flex: 1, gap: spacing.xs },
-  summaryDivider: { width: 1, alignSelf: "stretch", backgroundColor: colors.borderSoft, marginHorizontal: spacing.sm },
-  summaryLabel: { ...typography.overline, color: colors.textMuted },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  searchInput: { flex: 1, color: colors.textPrimary, fontSize: 14, padding: 0 },
-  filterBar: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
-  filterBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterBtnOn: { borderColor: colors.primary },
-  filterBtnText: { color: colors.textMuted, fontSize: 13, fontWeight: "600" },
-  filterBadge: {
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    paddingHorizontal: 4,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  filterBadgeText: { color: "#FFFFFF", fontSize: 10, fontWeight: "800" },
-  activeChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    paddingLeft: spacing.md,
-    paddingRight: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    maxWidth: 200,
-  },
-  activeChipText: { color: colors.primaryBright, fontSize: 12, fontWeight: "600", flexShrink: 1 },
-  filters: { flexDirection: "row", gap: spacing.xs },
-  aiBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.primary + "55",
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  aiBannerText: { color: colors.primaryBright, fontSize: 13, fontWeight: "700" },
-  chip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
-  chipText: { color: colors.textMuted, fontSize: 13, fontWeight: "600" },
-  chipTextActive: { color: "#FFFFFF" },
-  catRow: { gap: spacing.xs, paddingVertical: 2, paddingRight: spacing.xl },
-  catChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  catChipActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  catChipText: { color: colors.textSecondary, fontSize: 12, fontWeight: "600" },
-  catChipTextActive: { color: colors.primaryBright },
-  list: { paddingHorizontal: spacing.xl, paddingBottom: 120, flexGrow: 1 },
-  listHeader: { gap: spacing.md, paddingBottom: spacing.md },
-  sectionHeader: {
-    ...typography.overline,
-    color: colors.textMuted,
-    backgroundColor: colors.backgroundDark,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xs,
-  },
-  separator: { height: 1, backgroundColor: colors.borderSoft, marginVertical: 2 },
-});
+type Styles = ReturnType<typeof makeStyles>;
+
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    header: { padding: spacing.xl, gap: spacing.md },
+    title: { fontSize: 24, lineHeight: 30, fontWeight: "700", letterSpacing: -0.3, color: c.text },
+    summary: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.xs },
+    summaryItem: { flex: 1, gap: spacing.xs },
+    summaryDivider: { width: 1, alignSelf: "stretch", backgroundColor: c.border, marginHorizontal: spacing.sm },
+    summaryLabel: { fontSize: 10, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase", color: c.textDim },
+    searchBox: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      backgroundColor: c.surface2,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    searchInput: { flex: 1, color: c.text, fontSize: 14, padding: 0 },
+    filterBar: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
+    filterBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.surface2,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    filterBtnOn: { borderColor: c.accent },
+    filterBtnText: { color: c.textDim, fontSize: 13, fontWeight: "600" },
+    filterBadge: {
+      minWidth: 16,
+      height: 16,
+      borderRadius: 8,
+      paddingHorizontal: 4,
+      backgroundColor: c.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    filterBadgeText: { color: c.accentContrast, fontSize: 10, fontWeight: "800" },
+    activeChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      paddingLeft: spacing.md,
+      paddingRight: spacing.sm,
+      paddingVertical: 6,
+      borderRadius: radius.full,
+      backgroundColor: c.accentSoft,
+      borderWidth: 1,
+      borderColor: c.accent,
+      maxWidth: 200,
+    },
+    activeChipText: { color: c.accent, fontSize: 12, fontWeight: "600", flexShrink: 1 },
+    filters: { flexDirection: "row", gap: spacing.xs },
+    aiBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      backgroundColor: c.accentSoft,
+      borderWidth: 1,
+      borderColor: withAlpha(c.accent, 0.33),
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    aiBannerText: { color: c.accent, fontSize: 13, fontWeight: "700" },
+    chip: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.surface2,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipActive: { backgroundColor: c.accent, borderColor: c.accent },
+    chipText: { color: c.textDim, fontSize: 13, fontWeight: "600" },
+    chipTextActive: { color: c.accentContrast },
+    catRow: { gap: spacing.xs, paddingVertical: 2, paddingRight: spacing.xl },
+    catChip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
+      borderRadius: radius.full,
+      backgroundColor: c.surface2,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    catChipActive: { backgroundColor: c.accentSoft, borderColor: c.accent },
+    catChipText: { color: c.textDim, fontSize: 12, fontWeight: "600" },
+    catChipTextActive: { color: c.accent },
+    list: { paddingHorizontal: spacing.xl, paddingBottom: 120, flexGrow: 1 },
+    listHeader: { gap: spacing.md, paddingBottom: spacing.md },
+    sectionHeader: {
+      fontSize: 10,
+      fontWeight: "600",
+      letterSpacing: 1.6,
+      textTransform: "uppercase",
+      color: c.textDim,
+      backgroundColor: c.bg,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.xs,
+    },
+    separator: { height: 1, backgroundColor: c.border, marginVertical: 2 },
+  });
+}

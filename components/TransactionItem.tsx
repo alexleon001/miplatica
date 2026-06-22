@@ -1,8 +1,13 @@
+// Fila de movimiento — rediseño "Línea": caja de ícono con borde fino + título/
+// subtítulo + monto. Sin caja de fondo; la separación la dan los hairlines de la
+// lista. useTheme() para reaccionar al tema en vivo.
+
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { categoryById } from "../lib/categories";
 import type { Transaction } from "../lib/hooks/use-transactions";
+import { useTheme } from "../lib/theme-context";
+import { withAlpha } from "../lib/theme-tokens";
 import { MoneyAmount } from "./MoneyAmount";
-import { colors } from "../lib/colors";
 
 const dayFmt = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" });
 
@@ -15,6 +20,7 @@ export function TransactionItem({
   onPress?: () => void;
   onLongPress?: () => void;
 }) {
+  const c = useTheme();
   const cat = categoryById(tx.category);
   const isIncome = tx.type === "income";
   const tone = isIncome ? "positive" : tx.type === "expense" ? "negative" : "default";
@@ -29,15 +35,15 @@ export function TransactionItem({
       onLongPress={onLongPress}
       style={({ pressed }) => [styles.row, pressed && (onPress || onLongPress) ? { opacity: 0.6 } : null]}
     >
-      <View style={[styles.icon, { backgroundColor: (cat?.color ?? colors.border) + "33" }]}>
+      <View style={[styles.icon, { backgroundColor: withAlpha(cat?.color ?? c.textFaint, 0.18), borderColor: c.border }]}>
         <Text style={styles.iconText}>{cat?.icon ?? "📦"}</Text>
       </View>
 
       <View style={styles.middle}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, { color: c.text }]} numberOfLines={1}>
           {tx.merchant ?? tx.description ?? cat?.label ?? "Sin descripción"}
         </Text>
-        <Text style={styles.sub} numberOfLines={1}>
+        <Text style={[styles.sub, { color: c.textDim }]} numberOfLines={1}>
           {cat?.label ?? "Sin categoría"} · {dayFmt.format(new Date(tx.date))}
         </Text>
       </View>
@@ -56,14 +62,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   icon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  iconText: { fontSize: 20 },
+  iconText: { fontSize: 18 },
   middle: { flex: 1, gap: 2 },
-  title: { color: colors.textPrimary, fontWeight: "600", fontSize: 15 },
-  sub: { color: colors.textMuted, fontSize: 12 },
+  title: { fontWeight: "600", fontSize: 15 },
+  sub: { fontSize: 12 },
 });
