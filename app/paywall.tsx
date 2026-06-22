@@ -8,7 +8,7 @@
 // En __DEV__ hay un atajo para simular el entitlement (useProDevStore) y poder
 // probar el desbloqueo de las features de IA sin la pasarela.
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
@@ -22,7 +22,9 @@ import {
   type ProOfferings,
 } from "../lib/purchases";
 import { useProDevStore } from "../lib/store/pro";
-import { colors, radius, spacing, typography, shadow } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import { type Palette, withAlpha } from "../lib/theme-tokens";
+import { radius, spacing, shadow } from "../lib/theme";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -36,6 +38,8 @@ const BENEFITS: { icon: IoniconName; title: string; subtitle: string }[] = [
 ];
 
 export default function PaywallScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [plan, setPlan] = useState<Plan>("annual");
   const [offerings, setOfferings] = useState<ProOfferings | null>(null);
@@ -100,7 +104,7 @@ export default function PaywallScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.closeRow}>
           <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Cerrar" style={styles.closeBtn}>
-            <Ionicons name="close" size={22} color={colors.textSecondary} />
+            <Ionicons name="close" size={22} color={c.textDim} />
           </Pressable>
         </View>
 
@@ -119,7 +123,7 @@ export default function PaywallScreen() {
           {BENEFITS.map((b) => (
             <View key={b.title} style={styles.benefitRow}>
               <View style={styles.benefitIcon}>
-                <Ionicons name={b.icon} size={18} color={colors.primaryBright} />
+                <Ionicons name={b.icon} size={18} color={c.accent} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.benefitTitle}>{b.title}</Text>
@@ -209,6 +213,8 @@ function PlanCard({
   hint: string;
   badge?: string;
 }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <Pressable
       style={[styles.planCard, active && styles.planCardActive]}
@@ -220,7 +226,7 @@ function PlanCard({
         <Ionicons
           name={active ? "radio-button-on" : "radio-button-off"}
           size={20}
-          color={active ? colors.primaryBright : colors.textMuted}
+          color={active ? c.accent : c.textDim}
         />
         <View>
           <View style={styles.planTitleRow}>
@@ -239,73 +245,75 @@ function PlanCard({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: spacing.xl, paddingBottom: spacing["4xl"], gap: spacing.md },
-  closeRow: { flexDirection: "row", justifyContent: "flex-end" },
-  closeBtn: {
-    width: 36, height: 36, borderRadius: radius.full, alignItems: "center", justifyContent: "center",
-    backgroundColor: colors.surfaceDark, borderWidth: 1, borderColor: colors.border,
-  },
-  hero: {
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.primaryBright + "44",
-    ...shadow.glow,
-  },
-  heroBadge: {
-    flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start",
-    backgroundColor: "rgba(255,255,255,0.18)", paddingHorizontal: spacing.sm, paddingVertical: 3,
-    borderRadius: radius.full,
-  },
-  heroBadgeText: { color: "#FFFFFF", fontWeight: "800", fontSize: 11, letterSpacing: 1 },
-  heroTitle: { ...typography.title, color: "#FFFFFF", marginTop: spacing.xs },
-  heroSubtitle: { ...typography.body, color: "rgba(255,255,255,0.9)", lineHeight: 21 },
-  benefits: {
-    backgroundColor: colors.surfaceDark, borderRadius: radius.lg, padding: spacing.lg,
-    borderWidth: 1, borderColor: colors.border, gap: spacing.lg, ...shadow.sm,
-  },
-  benefitRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  benefitIcon: {
-    width: 38, height: 38, borderRadius: radius.md, alignItems: "center", justifyContent: "center",
-    backgroundColor: colors.primarySoft,
-  },
-  benefitTitle: { ...typography.bodyStrong, color: colors.textPrimary },
-  benefitSubtitle: { ...typography.caption, color: colors.textMuted, marginTop: 1 },
-  planCard: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: colors.surfaceDark, borderRadius: radius.lg, padding: spacing.lg,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  planCardActive: { borderColor: colors.primaryBright, backgroundColor: colors.surfaceElevated },
-  planLeft: { flexDirection: "row", alignItems: "center", gap: spacing.md, flex: 1 },
-  planTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  planTitle: { ...typography.heading, color: colors.textPrimary },
-  planBadge: { backgroundColor: colors.positiveSoft, paddingHorizontal: spacing.sm, paddingVertical: 1, borderRadius: radius.full },
-  planBadgeText: { color: colors.positive, fontWeight: "800", fontSize: 10, letterSpacing: 0.5 },
-  planHint: { ...typography.caption, color: colors.textMuted, marginTop: 1 },
-  planPrice: { ...typography.bodyStrong, color: colors.textPrimary, textAlign: "right", flexShrink: 1 },
-  cta: {
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.lg,
-    alignItems: "center", marginTop: spacing.xs, ...shadow.md,
-  },
-  ctaText: { color: "#FFFFFF", fontWeight: "800", fontSize: 16 },
-  legal: { ...typography.caption, color: colors.textMuted, fontSize: 11, lineHeight: 16, marginTop: spacing.xs },
-  restore: {
-    ...typography.caption, color: colors.textSecondary, fontWeight: "700",
-    textAlign: "center", paddingVertical: spacing.sm, textDecorationLine: "underline",
-  },
-  devBox: {
-    marginTop: spacing.md, padding: spacing.md, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.warning + "55", backgroundColor: colors.warningSoft, gap: spacing.sm,
-  },
-  devLabel: { ...typography.overline, color: colors.warning },
-  devRow: { flexDirection: "row", gap: spacing.sm },
-  devBtn: {
-    flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderRadius: radius.sm,
-    backgroundColor: colors.surfaceSunken, borderWidth: 1, borderColor: colors.border,
-  },
-  devBtnText: { ...typography.caption, color: colors.textSecondary, fontWeight: "700" },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    container: { padding: spacing.xl, paddingBottom: spacing["4xl"], gap: spacing.md },
+    closeRow: { flexDirection: "row", justifyContent: "flex-end" },
+    closeBtn: {
+      width: 36, height: 36, borderRadius: radius.full, alignItems: "center", justifyContent: "center",
+      backgroundColor: c.surface, borderWidth: 1, borderColor: c.border,
+    },
+    hero: {
+      borderRadius: radius.xl,
+      padding: spacing.xl,
+      gap: spacing.sm,
+      borderWidth: 1,
+      borderColor: withAlpha(c.accent, 0.27),
+      ...shadow.glow,
+    },
+    heroBadge: {
+      flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start",
+      backgroundColor: "rgba(255,255,255,0.18)", paddingHorizontal: spacing.sm, paddingVertical: 3,
+      borderRadius: radius.full,
+    },
+    heroBadgeText: { color: "#FFFFFF", fontWeight: "800", fontSize: 11, letterSpacing: 1 },
+    heroTitle: { fontSize: 24, lineHeight: 30, fontWeight: "700", letterSpacing: -0.3, color: "#FFFFFF", marginTop: spacing.xs },
+    heroSubtitle: { fontSize: 15, color: "rgba(255,255,255,0.9)", lineHeight: 21 },
+    benefits: {
+      backgroundColor: c.surface, borderRadius: radius.lg, padding: spacing.lg,
+      borderWidth: 1, borderColor: c.border, gap: spacing.lg, ...shadow.sm,
+    },
+    benefitRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+    benefitIcon: {
+      width: 38, height: 38, borderRadius: radius.md, alignItems: "center", justifyContent: "center",
+      backgroundColor: c.accentSoft,
+    },
+    benefitTitle: { fontSize: 15, fontWeight: "700", color: c.text },
+    benefitSubtitle: { fontSize: 13, color: c.textDim, marginTop: 1 },
+    planCard: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      backgroundColor: c.surface, borderRadius: radius.lg, padding: spacing.lg,
+      borderWidth: 1, borderColor: c.border,
+    },
+    planCardActive: { borderColor: c.accent, backgroundColor: c.surface2 },
+    planLeft: { flexDirection: "row", alignItems: "center", gap: spacing.md, flex: 1 },
+    planTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    planTitle: { fontSize: 18, lineHeight: 24, fontWeight: "700", color: c.text },
+    planBadge: { backgroundColor: c.posSoft, paddingHorizontal: spacing.sm, paddingVertical: 1, borderRadius: radius.full },
+    planBadgeText: { color: c.pos, fontWeight: "800", fontSize: 10, letterSpacing: 0.5 },
+    planHint: { fontSize: 13, color: c.textDim, marginTop: 1 },
+    planPrice: { fontSize: 15, fontWeight: "700", color: c.text, textAlign: "right", flexShrink: 1 },
+    cta: {
+      backgroundColor: c.accent, borderRadius: radius.full, paddingVertical: spacing.lg,
+      alignItems: "center", marginTop: spacing.xs, ...shadow.md,
+    },
+    ctaText: { color: c.accentContrast, fontWeight: "800", fontSize: 16 },
+    legal: { fontSize: 11, color: c.textDim, lineHeight: 16, marginTop: spacing.xs },
+    restore: {
+      fontSize: 13, color: c.textDim, fontWeight: "700",
+      textAlign: "center", paddingVertical: spacing.sm, textDecorationLine: "underline",
+    },
+    devBox: {
+      marginTop: spacing.md, padding: spacing.md, borderRadius: radius.md,
+      borderWidth: 1, borderColor: withAlpha(c.warn, 0.33), backgroundColor: c.warnSoft, gap: spacing.sm,
+    },
+    devLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase", color: c.warn },
+    devRow: { flexDirection: "row", gap: spacing.sm },
+    devBtn: {
+      flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderRadius: radius.sm,
+      backgroundColor: c.surface2, borderWidth: 1, borderColor: c.border,
+    },
+    devBtnText: { fontSize: 13, color: c.textDim, fontWeight: "700" },
+  });
+}

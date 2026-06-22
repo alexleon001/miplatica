@@ -12,7 +12,7 @@ import { Stack } from "expo-router";
 import { KeyboardAwareScrollView } from "./KeyboardAwareScrollView";
 import { useTheme } from "../lib/theme-context";
 import type { Palette } from "../lib/theme-tokens";
-import { colors, radius, spacing, typography } from "../lib/theme";
+import { radius, spacing } from "../lib/theme";
 
 // Contenedor estándar de un modal-formulario (con scroll teclado-aware).
 export function FormScreen({ title, children }: { title: string; children: ReactNode }) {
@@ -127,24 +127,9 @@ const staticStyles = StyleSheet.create({
   row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
 });
 
-// Estilos compartidos con la paleta base, expuestos para casos puntuales que
-// componen sobre ellos (hints, help, multiline, inputs custom). Los componentes
-// de arriba usan la versión themed; esto es solo compat para imports externos.
+// Helpers de layout puro (sin color) que algunos modales componen sobre los
+// FormInput themed (ej: textarea multilínea). Los estilos con color viven en
+// makeStyles (themed); acá solo va lo agnóstico al tema.
 export const form = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: spacing.xl, gap: spacing.lg },
-  field: { gap: spacing.sm },
-  fieldLabel: { ...typography.overline, color: colors.textMuted },
-  input: {
-    backgroundColor: colors.surfaceDark,
-    color: colors.textPrimary,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    fontSize: 16,
-  },
   multiline: { minHeight: 70, textAlignVertical: "top" },
-  hint: { ...typography.caption, color: colors.textMuted, lineHeight: 18 },
 });

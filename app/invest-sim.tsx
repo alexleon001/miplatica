@@ -13,7 +13,9 @@ import { MoneyAmount } from "../components/MoneyAmount";
 import { useExchangeRates } from "../lib/hooks/use-exchange-rates";
 import { useInflation } from "../lib/hooks/use-inflation";
 import { simulate, suggestedMonthlyInflation, type SimInstrument } from "../lib/invest-sim";
-import { colors, radius, spacing, typography, shadow } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import { type Palette, withAlpha } from "../lib/theme-tokens";
+import { radius, spacing, shadow } from "../lib/theme";
 
 const HORIZONS = [3, 6, 12, 24];
 const DEFAULT_INFLATION = "2.5"; // fallback si no hay IPC cargado
@@ -43,6 +45,8 @@ function num(s: string): number {
 }
 
 export default function InvestSimScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { data: rates } = useExchangeRates();
   const { data: ipc } = useInflation();
@@ -79,7 +83,7 @@ export default function InvestSimScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.headerRow}>
           <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Volver">
-            <Ionicons name="chevron-back" size={24} color={colors.primaryBright} />
+            <Ionicons name="chevron-back" size={24} color={c.accent} />
           </Pressable>
         </View>
 
@@ -94,7 +98,7 @@ export default function InvestSimScreen() {
               value={amount}
               onChangeText={setAmount}
               placeholder="0"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={c.textDim}
               style={styles.input}
             />
           </Field>
@@ -131,11 +135,11 @@ export default function InvestSimScreen() {
             <View key={r.id} style={[styles.resultCard, i === 0 && styles.winnerCard]}>
               <View style={styles.resultHead}>
                 <View style={styles.resultTitleWrap}>
-                  {i === 0 ? <Ionicons name="trophy" size={15} color={colors.warning} /> : null}
+                  {i === 0 ? <Ionicons name="trophy" size={15} color={c.warn} /> : null}
                   <Text style={styles.resultTitle}>{r.label}</Text>
                 </View>
-                <View style={[styles.realBadge, { backgroundColor: (r.beatsInflation ? colors.positive : colors.negative) + "22" }]}>
-                  <Text style={[styles.realBadgeText, { color: r.beatsInflation ? colors.positive : colors.negative }]}>
+                <View style={[styles.realBadge, { backgroundColor: withAlpha(r.beatsInflation ? c.pos : c.neg, 0.13) }]}>
+                  <Text style={[styles.realBadgeText, { color: r.beatsInflation ? c.pos : c.neg }]}>
                     real {r.realGainPct >= 0 ? "+" : ""}{r.realGainPct.toFixed(1)}%
                   </Text>
                 </View>
@@ -166,6 +170,8 @@ export default function InvestSimScreen() {
 }
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -176,6 +182,8 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 function RateField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={styles.rateField}>
       <Text style={styles.rateLabel}>{label}</Text>
@@ -185,6 +193,8 @@ function RateField({ label, value, onChange }: { label: string; value: string; o
 }
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <Pressable style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
@@ -192,82 +202,84 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: spacing.xl, paddingBottom: 100, gap: spacing.md },
-  headerRow: { flexDirection: "row", alignItems: "center" },
-  title: { ...typography.title, color: colors.textPrimary },
-  subtitle: { ...typography.caption, color: colors.textMuted, lineHeight: 18 },
-  card: {
-    backgroundColor: colors.surfaceDark,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.md,
-    marginTop: spacing.xs,
-    ...shadow.sm,
-  },
-  field: { gap: spacing.sm },
-  fieldLabel: { ...typography.overline, color: colors.textMuted },
-  hint: { ...typography.caption, color: colors.textMuted },
-  input: {
-    backgroundColor: colors.surfaceSunken,
-    color: colors.textPrimary,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    fontSize: 16,
-  },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  chip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceSunken,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
-  chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  chipTextActive: { color: "#FFFFFF" },
-  ratesRow: { flexDirection: "row", gap: spacing.sm },
-  rateField: { flex: 1, gap: spacing.xs },
-  rateLabel: { ...typography.caption, color: colors.textMuted, fontSize: 11 },
-  rateInput: {
-    backgroundColor: colors.surfaceSunken,
-    color: colors.textPrimary,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    fontSize: 15,
-    textAlign: "center",
-  },
-  sectionLabel: { ...typography.overline, color: colors.textMuted, marginTop: spacing.md },
-  empty: { ...typography.caption, color: colors.textMuted, paddingVertical: spacing.md },
-  resultCard: {
-    backgroundColor: colors.surfaceDark,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.md,
-    marginTop: spacing.xs,
-    ...shadow.sm,
-  },
-  winnerCard: { borderColor: colors.warning, backgroundColor: colors.surfaceElevated },
-  resultHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  resultTitleWrap: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  resultTitle: { ...typography.heading, color: colors.textPrimary },
-  realBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
-  realBadgeText: { fontSize: 12, fontWeight: "800" },
-  resultBody: { flexDirection: "row", gap: spacing.lg },
-  resultCol: { flex: 1, gap: 2 },
-  resultColLabel: { ...typography.caption, color: colors.textMuted, fontSize: 11 },
-  nominalPct: { ...typography.caption, color: colors.textMuted, fontSize: 11 },
-  disclaimer: { ...typography.caption, color: colors.textMuted, fontSize: 11, marginTop: spacing.sm, lineHeight: 16 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    container: { padding: spacing.xl, paddingBottom: 100, gap: spacing.md },
+    headerRow: { flexDirection: "row", alignItems: "center" },
+    title: { fontSize: 24, lineHeight: 30, fontWeight: "700", letterSpacing: -0.3, color: c.text },
+    subtitle: { fontSize: 13, color: c.textDim, lineHeight: 18 },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: spacing.md,
+      marginTop: spacing.xs,
+      ...shadow.sm,
+    },
+    field: { gap: spacing.sm },
+    fieldLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase", color: c.textDim },
+    hint: { fontSize: 13, color: c.textDim },
+    input: {
+      backgroundColor: c.surface2,
+      color: c.text,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      fontSize: 16,
+    },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    chip: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.surface2,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipActive: { backgroundColor: c.accent, borderColor: c.accent },
+    chipText: { color: c.textDim, fontWeight: "600", fontSize: 13 },
+    chipTextActive: { color: c.accentContrast },
+    ratesRow: { flexDirection: "row", gap: spacing.sm },
+    rateField: { flex: 1, gap: spacing.xs },
+    rateLabel: { fontSize: 11, color: c.textDim },
+    rateInput: {
+      backgroundColor: c.surface2,
+      color: c.text,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderWidth: 1,
+      borderColor: c.border,
+      fontSize: 15,
+      textAlign: "center",
+    },
+    sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase", color: c.textDim, marginTop: spacing.md },
+    empty: { fontSize: 13, color: c.textDim, paddingVertical: spacing.md },
+    resultCard: {
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: spacing.md,
+      marginTop: spacing.xs,
+      ...shadow.sm,
+    },
+    winnerCard: { borderColor: c.warn, backgroundColor: c.surface2 },
+    resultHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    resultTitleWrap: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+    resultTitle: { fontSize: 18, lineHeight: 24, fontWeight: "700", color: c.text },
+    realBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
+    realBadgeText: { fontSize: 12, fontWeight: "800" },
+    resultBody: { flexDirection: "row", gap: spacing.lg },
+    resultCol: { flex: 1, gap: 2 },
+    resultColLabel: { fontSize: 11, color: c.textDim },
+    nominalPct: { fontSize: 11, color: c.textDim },
+    disclaimer: { fontSize: 11, color: c.textDim, marginTop: spacing.sm, lineHeight: 16 },
+  });
+}

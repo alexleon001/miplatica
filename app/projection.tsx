@@ -33,11 +33,15 @@ import {
   type ProjItem,
 } from "../lib/projection";
 import { paidKey, useProjectionPaidStore } from "../lib/store/projection-paid";
-import { colors, radius, spacing, typography, shadow } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import { type Palette, withAlpha } from "../lib/theme-tokens";
+import { radius, spacing, shadow } from "../lib/theme";
 
 const HORIZONS = [6, 12] as const;
 
 export default function ProjectionScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { data: items, isLoading, isError, refetch } = useProjectionItems();
@@ -132,12 +136,12 @@ export default function ProjectionScreen() {
       <ScrollView contentContainerStyle={[styles.container, { paddingBottom: 100 + insets.bottom }]} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Volver">
-            <Ionicons name="chevron-back" size={24} color={colors.primaryBright} />
+            <Ionicons name="chevron-back" size={24} color={c.accent} />
           </Pressable>
           <View style={styles.headerActions}>
             {hasData ? (
               <Pressable onPress={shareProjection} hitSlop={12} accessibilityLabel="Compartir proyección" style={styles.shareBtn}>
-                <Ionicons name="share-outline" size={20} color={colors.primaryBright} />
+                <Ionicons name="share-outline" size={20} color={c.accent} />
               </Pressable>
             ) : null}
             <CurrencyToggle />
@@ -179,7 +183,7 @@ export default function ProjectionScreen() {
                   <Text style={styles.summaryLabel}>Efectivo hoy</Text>
                   <MoneyAmount ars={startingBalanceArs} usd={startingBalanceUsd} size="sm" />
                 </View>
-                <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
+                <Ionicons name="arrow-forward" size={16} color={c.textDim} />
                 <View style={[styles.summaryItem, { alignItems: "flex-end" }]}>
                   <Text style={styles.summaryLabel}>Saldo en {horizon} meses</Text>
                   <MoneyAmount
@@ -193,18 +197,18 @@ export default function ProjectionScreen() {
               <View
                 style={[
                   styles.statusBanner,
-                  { backgroundColor: (projection.firstDeficitMonth ? colors.negative : colors.positive) + "1F" },
+                  { backgroundColor: withAlpha(projection.firstDeficitMonth ? c.neg : c.pos, 0.12) },
                 ]}
               >
                 <Ionicons
                   name={projection.firstDeficitMonth ? "alert-circle" : "checkmark-circle"}
                   size={16}
-                  color={projection.firstDeficitMonth ? colors.negative : colors.positive}
+                  color={projection.firstDeficitMonth ? c.neg : c.pos}
                 />
                 <Text
                   style={[
                     styles.statusText,
-                    { color: projection.firstDeficitMonth ? colors.negative : colors.positive },
+                    { color: projection.firstDeficitMonth ? c.neg : c.pos },
                   ]}
                 >
                   {projection.firstDeficitMonth
@@ -228,7 +232,7 @@ export default function ProjectionScreen() {
                     style={[
                       styles.monthCard,
                       isSel && styles.monthCardActive,
-                      { borderLeftColor: underwater ? colors.negative : colors.positive },
+                      { borderLeftColor: underwater ? c.neg : c.pos },
                     ]}
                   >
                     <View style={styles.monthCardHead}>
@@ -236,13 +240,13 @@ export default function ProjectionScreen() {
                       {isCurrent ? <Text style={styles.monthCardToday}>hoy</Text> : null}
                     </View>
                     <Text style={styles.monthCardYear}>{m.month.slice(0, 4)}</Text>
-                    <Text style={[styles.monthCardNet, { color: underwater ? colors.negative : colors.positive }]}>
+                    <Text style={[styles.monthCardNet, { color: underwater ? c.neg : c.pos }]}>
                       {Math.round(m.cumulativeArs).toLocaleString("es-AR")}
                     </Text>
                     {isCurrent ? (
                       <Text style={styles.monthCardSub}>efectivo hoy</Text>
                     ) : (
-                      <Text style={[styles.monthCardSub, { color: net < 0 ? colors.negative : colors.textMuted }]}>
+                      <Text style={[styles.monthCardSub, { color: net < 0 ? c.neg : c.textDim }]}>
                         {net >= 0 ? "+" : ""}
                         {net.toLocaleString("es-AR")} este mes
                       </Text>
@@ -279,7 +283,7 @@ export default function ProjectionScreen() {
                       style={styles.lineBtn}
                       accessibilityLabel="Quitar ajuste de ingreso"
                     >
-                      <Ionicons name="trash-outline" size={16} color={colors.negative} />
+                      <Ionicons name="trash-outline" size={16} color={c.neg} />
                     </Pressable>
                   ) : null}
                 </View>
@@ -309,7 +313,7 @@ export default function ProjectionScreen() {
                             <Ionicons
                               name={paid ? "checkmark-circle" : "ellipse-outline"}
                               size={20}
-                              color={paid ? colors.positive : colors.textMuted}
+                              color={paid ? c.pos : c.textDim}
                             />
                           </Pressable>
                           <Pressable
@@ -329,10 +333,10 @@ export default function ProjectionScreen() {
                           ) : (
                             <View style={styles.lineActions}>
                               <Pressable onPress={() => router.push(`/modals/add-projection-item?dup=${l.id}`)} hitSlop={8} style={styles.lineBtn} accessibilityLabel={`Duplicar ${l.name}`}>
-                                <Ionicons name="copy-outline" size={16} color={colors.textSecondary} />
+                                <Ionicons name="copy-outline" size={16} color={c.textDim} />
                               </Pressable>
                               <Pressable onPress={editItem} hitSlop={8} style={styles.lineBtn} accessibilityLabel={`Editar ${l.name}`}>
-                                <Ionicons name="pencil" size={16} color={colors.primaryBright} />
+                                <Ionicons name="pencil" size={16} color={c.accent} />
                               </Pressable>
                               <Pressable
                                 onPress={() => confirmDelete(l.name, () => delItem.mutate(l.id))}
@@ -340,7 +344,7 @@ export default function ProjectionScreen() {
                                 style={styles.lineBtn}
                                 accessibilityLabel={`Borrar ${l.name}`}
                               >
-                                <Ionicons name="trash-outline" size={16} color={colors.negative} />
+                                <Ionicons name="trash-outline" size={16} color={c.neg} />
                               </Pressable>
                             </View>
                           )}
@@ -361,7 +365,7 @@ export default function ProjectionScreen() {
                     <MoneyAmount ars={remaining.ars} usd={remaining.usd} size="sm" tone="warning" />
                   </View>
                 ) : null}
-                <View style={[styles.netRow, { backgroundColor: (current.netArs < 0 ? colors.negative : colors.positive) + "22" }]}>
+                <View style={[styles.netRow, { backgroundColor: withAlpha(current.netArs < 0 ? c.neg : c.pos, 0.13) }]}>
                   <Text style={styles.netLabel}>{current.netArs < 0 ? "Déficit del mes" : "Te sobra"}</Text>
                   <MoneyAmount
                     ars={current.netArs}
@@ -400,115 +404,117 @@ export default function ProjectionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: spacing.xl, paddingBottom: 100, gap: spacing.md },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  shareBtn: {
-    width: 36, height: 36, borderRadius: radius.full, alignItems: "center", justifyContent: "center",
-    backgroundColor: colors.surfaceDark, borderWidth: 1, borderColor: colors.border,
-  },
-  title: { ...typography.title, color: colors.textPrimary },
-  subtitle: { ...typography.caption, color: colors.textMuted },
-  horizonRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs },
-  horizonChip: {
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full,
-    backgroundColor: colors.surfaceDark, borderWidth: 1, borderColor: colors.border,
-  },
-  horizonChipActive: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
-  horizonText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  horizonTextActive: { color: "#FFFFFF" },
-  summary: {
-    backgroundColor: colors.surfaceDark, borderRadius: radius.lg, padding: spacing.lg,
-    borderWidth: 1, borderColor: colors.border, gap: spacing.md, marginTop: spacing.xs,
-    ...shadow.sm,
-  },
-  summaryRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
-  summaryItem: { gap: 2 },
-  summaryLabel: { ...typography.overline, color: colors.textMuted },
-  statusBanner: {
-    flexDirection: "row", alignItems: "center", gap: spacing.sm,
-    borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-  },
-  statusText: { ...typography.caption, fontWeight: "700", flex: 1 },
-  overview: { gap: spacing.sm, paddingVertical: spacing.xs, paddingRight: spacing.sm },
-  monthCard: {
-    backgroundColor: colors.surfaceDark, borderRadius: radius.md, padding: spacing.md, minWidth: 110,
-    borderWidth: 1, borderColor: colors.border, borderLeftWidth: 4, gap: 2,
-    ...shadow.sm,
-  },
-  monthCardActive: { borderColor: colors.primaryBright },
-  monthCardHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.xs },
-  monthCardLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
-  monthCardToday: {
-    color: colors.primaryBright, fontSize: 9, fontWeight: "800", textTransform: "uppercase",
-    letterSpacing: 0.5, backgroundColor: colors.primarySoft, paddingHorizontal: 5, paddingVertical: 1,
-    borderRadius: radius.sm, overflow: "hidden",
-  },
-  monthCardYear: { color: colors.textMuted, fontSize: 11 },
-  monthCardNet: { fontSize: 16, fontWeight: "800", marginTop: spacing.xs },
-  monthCardSub: { fontSize: 11, fontWeight: "600", marginTop: 1, color: colors.textMuted },
-  detail: {
-    backgroundColor: colors.surfaceDark, borderRadius: radius.lg, padding: spacing.lg,
-    borderWidth: 1, borderColor: colors.border, gap: spacing.md, marginTop: spacing.xs,
-    ...shadow.sm,
-  },
-  detailMonth: { ...typography.heading, color: colors.textPrimary },
-  detailHint: { ...typography.caption, color: colors.textMuted, marginTop: -spacing.xs },
-  incomeRow: {
-    flexDirection: "row", alignItems: "center", gap: spacing.sm,
-    paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderSoft,
-  },
-  incomeMain: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  incomeLabel: { color: colors.positive, fontSize: 13, fontWeight: "700" },
-  group: { gap: spacing.xs, marginTop: spacing.sm },
-  groupHeader: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.borderSoft,
-  },
-  groupName: { ...typography.overline, color: colors.textMuted },
-  groupSubtotal: { color: colors.textSecondary, fontSize: 13, fontWeight: "700" },
-  line: {
-    flexDirection: "row", alignItems: "center", gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  checkbox: { width: 24, alignItems: "center", justifyContent: "center" },
-  linePaid: { textDecorationLine: "line-through", color: colors.textMuted },
-  lineMain: {
-    flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    gap: spacing.sm,
-  },
-  linePressed: { opacity: 0.55 },
-  lineName: { color: colors.textPrimary, fontSize: 14, flex: 1, marginRight: spacing.sm },
-  lineCuota: { color: colors.warning, fontSize: 12 },
-  lineTag: { color: colors.textMuted, fontSize: 12 },
-  lineAmount: { color: colors.textPrimary, fontSize: 14, fontWeight: "600" },
-  lineActions: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  lineBtn: {
-    width: 32, height: 32, borderRadius: radius.sm, alignItems: "center", justifyContent: "center",
-    backgroundColor: colors.surfaceSunken,
-  },
-  lineDebtHint: { color: colors.textMuted, fontSize: 11, fontStyle: "italic" },
-  totalRow: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border,
-  },
-  totalLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
-  remainingRow: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    marginTop: spacing.xs,
-  },
-  remainingLabel: { color: colors.warning, fontSize: 13, fontWeight: "700" },
-  netRow: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm,
-  },
-  netLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
-  cumulativeRow: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    marginTop: spacing.sm, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.borderSoft,
-  },
-  cumulativeLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
-  cumulativeHint: { ...typography.caption, color: colors.textMuted, fontSize: 11, marginTop: 1 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    container: { padding: spacing.xl, paddingBottom: 100, gap: spacing.md },
+    headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+    shareBtn: {
+      width: 36, height: 36, borderRadius: radius.full, alignItems: "center", justifyContent: "center",
+      backgroundColor: c.surface, borderWidth: 1, borderColor: c.border,
+    },
+    title: { fontSize: 24, lineHeight: 30, fontWeight: "700", letterSpacing: -0.3, color: c.text },
+    subtitle: { fontSize: 13, color: c.textDim },
+    horizonRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs },
+    horizonChip: {
+      paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full,
+      backgroundColor: c.surface, borderWidth: 1, borderColor: c.border,
+    },
+    horizonChipActive: { backgroundColor: c.accent, borderColor: c.accent },
+    horizonText: { color: c.textDim, fontWeight: "600", fontSize: 13 },
+    horizonTextActive: { color: c.accentContrast },
+    summary: {
+      backgroundColor: c.surface, borderRadius: radius.lg, padding: spacing.lg,
+      borderWidth: 1, borderColor: c.border, gap: spacing.md, marginTop: spacing.xs,
+      ...shadow.sm,
+    },
+    summaryRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
+    summaryItem: { gap: 2 },
+    summaryLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase", color: c.textDim },
+    statusBanner: {
+      flexDirection: "row", alignItems: "center", gap: spacing.sm,
+      borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    },
+    statusText: { fontSize: 13, fontWeight: "700", flex: 1 },
+    overview: { gap: spacing.sm, paddingVertical: spacing.xs, paddingRight: spacing.sm },
+    monthCard: {
+      backgroundColor: c.surface, borderRadius: radius.md, padding: spacing.md, minWidth: 110,
+      borderWidth: 1, borderColor: c.border, borderLeftWidth: 4, gap: 2,
+      ...shadow.sm,
+    },
+    monthCardActive: { borderColor: c.accent },
+    monthCardHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.xs },
+    monthCardLabel: { color: c.text, fontSize: 14, fontWeight: "700" },
+    monthCardToday: {
+      color: c.accent, fontSize: 9, fontWeight: "800", textTransform: "uppercase",
+      letterSpacing: 0.5, backgroundColor: c.accentSoft, paddingHorizontal: 5, paddingVertical: 1,
+      borderRadius: radius.sm, overflow: "hidden",
+    },
+    monthCardYear: { color: c.textDim, fontSize: 11 },
+    monthCardNet: { fontSize: 16, fontWeight: "800", marginTop: spacing.xs, fontVariant: ["tabular-nums"] },
+    monthCardSub: { fontSize: 11, fontWeight: "600", marginTop: 1, color: c.textDim },
+    detail: {
+      backgroundColor: c.surface, borderRadius: radius.lg, padding: spacing.lg,
+      borderWidth: 1, borderColor: c.border, gap: spacing.md, marginTop: spacing.xs,
+      ...shadow.sm,
+    },
+    detailMonth: { fontSize: 18, lineHeight: 24, fontWeight: "700", color: c.text },
+    detailHint: { fontSize: 13, color: c.textDim, marginTop: -spacing.xs },
+    incomeRow: {
+      flexDirection: "row", alignItems: "center", gap: spacing.sm,
+      paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: c.border,
+    },
+    incomeMain: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    incomeLabel: { color: c.pos, fontSize: 13, fontWeight: "700" },
+    group: { gap: spacing.xs, marginTop: spacing.sm },
+    groupHeader: {
+      flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+      paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: c.border,
+    },
+    groupName: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase", color: c.textDim },
+    groupSubtotal: { color: c.textDim, fontSize: 13, fontWeight: "700", fontVariant: ["tabular-nums"] },
+    line: {
+      flexDirection: "row", alignItems: "center", gap: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    checkbox: { width: 24, alignItems: "center", justifyContent: "center" },
+    linePaid: { textDecorationLine: "line-through", color: c.textDim },
+    lineMain: {
+      flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+      gap: spacing.sm,
+    },
+    linePressed: { opacity: 0.55 },
+    lineName: { color: c.text, fontSize: 14, flex: 1, marginRight: spacing.sm },
+    lineCuota: { color: c.warn, fontSize: 12 },
+    lineTag: { color: c.textDim, fontSize: 12 },
+    lineAmount: { color: c.text, fontSize: 14, fontWeight: "600", fontVariant: ["tabular-nums"] },
+    lineActions: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+    lineBtn: {
+      width: 32, height: 32, borderRadius: radius.sm, alignItems: "center", justifyContent: "center",
+      backgroundColor: c.surface2,
+    },
+    lineDebtHint: { color: c.textDim, fontSize: 11, fontStyle: "italic" },
+    totalRow: {
+      flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+      marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: c.border,
+    },
+    totalLabel: { color: c.text, fontSize: 14, fontWeight: "700" },
+    remainingRow: {
+      flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+      marginTop: spacing.xs,
+    },
+    remainingLabel: { color: c.warn, fontSize: 13, fontWeight: "700" },
+    netRow: {
+      flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+      borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm,
+    },
+    netLabel: { color: c.text, fontSize: 14, fontWeight: "700" },
+    cumulativeRow: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      marginTop: spacing.sm, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: c.border,
+    },
+    cumulativeLabel: { color: c.text, fontSize: 14, fontWeight: "700" },
+    cumulativeHint: { fontSize: 11, color: c.textDim, marginTop: 1 },
+  });
+}

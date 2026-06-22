@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,7 +19,9 @@ import { usePro } from "../lib/hooks/use-pro";
 import { invalidateRewardCredits, useRewardCredits } from "../lib/hooks/use-reward-credits";
 import { useAdvisorChatStore } from "../lib/store/advisor";
 import { useKeyboardHeight } from "../lib/hooks/use-keyboard-height";
-import { colors, radius, spacing, typography } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import { type Palette, withAlpha } from "../lib/theme-tokens";
+import { radius, spacing } from "../lib/theme";
 
 const SUGGESTIONS = [
   "¿Cómo viene mi mes?",
@@ -29,6 +31,8 @@ const SUGGESTIONS = [
 ];
 
 export default function AdvisorScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { isPro } = usePro();
   // Puente Free→Pro: cada crédito de rewarded ad paga un mensaje al asesor.
@@ -112,10 +116,10 @@ export default function AdvisorScreen() {
           accessibilityLabel="Volver"
           style={styles.backBtn}
         >
-          <Ionicons name="chevron-back" size={22} color={colors.primaryBright} />
+          <Ionicons name="chevron-back" size={22} color={c.accent} />
         </Pressable>
         <View style={styles.titleWrap}>
-          <Ionicons name="sparkles" size={15} color={colors.primaryBright} />
+          <Ionicons name="sparkles" size={15} color={c.accent} />
           <Text style={styles.title}>Asesor IA</Text>
         </View>
         {messages.length > 0 ? (
@@ -173,7 +177,7 @@ export default function AdvisorScreen() {
             ListFooterComponent={
               advisor.isPending ? (
                 <View style={[styles.bubble, styles.bubbleAssistant, styles.typing]}>
-                  <ActivityIndicator color={colors.textMuted} size="small" />
+                  <ActivityIndicator color={c.textDim} size="small" />
                   <Text style={styles.typingText}>Pensando…</Text>
                 </View>
               ) : null
@@ -190,9 +194,9 @@ export default function AdvisorScreen() {
             accessibilityLabel="Mirá un anuncio para enviar otro mensaje"
           >
             {reward.watching ? (
-              <ActivityIndicator size="small" color={colors.primaryBright} />
+              <ActivityIndicator size="small" color={c.accent} />
             ) : (
-              <Ionicons name="play-circle-outline" size={18} color={colors.primaryBright} />
+              <Ionicons name="play-circle-outline" size={18} color={c.accent} />
             )}
             <Text style={styles.adHintText}>
               {reward.adsAvailable
@@ -206,7 +210,7 @@ export default function AdvisorScreen() {
           <TextInput
             style={styles.input}
             placeholder="Escribí tu pregunta…"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={c.textDim}
             value={input}
             onChangeText={setInput}
             multiline
@@ -222,7 +226,7 @@ export default function AdvisorScreen() {
             disabled={advisor.isPending || !input.trim() || !canUseAi}
             accessibilityLabel="Enviar mensaje"
           >
-            <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
+            <Ionicons name="arrow-up" size={20} color={c.accentContrast} />
           </Pressable>
         </View>
       </View>
@@ -232,6 +236,8 @@ export default function AdvisorScreen() {
 }
 
 function Bubble({ message }: { message: AdvisorMessage }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const isUser = message.role === "user";
   return (
     <View
@@ -247,91 +253,93 @@ function Bubble({ message }: { message: AdvisorMessage }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSoft,
-  },
-  backBtn: { width: 56 },
-  titleWrap: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  clear: { color: colors.textMuted, fontSize: 14, fontWeight: "600", width: 56, textAlign: "right" },
-  title: { ...typography.heading, color: colors.textPrimary },
-  empty: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing["3xl"], gap: spacing.md },
-  emptyIcon: { fontSize: 44 },
-  emptyTitle: { ...typography.heading, color: colors.textPrimary, textAlign: "center" },
-  emptyText: { ...typography.body, color: colors.textMuted, textAlign: "center", lineHeight: 20 },
-  suggestions: { gap: spacing.sm, marginTop: spacing.md, alignSelf: "stretch" },
-  suggestion: {
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  suggestionText: { ...typography.body, color: colors.textPrimary },
-  list: { padding: spacing.lg, gap: spacing.md },
-  bubble: { maxWidth: "85%", borderRadius: radius.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  bubbleUser: { alignSelf: "flex-end", backgroundColor: colors.primary, borderBottomRightRadius: radius.sm },
-  bubbleAssistant: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  bubbleUserText: { color: "#FFFFFF", fontSize: 15, lineHeight: 21 },
-  bubbleAssistantText: { color: colors.textPrimary, fontSize: 15, lineHeight: 21 },
-  typing: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  typingText: { color: colors.textMuted, fontSize: 14 },
-  chipRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  adHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xs,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.primaryBright + "44",
-  },
-  adHintText: { color: colors.primaryBright, fontWeight: "700", fontSize: 13 },
-  inputBar: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
-  },
-  input: {
-    flex: 1,
-    maxHeight: 120,
-    backgroundColor: colors.surfaceDark,
-    color: colors.textPrimary,
-    borderRadius: radius.xl,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    fontSize: 15,
-  },
-  sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    backBtn: { width: 56 },
+    titleWrap: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+    clear: { color: c.textDim, fontSize: 14, fontWeight: "600", width: 56, textAlign: "right" },
+    title: { fontSize: 18, lineHeight: 24, fontWeight: "700", color: c.text },
+    empty: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing["3xl"], gap: spacing.md },
+    emptyIcon: { fontSize: 44 },
+    emptyTitle: { fontSize: 18, lineHeight: 24, fontWeight: "700", color: c.text, textAlign: "center" },
+    emptyText: { fontSize: 15, color: c.textDim, textAlign: "center", lineHeight: 20 },
+    suggestions: { gap: spacing.sm, marginTop: spacing.md, alignSelf: "stretch" },
+    suggestion: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+    },
+    suggestionText: { fontSize: 15, color: c.text },
+    list: { padding: spacing.lg, gap: spacing.md },
+    bubble: { maxWidth: "85%", borderRadius: radius.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+    bubbleUser: { alignSelf: "flex-end", backgroundColor: c.accent, borderBottomRightRadius: radius.sm },
+    bubbleAssistant: {
+      alignSelf: "flex-start",
+      backgroundColor: c.surface2,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    bubbleUserText: { color: c.accentContrast, fontSize: 15, lineHeight: 21 },
+    bubbleAssistantText: { color: c.text, fontSize: 15, lineHeight: 21 },
+    typing: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    typingText: { color: c.textDim, fontSize: 14 },
+    chipRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+    adHint: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+      marginHorizontal: spacing.md,
+      marginTop: spacing.sm,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.md,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: withAlpha(c.accent, 0.27),
+    },
+    adHintText: { color: c.accent, fontWeight: "700", fontSize: 13 },
+    inputBar: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    input: {
+      flex: 1,
+      maxHeight: 120,
+      backgroundColor: c.surface,
+      color: c.text,
+      borderRadius: radius.xl,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      fontSize: 15,
+    },
+    sendBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.full,
+      backgroundColor: c.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });
+}
