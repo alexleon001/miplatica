@@ -27,7 +27,7 @@ import { requireProAi } from "../_shared/ai-gate.ts";
 
 const MODEL = "claude-sonnet-4-6";
 
-const PERSONA = `Sos "el asesor de Mi Platica": un asesor financiero argentino, cercano y honesto. Hablás en español rioplatense, tratás de vos al usuario.
+const PERSONA_AR = `Sos "el asesor de Mi Platica": un asesor financiero argentino, cercano y honesto. Hablás en español rioplatense, tratás de vos al usuario.
 
 Contexto del país (tenelo siempre presente):
 - Argentina tiene inflación alta: un rendimiento nominal positivo puede ser una pérdida real. Cuando hables de rendimientos, distinguí nominal vs. real (contra inflación) si tenés el dato.
@@ -41,6 +41,22 @@ Reglas de comportamiento:
 - No prometas rendimientos ni des certezas de mercado. Sos orientativo, no garantizás resultados. Si el tema es delicado (impuestos, decisiones grandes), sugerí consultar a un profesional.
 - Montos: formato argentino (puntos de miles, coma decimal). Aclarás la moneda (ARS/USD).
 - No respondas cosas fuera de finanzas personales del usuario; redirigí amablemente.`;
+
+const PERSONA_VE = `Eres "el asesor de Mi Platica": un asesor financiero venezolano, cercano y honesto. Hablas en español venezolano, tratas de tú al usuario.
+
+Contexto del país (tenlo siempre presente):
+- Venezuela está dolarizada de facto: buena parte de los precios y ahorros se manejan en USD. El bolívar (Bs) sirve para gastos cotidianos pero pierde valor rápido, así que conviene razonar en USD.
+- Hay dos referencias del dólar: BCV (oficial) y paralelo. Aclara a cuál te refieres; la brecha entre ambos importa.
+- El ahorro típico es en USD (efectivo/Zelle) y cripto, sobre todo USDT (estable, atado al dólar) y algo de Bitcoin. No hay un mercado de instrumentos local desarrollado (sin plazos fijos en Bs confiables ni fondos retail).
+- Medios de pago comunes: Pago Móvil, transferencias en Bs, Zelle y USDT (Binance P2P).
+
+Reglas de comportamiento:
+- Usa SOLO los datos del contexto financiero del usuario que te paso abajo. NO inventes saldos, posiciones ni números que no estén ahí.
+- Si te falta un dato para responder bien, dilo y pide que lo cargue en la app.
+- Sé concreto y accionable: respuestas cortas, en puntos cuando ayude. Nada de relleno.
+- No prometas rendimientos ni des certezas de mercado. Eres orientativo, no garantizas resultados. Si el tema es delicado, sugiere consultar a un profesional.
+- Montos: aclara la moneda (Bs/USD). Dado el ritmo de devaluación, prioriza razonar en USD.
+- No respondas cosas fuera de finanzas personales del usuario; redirige amablemente.`;
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -88,9 +104,9 @@ Deno.serve(async (req: Request) => {
   const gate = await requireProAi(supabase);
   if (gate) return gate;
 
-  let contextBlock: string;
+  let ctx: { block: string; country: string };
   try {
-    contextBlock = await buildFinancialContext(supabase);
+    ctx = await buildFinancialContext(supabase);
   } catch (e) {
     return json(
       { error: "Failed to build user context", detail: e instanceof Error ? e.message : String(e) },
@@ -98,6 +114,7 @@ Deno.serve(async (req: Request) => {
     );
   }
 
+  const persona = ctx.country === "VE" ? PERSONA_VE : PERSONA_AR;
   const client = new Anthropic({ apiKey });
 
   try {
@@ -105,10 +122,10 @@ Deno.serve(async (req: Request) => {
       model: MODEL,
       max_tokens: 1024,
       system: [
-        // Bloque estable → cacheable (ahorra tokens entre turnos y usuarios).
-        { type: "text", text: PERSONA, cache_control: { type: "ephemeral" } },
+        // Bloque estable por país → cacheable (ahorra tokens entre turnos y usuarios).
+        { type: "text", text: persona, cache_control: { type: "ephemeral" } },
         // Contexto del usuario (cambia por usuario; estable dentro de la charla).
-        { type: "text", text: contextBlock },
+        { type: "text", text: ctx.block },
       ],
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
     });
@@ -128,10 +145,11 @@ Deno.serve(async (req: Request) => {
 });
 
 // Arma un snapshot financiero compacto en texto para inyectar como contexto.
+// Devuelve también el país para elegir la persona del asesor.
 async function buildFinancialContext(
   // deno-lint-ignore no-explicit-any
   supabase: any,
-): Promise<string> {
+): Promise<{ block: string; country: string }> {
   const now = new Date();
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth() + 1;
@@ -141,7 +159,7 @@ async function buildFinancialContext(
 
   const [profile, netWorth, accounts, txs, investments, debts, budgets, rates, inflation] =
     await Promise.all([
-      supabase.from("profiles").select("name, monthly_income_ars, preferred_usd_type, currency_display").maybeSingle(),
+      supabase.from("profiles").select("name, country, monthly_income_ars, preferred_usd_type, currency_display").maybeSingle(),
       supabase.from("v_net_worth").select("*").maybeSingle(),
       supabase.from("accounts").select("name, type, currency, balance_amount").eq("is_active", true),
       supabase
@@ -156,9 +174,14 @@ async function buildFinancialContext(
         .order("current_value_ars", { ascending: false }),
       supabase.from("debts").select("name, type, currency, remaining_amount, interest_rate, monthly_payment, next_payment_date").eq("is_active", true),
       supabase.from("budgets").select("category, limit_ars, spent_ars").eq("year", year).eq("month", month),
-      supabase.from("exchange_rates").select("date, oficial, mep, blue, ccl, tarjeta").order("date", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("exchange_rates").select("date, oficial, mep, blue, ccl, tarjeta, bcv, paralelo").order("date", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("inflation").select("month, ipc").order("month", { ascending: false }).limit(120),
     ]);
+
+  const country = (profile.data?.country ?? "AR") as string;
+  const isVE = country === "VE";
+  // El slot _ars es la moneda local del usuario (ARS en AR, Bs/VES en VE).
+  const cur = isVE ? "Bs" : "ARS";
 
   const fmt = (n: number | null | undefined) =>
     n == null ? "—" : n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
@@ -169,19 +192,22 @@ async function buildFinancialContext(
   const p = profile.data;
   if (p) {
     lines.push(
-      `\nPerfil: ${p.name ?? "(sin nombre)"} · ingreso mensual declarado: ${fmt(p.monthly_income_ars)} ARS · dólar preferido: ${(p.preferred_usd_type ?? "mep").toUpperCase()} · vista: ${p.currency_display ?? "both"}`,
+      `\nPerfil: ${p.name ?? "(sin nombre)"} · ingreso mensual declarado: ${fmt(p.monthly_income_ars)} ${cur} · dólar preferido: ${(p.preferred_usd_type ?? (isVE ? "paralelo" : "mep")).toUpperCase()} · vista: ${p.currency_display ?? "both"}`,
     );
   }
 
   const r = rates.data;
   if (r) {
     lines.push(
-      `\nTipos de cambio (${r.date}): oficial ${fmt(r.oficial)} · MEP ${fmt(r.mep)} · blue ${fmt(r.blue)} · CCL ${fmt(r.ccl)} · tarjeta ${fmt(r.tarjeta)} (ARS por USD)`,
+      isVE
+        ? `\nTipos de cambio (${r.date}): BCV ${fmt(r.bcv)} · paralelo ${fmt(r.paralelo)} (Bs por USD)`
+        : `\nTipos de cambio (${r.date}): oficial ${fmt(r.oficial)} · MEP ${fmt(r.mep)} · blue ${fmt(r.blue)} · CCL ${fmt(r.ccl)} · tarjeta ${fmt(r.tarjeta)} (ARS por USD)`,
     );
   }
 
   // Inflación: IPC mensual reciente + acumulados (para razonar rendimiento real).
-  const inf = (inflation.data ?? []).filter((x: { ipc: number | null }) => x.ipc != null);
+  // Solo aplica a Argentina (serie INDEC); en VE no hay fuente API confiable.
+  const inf = isVE ? [] : (inflation.data ?? []).filter((x: { ipc: number | null }) => x.ipc != null);
   if (inf.length) {
     const compound = (rows: { ipc: number }[]) =>
       (rows.reduce((f, x) => f * (1 + Number(x.ipc) / 100), 1) - 1) * 100;
@@ -197,15 +223,16 @@ async function buildFinancialContext(
   const nw = netWorth.data;
   if (nw) {
     lines.push(
-      `\nPatrimonio neto: ${fmt(nw.net_ars)} ARS / ${fmt(nw.net_usd)} USD`,
-      `  - Cuentas: ${fmt(nw.accounts_ars)} ARS · Inversiones: ${fmt(nw.investments_ars)} ARS · Deudas: ${fmt(nw.debts_ars)} ARS`,
+      `\nPatrimonio neto: ${fmt(nw.net_ars)} ${cur} / ${fmt(nw.net_usd)} USD`,
+      `  - Cuentas: ${fmt(nw.accounts_ars)} ${cur} · Inversiones: ${fmt(nw.investments_ars)} ${cur} · Deudas: ${fmt(nw.debts_ars)} ${cur}`,
     );
   }
 
   const accs = accounts.data ?? [];
   if (accs.length) {
     lines.push("\nCuentas:");
-    for (const a of accs) lines.push(`  - ${a.name} (${a.type}): ${fmt(a.balance_amount)} ${a.currency}`);
+    // El slot de cuenta "ARS" es la moneda local del usuario (Bs en VE).
+    for (const a of accs) lines.push(`  - ${a.name} (${a.type}): ${fmt(a.balance_amount)} ${a.currency === "ARS" ? cur : a.currency}`);
   }
 
   // Inflación acumulada (compuesta) desde el primer día del mes de `sinceIso`
@@ -241,7 +268,7 @@ async function buildFinancialContext(
         realStr = ` · real ${real > 0 ? "+" : ""}${real.toFixed(1)}% (infl. ${infl.toFixed(1)}% desde compra)`;
       }
       lines.push(
-        `  - ${i.name}${i.ticker ? ` (${i.ticker})` : ""} [${i.type}]: ${fmt(i.current_value_ars)} ARS${i.profit_loss_pct != null ? ` · P&L nom. ${i.profit_loss_pct > 0 ? "+" : ""}${i.profit_loss_pct.toFixed(1)}%` : ""}${realStr}`,
+        `  - ${i.name}${i.ticker ? ` (${i.ticker})` : ""} [${i.type}]: ${fmt(i.current_value_ars)} ${cur}${i.profit_loss_pct != null ? ` · P&L nom. ${i.profit_loss_pct > 0 ? "+" : ""}${i.profit_loss_pct.toFixed(1)}%` : ""}${realStr}`,
       );
     }
   }
@@ -251,7 +278,7 @@ async function buildFinancialContext(
     lines.push("\nDeudas:");
     for (const d of dbs) {
       lines.push(
-        `  - ${d.name} [${d.type}]: saldo ${fmt(d.remaining_amount)} ${d.currency}${d.interest_rate != null ? ` · TNA ${d.interest_rate}%` : ""}${d.monthly_payment != null ? ` · cuota ${fmt(d.monthly_payment)}` : ""}${d.next_payment_date ? ` · próx. vto ${d.next_payment_date}` : ""}`,
+        `  - ${d.name} [${d.type}]: saldo ${fmt(d.remaining_amount)} ${d.currency === "ARS" ? cur : d.currency}${d.interest_rate != null ? ` · TNA ${d.interest_rate}%` : ""}${d.monthly_payment != null ? ` · cuota ${fmt(d.monthly_payment)}` : ""}${d.next_payment_date ? ` · próx. vto ${d.next_payment_date}` : ""}`,
       );
     }
   }
@@ -261,7 +288,7 @@ async function buildFinancialContext(
     lines.push(`\nPresupuestos del mes (${month}/${year}):`);
     for (const b of buds) {
       const pct = b.limit_ars > 0 ? Math.round((b.spent_ars / b.limit_ars) * 100) : 0;
-      lines.push(`  - ${b.category}: gastado ${fmt(b.spent_ars)} de ${fmt(b.limit_ars)} ARS (${pct}%)`);
+      lines.push(`  - ${b.category}: gastado ${fmt(b.spent_ars)} de ${fmt(b.limit_ars)} ${cur} (${pct}%)`);
     }
   }
 
@@ -269,13 +296,13 @@ async function buildFinancialContext(
   if (t.length) {
     lines.push(`\nÚltimos movimientos (${t.length}, desde ${since}):`);
     for (const x of t.slice(0, 30)) {
-      lines.push(`  - ${x.date} ${x.type} ${x.category ?? "?"}: ${fmt(x.amount_ars)} ARS${x.description ? ` — ${x.description}` : ""}`);
+      lines.push(`  - ${x.date} ${x.type} ${x.category ?? "?"}: ${fmt(x.amount_ars)} ${cur}${x.description ? ` — ${x.description}` : ""}`);
     }
   } else {
     lines.push("\nNo hay movimientos en los últimos 30 días.");
   }
 
-  return lines.join("\n");
+  return { block: lines.join("\n"), country };
 }
 
 function json(body: unknown, status = 200): Response {

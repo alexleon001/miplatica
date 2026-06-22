@@ -8,7 +8,7 @@ import { ChipRow, FormChip, FormField, FormInput, FormScreen, SubmitButton } fro
 import { DateField } from "../../components/DateField";
 import { categoriesByGroup } from "../../lib/categories";
 import { useGroup } from "../../lib/hooks/use-group";
-import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
+import { rateForUsdType, useExchangeRates } from "../../lib/hooks/use-exchange-rates";
 import { useCreateSharedExpense } from "../../lib/hooks/use-shared-expenses";
 import { useCurrencyStore } from "../../lib/store/currency";
 import { buildSplits, splitsMatchTotal, type SplitType } from "../../lib/splits";
@@ -96,7 +96,7 @@ export default function AddSharedExpenseModal() {
       splits = buildSplits(splitType, total, { weights });
     }
 
-    const rate = rates.data ? Number(rates.data[usdType]) : null;
+    const rate = rateForUsdType(rates.data, usdType);
     const amountUsd = rate && rate > 0 ? Math.round((total / rate) * 100) / 100 : null;
 
     try {

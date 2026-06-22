@@ -4,8 +4,8 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../supabase";
-import { freshenPlazoFijo, useInvestments } from "./use-investments";
-import { useExchangeRates } from "./use-exchange-rates";
+import { freshenPlazoFijo, freshenUsdValue, useInvestments } from "./use-investments";
+import { useLocalUsdRate } from "./use-exchange-rates";
 
 export function useNetWorth() {
   return useQuery({
@@ -22,24 +22,23 @@ export function useNetWorth() {
   });
 }
 
-// v_net_worth suma `investments.current_value_*`, que para plazos fijos solo se
-// actualiza al correr el cron de precios. Acá ajustamos el patrimonio por el
-// delta de interés devengado recalculado al vuelo (mismo criterio que la
-// pantalla de Inversiones, ver freshenPlazoFijo), para que el dashboard no
-// quede ~1 día atrasado fuera de horario bursátil.
+// v_net_worth suma `investments.current_value_*`, calculados por el cron de
+// precios. Acá ajustamos el patrimonio al vuelo por dos motivos: (1) el interés
+// devengado de plazos fijos crece a diario (freshenPlazoFijo), y (2) las
+// posiciones en USD: el cron escribe su valor local con el MEP de AR, pero un
+// usuario VE (o AR con otro dólar) lo quiere a SU tasa → freshenUsdValue. Así el
+// dashboard no queda atrasado ni con la moneda local mal convertida.
 export function useFreshNetWorth() {
   const nw = useNetWorth();
   const { data: investments } = useInvestments();
-  const { data: rates } = useExchangeRates();
-  const mep = rates?.mep ?? null;
+  const mep = useLocalUsdRate();
 
   const data = useMemo(() => {
     if (!nw.data) return nw.data;
     let dArs = 0;
     let dUsd = 0;
     for (const inv of investments ?? []) {
-      if (inv.type !== "plazo_fijo") continue;
-      const fresh = freshenPlazoFijo(inv, mep);
+      const fresh = freshenUsdValue(freshenPlazoFijo(inv, mep), mep);
       dArs += (fresh.current_value_ars ?? 0) - (inv.current_value_ars ?? 0);
       dUsd += (fresh.current_value_usd ?? 0) - (inv.current_value_usd ?? 0);
     }

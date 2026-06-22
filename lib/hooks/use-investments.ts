@@ -65,6 +65,26 @@ export function freshenFci(inv: Investment, fundsBySlug: Map<string, FciFund>, m
   };
 }
 
+// Para posiciones en USD (cripto, dólar billete, ON, etc.) el valor confiable es
+// `current_value_usd`; el valor en moneda local se deriva con la tasa elegida.
+// El cron `update-asset-prices`/`refresh_positions` escribe `current_value_ars`
+// con el MEP de Argentina server-side → para un usuario VE (paralelo) ese "ars"
+// (=VES) quedaría calculado con la tasa argentina (muy inflado). Recalculamos el
+// valor local al vuelo desde USD × tasa del país. En AR con MEP no cambia nada.
+export function freshenUsdValue(inv: Investment, rate: number | null): Investment {
+  if (inv.currency !== "USD" || rate == null || rate <= 0) return inv;
+  if (inv.current_value_usd == null) return inv;
+  const r2 = (n: number | null): number | null => (n == null ? null : Math.round(n * rate * 100) / 100);
+  const r4 = (n: number | null): number | null => (n == null ? null : Math.round(n * rate * 10000) / 10000);
+  return {
+    ...inv,
+    current_value_ars: r2(inv.current_value_usd),
+    profit_loss_ars: r2(inv.profit_loss_usd),
+    current_price_ars: r4(inv.current_price_usd),
+    avg_cost_ars: r4(inv.avg_cost_usd),
+  };
+}
+
 export function useInvestments() {
   return useQuery({
     queryKey: ["investments", "list"],

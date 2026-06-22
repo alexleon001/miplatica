@@ -18,7 +18,8 @@ import { useFciFundsBySlug } from "../../lib/hooks/use-fci-funds";
 import { isPriceStale, staleLabel } from "../../lib/prices";
 import { useCreateInvestment, useUpdateInvestment } from "../../lib/hooks/use-create-investment";
 import { useInvestments } from "../../lib/hooks/use-investments";
-import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
+import { rateForUsdType, useExchangeRates } from "../../lib/hooks/use-exchange-rates";
+import { countryConfig } from "../../lib/countries";
 import { useCurrencyStore } from "../../lib/store/currency";
 import { useTheme } from "../../lib/theme-context";
 import type { Palette } from "../../lib/theme-tokens";
@@ -45,11 +46,23 @@ export default function AddInvestmentModal() {
   const update = useUpdateInvestment();
   const rates = useExchangeRates();
   const usdType = useCurrencyStore((s) => s.usdType);
+  const country = useCurrencyStore((s) => s.country);
+  const cfg = countryConfig(country);
 
-  const [type, setType] = useState<InstrumentType>("cedear");
+  // Solo los instrumentos del país (VE: USD billete + cripto; AR: todos).
+  const allowedInstruments = useMemo(() => {
+    const allowed = new Set(cfg.instruments);
+    return INSTRUMENTS.filter((i) => allowed.has(i.id));
+  }, [cfg.instruments]);
+
+  const [type, setType] = useState<InstrumentType>(
+    () => countryConfig(useCurrencyStore.getState().country).instruments[0],
+  );
   const [name, setName] = useState("");
   const [ticker, setTicker] = useState("");
-  const [currency, setCurrency] = useState<InstrumentCurrency>("ARS");
+  const [currency, setCurrency] = useState<InstrumentCurrency>(
+    () => instrumentById(countryConfig(useCurrencyStore.getState().country).instruments[0])!.defaultCurrency,
+  );
   const [quantity, setQuantity] = useState("");
   const [avgCost, setAvgCost] = useState("");
   const [interestRate, setInterestRate] = useState("");
@@ -115,8 +128,7 @@ export default function AddInvestmentModal() {
   }, [isFci, fciVcp, instrument.hasLivePrice, assetPrice.data, currency]);
 
   const mep = useMemo<number | null>(() => {
-    if (!rates.data) return null;
-    return rates.data[usdType] ?? rates.data.mep ?? null;
+    return rateForUsdType(rates.data, usdType);
   }, [rates.data, usdType]);
 
   async function submit() {
@@ -171,7 +183,7 @@ export default function AddInvestmentModal() {
     <FormScreen title={editing ? "Editar inversión" : "Nueva inversión"}>
       <FormField label="Tipo de instrumento">
         <ChipRow>
-          {INSTRUMENTS.map((ins) => (
+          {allowedInstruments.map((ins) => (
             <FormChip key={ins.id} label={`${ins.icon} ${ins.label}`} active={type === ins.id} onPress={() => changeType(ins.id)} />
           ))}
         </ChipRow>
@@ -226,7 +238,7 @@ export default function AddInvestmentModal() {
         <FormField label="Moneda">
           <ChipRow>
             {CURRENCIES.map((c) => (
-              <FormChip key={c} label={c} active={currency === c} onPress={() => setCurrency(c)} />
+              <FormChip key={c} label={c === "ARS" ? cfg.currencyLabel : c} active={currency === c} onPress={() => setCurrency(c)} />
             ))}
           </ChipRow>
         </FormField>

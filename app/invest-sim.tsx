@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { MoneyAmount } from "../components/MoneyAmount";
-import { useExchangeRates } from "../lib/hooks/use-exchange-rates";
+import { useLocalUsdRate } from "../lib/hooks/use-exchange-rates";
 import { useInflation } from "../lib/hooks/use-inflation";
 import { simulate, suggestedMonthlyInflation, type SimInstrument } from "../lib/invest-sim";
 import { useTheme } from "../lib/theme-context";
@@ -48,7 +48,7 @@ export default function InvestSimScreen() {
   const c = useTheme();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
-  const { data: rates } = useExchangeRates();
+  const mep = useLocalUsdRate();
   const { data: ipc } = useInflation();
 
   const suggestedInfl = useMemo(() => suggestedMonthlyInflation(ipc ?? []), [ipc]);
@@ -74,7 +74,6 @@ export default function InvestSimScreen() {
     [amountArs, months, inflPct, ptfRate, fciRate, usdRate],
   );
 
-  const mep = rates?.mep ?? null;
   const toUsd = (ars: number) => (mep && mep > 0 ? ars / mep : null);
 
   return (

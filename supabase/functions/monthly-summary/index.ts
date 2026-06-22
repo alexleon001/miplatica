@@ -19,7 +19,7 @@ import { requireProAi } from "../_shared/ai-gate.ts";
 
 const MODEL = "claude-sonnet-4-6";
 
-const PERSONA = `Sos "el asesor de Mi Platica": un asesor financiero argentino, cercano y honesto. Hablás en español rioplatense, tratás de vos al usuario.
+const PERSONA_AR = `Sos "el asesor de Mi Platica": un asesor financiero argentino, cercano y honesto. Hablás en español rioplatense, tratás de vos al usuario.
 
 Tu tarea: escribir un RESUMEN BREVE del mes financiero del usuario, a partir de los números que te paso. Reglas:
 - Arrancá con una frase de panorama (¿gastó más o menos que el mes pasado? ¿le alcanzó el ingreso?).
@@ -28,6 +28,16 @@ Tu tarea: escribir un RESUMEN BREVE del mes financiero del usuario, a partir de 
 - Cerrá con UN consejo concreto y accionable para el mes que viene.
 - Tono humano y directo, NADA de relleno. 120-180 palabras. Usá viñetas para las categorías.
 - Montos en formato argentino (puntos de miles), aclarando ARS. No inventes números: usá SOLO los del contexto.
+- No uses encabezados markdown grandes; texto plano con viñetas "- " está bien.`;
+
+const PERSONA_VE = `Eres "el asesor de Mi Platica": un asesor financiero venezolano, cercano y honesto. Hablas en español venezolano, tratas de tú al usuario.
+
+Tu tarea: escribir un RESUMEN BREVE del mes financiero del usuario, a partir de los números que te paso. Reglas:
+- Empieza con una frase de panorama (¿gastó más o menos que el mes pasado? ¿le alcanzó el ingreso?).
+- Destaca las 2-3 categorías donde más gastó y los cambios fuertes vs. el mes anterior (subidas/bajadas notables).
+- Cierra con UN consejo concreto y accionable para el mes que viene.
+- Tono humano y directo, NADA de relleno. 120-180 palabras. Usa viñetas para las categorías.
+- Montos aclarando la moneda (Bs/USD). Dado el ritmo de devaluación del bolívar, ayuda a razonar en USD cuando tenga sentido. No inventes números: usa SOLO los del contexto.
 - No uses encabezados markdown grandes; texto plano con viñetas "- " está bien.`;
 
 // Labels de categorías (espejo de lib/categories.ts) para que el resumen lea
@@ -80,23 +90,25 @@ Deno.serve(async (req: Request) => {
   const gate = await requireProAi(supabase);
   if (gate) return gate;
 
-  let contextBlock: string;
+  let ctx: { block: string; country: string };
   try {
-    contextBlock = await buildSummaryContext(supabase, period, prevPeriod, since, until);
+    ctx = await buildSummaryContext(supabase, period, prevPeriod, since, until);
   } catch (e) {
     return json({ error: "Failed to build context", detail: e instanceof Error ? e.message : String(e) }, 502);
   }
 
+  const persona = ctx.country === "VE" ? PERSONA_VE : PERSONA_AR;
+  const userPrompt = ctx.country === "VE" ? `Haz el resumen del mes ${period}.` : `Hacé el resumen del mes ${period}.`;
   const client = new Anthropic({ apiKey });
   try {
     const completion = await client.messages.create({
       model: MODEL,
       max_tokens: 700,
       system: [
-        { type: "text", text: PERSONA, cache_control: { type: "ephemeral" } },
-        { type: "text", text: contextBlock },
+        { type: "text", text: persona, cache_control: { type: "ephemeral" } },
+        { type: "text", text: ctx.block },
       ],
-      messages: [{ role: "user", content: `Hacé el resumen del mes ${period}.` }],
+      messages: [{ role: "user", content: userPrompt }],
     });
     const textBlock = completion.content.find((b) => b.type === "text");
     if (!textBlock || textBlock.type !== "text") return json({ error: "Empty model response" }, 502);
@@ -113,18 +125,22 @@ async function buildSummaryContext(
   prevPeriod: string,
   since: string,
   until: string,
-): Promise<string> {
+): Promise<{ block: string; country: string }> {
   const [profile, txsRes, rates, inflation] = await Promise.all([
-    supabase.from("profiles").select("name, monthly_income_ars").maybeSingle(),
+    supabase.from("profiles").select("name, country, monthly_income_ars").maybeSingle(),
     supabase
       .from("transactions")
       .select("date, type, category, amount_ars")
       .gte("date", since)
       .lte("date", until)
       .limit(2000),
-    supabase.from("exchange_rates").select("mep").order("date", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("exchange_rates").select("mep, bcv, paralelo").order("date", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("inflation").select("month, ipc").order("month", { ascending: false }).limit(6),
   ]);
+
+  const country = (profile.data?.country ?? "AR") as string;
+  const isVE = country === "VE";
+  const curLabel = isVE ? "Bs" : "ARS"; // el slot _ars es la moneda local del usuario
 
   const fmt = (n: number) => Math.round(n).toLocaleString("es-AR");
   const txs: { date: string; type: string; category: string | null; amount_ars: number | null }[] =
@@ -155,17 +171,17 @@ async function buildSummaryContext(
   const declaredIncome = Number(p?.monthly_income_ars ?? 0);
   lines.push(`Usuario: ${p?.name ?? "(sin nombre)"}`);
   lines.push(`Mes a resumir: ${period} · mes anterior: ${prevPeriod}`);
-  lines.push(`Ingreso mensual declarado en el perfil: ${fmt(declaredIncome)} ARS`);
+  lines.push(`Ingreso mensual declarado en el perfil: ${fmt(declaredIncome)} ${curLabel}`);
 
   const curIncome = cur.incomeTotal > 0 ? cur.incomeTotal : declaredIncome;
-  lines.push(`\nGasto total ${period}: ${fmt(cur.expenseTotal)} ARS`);
-  lines.push(`Gasto total ${prevPeriod}: ${fmt(old.expenseTotal)} ARS`);
+  lines.push(`\nGasto total ${period}: ${fmt(cur.expenseTotal)} ${curLabel}`);
+  lines.push(`Gasto total ${prevPeriod}: ${fmt(old.expenseTotal)} ${curLabel}`);
   if (old.expenseTotal > 0) {
     const delta = ((cur.expenseTotal - old.expenseTotal) / old.expenseTotal) * 100;
     lines.push(`Variación de gasto vs. mes anterior: ${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`);
   }
-  lines.push(`Ingresos registrados ${period}: ${fmt(cur.incomeTotal)} ARS (si es 0, usá el ingreso declarado: ${fmt(declaredIncome)} ARS)`);
-  lines.push(`Balance del mes (ingreso − gasto): ${fmt(curIncome - cur.expenseTotal)} ARS`);
+  lines.push(`Ingresos registrados ${period}: ${fmt(cur.incomeTotal)} ${curLabel} (si es 0, usá el ingreso declarado: ${fmt(declaredIncome)} ${curLabel})`);
+  lines.push(`Balance del mes (ingreso − gasto): ${fmt(curIncome - cur.expenseTotal)} ${curLabel}`);
 
   // Top categorías del mes con su comparación contra el mes anterior.
   const sorted = Object.entries(cur.expenseByCat).sort((a, b) => b[1] - a[1]);
@@ -182,25 +198,31 @@ async function buildSummaryContext(
       } else if (amt > 0) {
         cmp = ` · nuevo gasto este mes`;
       }
-      lines.push(`  - ${label}: ${fmt(amt)} ARS (${share}% del gasto)${cmp}`);
+      lines.push(`  - ${label}: ${fmt(amt)} ${curLabel} (${share}% del gasto)${cmp}`);
     }
   } else {
     lines.push(`\nNo hay gastos registrados en ${period}.`);
   }
 
   const r = rates.data;
-  if (r?.mep) lines.push(`\nDólar MEP actual: ${fmt(Number(r.mep))} ARS/USD (para referencia si hablás en USD)`);
-
-  // Inflación del mes a resumir (o la más reciente disponible).
-  const inf = (inflation.data ?? []).filter((x: { ipc: number | null }) => x.ipc != null);
-  const periodInf = inf.find((x: { month: string }) => (x.month ?? "").slice(0, 7) === period) ?? inf[0];
-  if (periodInf) {
-    lines.push(
-      `\nInflación IPC del mes ${(periodInf.month ?? "").slice(0, 7)}: ${Number(periodInf.ipc).toFixed(1)}% (comparala contra la suba de gasto para hablar de términos reales).`,
-    );
+  if (isVE) {
+    if (r?.paralelo) lines.push(`\nDólar paralelo actual: ${fmt(Number(r.paralelo))} Bs/USD${r?.bcv ? ` · BCV ${fmt(Number(r.bcv))} Bs/USD` : ""} (para referencia si hablás en USD)`);
+  } else if (r?.mep) {
+    lines.push(`\nDólar MEP actual: ${fmt(Number(r.mep))} ARS/USD (para referencia si hablás en USD)`);
   }
 
-  return lines.join("\n");
+  // Inflación del mes a resumir (solo Argentina; en VE no hay fuente API confiable).
+  if (!isVE) {
+    const inf = (inflation.data ?? []).filter((x: { ipc: number | null }) => x.ipc != null);
+    const periodInf = inf.find((x: { month: string }) => (x.month ?? "").slice(0, 7) === period) ?? inf[0];
+    if (periodInf) {
+      lines.push(
+        `\nInflación IPC del mes ${(periodInf.month ?? "").slice(0, 7)}: ${Number(periodInf.ipc).toFixed(1)}% (comparala contra la suba de gasto para hablar de términos reales).`,
+      );
+    }
+  }
+
+  return { block: lines.join("\n"), country };
 }
 
 function json(body: unknown, status = 200): Response {

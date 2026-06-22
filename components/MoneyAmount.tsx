@@ -1,8 +1,12 @@
 // Componente único para renderizar montos. Consume useCurrencyStore para decidir
-// si mostrar ARS, USD o ambas, y useTheme para el color vivo del rediseño "Línea".
-// Centraliza el formato es-AR (siempre) y los números tabulares (tabular-nums).
+// si mostrar moneda local, USD o ambas, y useTheme para el color vivo del
+// rediseño "Línea". El formato y la moneda local salen de la config de país
+// (lib/countries): AR formatea ARS en es-AR, VE formatea VES en es-VE.
+// La prop `ars` es el "slot de moneda local" (ARS en AR, VES en VE).
 
+import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { countryConfig, type CountryConfig } from "../lib/countries";
 import { useCurrencyStore } from "../lib/store/currency";
 import { useTheme } from "../lib/theme-context";
 
@@ -16,17 +20,23 @@ type MoneyAmountProps = {
   tone?: Tone;
 };
 
-const arsFmt = new Intl.NumberFormat("es-AR", {
-  style: "currency",
-  currency: "ARS",
-  maximumFractionDigits: 0,
-});
-
-const usdFmt = new Intl.NumberFormat("es-AR", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 2,
-});
+// Formateadores por país (memoizados por código). Hermes/RN tiene Intl limitado
+// para algunos locales; si falta data de es-VE/VES, degrada a un formato genérico
+// (dígitos + código) sin romper la UI.
+function makeFormatters(cfg: CountryConfig) {
+  return {
+    localFmt: new Intl.NumberFormat(cfg.locale, {
+      style: "currency",
+      currency: cfg.currencyCode,
+      maximumFractionDigits: 0,
+    }),
+    usdFmt: new Intl.NumberFormat(cfg.locale, {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 2,
+    }),
+  };
+}
 
 const SIZES: Record<Size, { primary: number; secondary: number }> = {
   sm: { primary: 14, secondary: 11 },
@@ -38,6 +48,8 @@ const SIZES: Record<Size, { primary: number; secondary: number }> = {
 export function MoneyAmount({ ars, usd, size = "md", tone = "default" }: MoneyAmountProps) {
   const c = useTheme();
   const display = useCurrencyStore((s) => s.display);
+  const country = useCurrencyStore((s) => s.country);
+  const { localFmt, usdFmt } = useMemo(() => makeFormatters(countryConfig(country)), [country]);
   const { primary, secondary } = SIZES[size];
 
   const toneColor = (t: Tone): string =>
@@ -47,7 +59,7 @@ export function MoneyAmount({ ars, usd, size = "md", tone = "default" }: MoneyAm
   const showArs = display === "ars" || display === "both";
   const showUsd = display === "usd" || display === "both";
 
-  const arsText = ars == null ? "—" : arsFmt.format(ars);
+  const arsText = ars == null ? "—" : localFmt.format(ars);
   const usdText = usd == null ? "—" : usdFmt.format(usd);
 
   if (display === "ars") {

@@ -256,30 +256,36 @@ export type Database = {
       }
       exchange_rates: {
         Row: {
+          bcv: number | null
           blue: number | null
           ccl: number | null
           date: string
           fetched_at: string
           mep: number | null
           oficial: number | null
+          paralelo: number | null
           tarjeta: number | null
         }
         Insert: {
+          bcv?: number | null
           blue?: number | null
           ccl?: number | null
           date: string
           fetched_at?: string
           mep?: number | null
           oficial?: number | null
+          paralelo?: number | null
           tarjeta?: number | null
         }
         Update: {
+          bcv?: number | null
           blue?: number | null
           ccl?: number | null
           date?: string
           fetched_at?: string
           mep?: number | null
           oficial?: number | null
+          paralelo?: number | null
           tarjeta?: number | null
         }
         Relationships: []
@@ -563,6 +569,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          country: string
           created_at: string
           currency_display: string
           id: string
@@ -574,6 +581,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          country?: string
           created_at?: string
           currency_display?: string
           id: string
@@ -585,6 +593,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          country?: string
           created_at?: string
           currency_display?: string
           id?: string

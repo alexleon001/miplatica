@@ -6,6 +6,8 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAccounts, useDeleteAccount } from "../lib/hooks/use-accounts";
 import { confirmDelete } from "../lib/confirm";
+import { countryConfig } from "../lib/countries";
+import { useCurrencyStore } from "../lib/store/currency";
 import { useTheme } from "../lib/theme-context";
 import { MoneyAmount } from "./MoneyAmount";
 import { RowsSkeleton } from "./Skeleton";
@@ -25,6 +27,9 @@ export function AccountsList() {
   const { data: accounts, isLoading } = useAccounts();
   const router = useRouter();
   const del = useDeleteAccount();
+  const country = useCurrencyStore((s) => s.country);
+  // El slot local "ARS" se rotula según el país (Bs. en VE).
+  const localLabel = countryConfig(country).currencyLabel;
 
   return (
     <View style={{ gap: 14, paddingTop: 4 }}>
@@ -53,7 +58,7 @@ export function AccountsList() {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.accountName, { color: c.text }]}>{acc.name}</Text>
                 <Text style={[styles.accountType, { color: c.textDim }]}>
-                  {meta.label} · {acc.currency}
+                  {meta.label} · {acc.currency === "ARS" ? localLabel : acc.currency}
                 </Text>
               </View>
               {acc.currency === "ARS" ? (

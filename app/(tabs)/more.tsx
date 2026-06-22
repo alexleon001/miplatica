@@ -14,6 +14,8 @@ import { useAuth } from "../../lib/auth";
 import { usePro } from "../../lib/hooks/use-pro";
 import { useProfile } from "../../lib/hooks/use-profile";
 import { useNotifPrefsStore } from "../../lib/store/notif-prefs";
+import { countryConfig } from "../../lib/countries";
+import { useCurrencyStore } from "../../lib/store/currency";
 import { transactionsToCsv } from "../../lib/csv-export";
 import { useTheme } from "../../lib/theme-context";
 import { type Palette, withAlpha } from "../../lib/theme-tokens";
@@ -32,6 +34,11 @@ export default function MoreScreen() {
   const { data: profile } = useProfile();
   const { isPro } = usePro();
   const notif = useNotifPrefsStore();
+  const country = useCurrencyStore((s) => s.country);
+  // Features atadas a Argentina: Mercado Pago (sin API de pagos en VE) y el
+  // simulador de inversiones (instrumentos AR + "ganarle a la inflación").
+  const showMercadoPago = countryConfig(country).features.mercadoPago;
+  const showInflationFeatures = countryConfig(country).features.inflation;
 
   async function signOut() {
     const { error } = await supabase.auth.signOut();
@@ -89,7 +96,9 @@ export default function MoreScreen() {
           <FeatureRow icon="calendar-outline" tint={c.accent} title="Proyección de pagos" subtitle="Tu flujo de caja mes a mes, como el Excel pero solo" onPress={() => router.push("/projection")} styles={styles} c={c} />
           <FeatureRow icon="newspaper-outline" tint={c.accent} title="Resumen del mes" subtitle="Qué pasó con tu plata este mes, contado por la IA" pro={!isPro} onPress={() => router.push("/monthly-summary")} styles={styles} c={c} />
           <FeatureRow icon="bar-chart-outline" tint={c.pos} title="Insights de gastos" subtitle="Tu tendencia mensual y qué cambió" onPress={() => router.push("/insights")} styles={styles} c={c} />
-          <FeatureRow icon="calculator-outline" tint={c.warn} title="Simulador de inversiones" subtitle="¿Dónde le ganás a la inflación?" onPress={() => router.push("/invest-sim")} styles={styles} c={c} />
+          {showInflationFeatures ? (
+            <FeatureRow icon="calculator-outline" tint={c.warn} title="Simulador de inversiones" subtitle="¿Dónde le ganás a la inflación?" onPress={() => router.push("/invest-sim")} styles={styles} c={c} />
+          ) : null}
           <FeatureRow icon="pricetags-outline" tint={c.accent} title="Categorías" subtitle="Creá las tuyas para clasificar mejor" onPress={() => router.push("/categories")} styles={styles} c={c} />
           <FeatureRow icon="notifications-outline" tint={c.textDim} title="Alertas de cotización" subtitle="Avisame cuando el dólar cruce un valor" onPress={() => router.push("/rate-alerts")} styles={styles} c={c} last />
         </View>
@@ -111,8 +120,12 @@ export default function MoreScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Datos</Text>
-          <MercadoPagoConnect />
-          <View style={styles.dataDivider} />
+          {showMercadoPago ? (
+            <>
+              <MercadoPagoConnect />
+              <View style={styles.dataDivider} />
+            </>
+          ) : null}
           <CtaButton
             label="Importar movimientos (CSV de broker)"
             icon="document-text-outline"

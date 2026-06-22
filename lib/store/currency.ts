@@ -6,13 +6,20 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { DEFAULT_COUNTRY, type CountryCode, type RateKey } from "../countries";
 
 export type CurrencyDisplay = "ars" | "usd" | "both";
-export type UsdType = "mep" | "blue" | "oficial" | "ccl" | "tarjeta";
+// Tipo de tasa local<->USD. Unión de todos los países (ver lib/countries.ts):
+// AR usa mep/blue/oficial/ccl/tarjeta, VE usa bcv/paralelo.
+export type UsdType = RateKey;
 
 type CurrencyState = {
+  // País del usuario (espejo de profiles.country; lo setea el _layout al cargar
+  // el perfil). Decide símbolo de moneda, cotizaciones e instrumentos.
+  country: CountryCode;
   display: CurrencyDisplay;
   usdType: UsdType;
+  setCountry: (country: CountryCode) => void;
   setDisplay: (display: CurrencyDisplay) => void;
   setUsdType: (usdType: UsdType) => void;
 };
@@ -20,8 +27,10 @@ type CurrencyState = {
 export const useCurrencyStore = create<CurrencyState>()(
   persist(
     (set) => ({
+      country: DEFAULT_COUNTRY,
       display: "both",
       usdType: "mep",
+      setCountry: (country) => set({ country }),
       setDisplay: (display) => set({ display }),
       setUsdType: (usdType) => set({ usdType }),
     }),

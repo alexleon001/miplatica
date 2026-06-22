@@ -9,7 +9,7 @@ import { ChipRow, FormChip, FormField, FormInput, FormScreen, SubmitButton } fro
 import { DateField } from "../../components/DateField";
 import { useAccounts } from "../../lib/hooks/use-accounts";
 import { useAuth } from "../../lib/auth";
-import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
+import { rateForUsdType, useExchangeRates } from "../../lib/hooks/use-exchange-rates";
 import { useGroup } from "../../lib/hooks/use-group";
 import { useSettle } from "../../lib/hooks/use-settlements";
 import { useCurrencyStore } from "../../lib/store/currency";
@@ -65,7 +65,7 @@ export default function SettleUpModal() {
       return;
     }
 
-    const rate = rates.data ? Number(rates.data[usdType]) : null;
+    const rate = rateForUsdType(rates.data, usdType);
     const amountUsd = rate && rate > 0 ? Math.round((total / rate) * 100) / 100 : null;
 
     // El movimiento se registra desde la perspectiva del usuario actual.

@@ -1,39 +1,35 @@
-// Selector de moneda del rediseño "Línea": ARS/USD/Ambas como UNDERLINE TABS
-// (activo = texto acento + borde inferior 2px). Cuando no es ARS, debajo aparece
-// el tipo de dólar (MEP/Blue/Oficial/CCL) como pills discretas. Usa useTheme().
+// Selector de moneda del rediseño "Línea": local/USD/Ambas como UNDERLINE TABS
+// (activo = texto acento + borde inferior 2px). Cuando no es local, debajo aparece
+// el tipo de dólar (MEP/Blue/… en AR, BCV/Paralelo en VE) como pills discretas.
+// La etiqueta de la moneda local y los tipos de dólar salen de la config de país.
 
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { countryConfig } from "../lib/countries";
 import {
   type CurrencyDisplay,
-  type UsdType,
   useCurrencyStore,
 } from "../lib/store/currency";
 import { useTheme } from "../lib/theme-context";
 
-const DISPLAY_OPTIONS: { value: CurrencyDisplay; label: string }[] = [
-  { value: "ars", label: "ARS" },
-  { value: "usd", label: "USD" },
-  { value: "both", label: "Ambas" },
-];
-
-const USD_OPTIONS: { value: UsdType; label: string }[] = [
-  { value: "mep", label: "MEP" },
-  { value: "blue", label: "Blue" },
-  { value: "oficial", label: "Oficial" },
-  { value: "ccl", label: "CCL" },
-];
-
 export function CurrencyToggle() {
   const c = useTheme();
+  const country = useCurrencyStore((s) => s.country);
   const display = useCurrencyStore((s) => s.display);
   const usdType = useCurrencyStore((s) => s.usdType);
   const setDisplay = useCurrencyStore((s) => s.setDisplay);
   const setUsdType = useCurrencyStore((s) => s.setUsdType);
 
+  const cfg = countryConfig(country);
+  const displayOptions: { value: CurrencyDisplay; label: string }[] = [
+    { value: "ars", label: cfg.currencyLabel },
+    { value: "usd", label: "USD" },
+    { value: "both", label: "Ambas" },
+  ];
+
   return (
     <View style={{ gap: 14 }}>
       <View style={[styles.tabs, { borderBottomColor: c.border }]}>
-        {DISPLAY_OPTIONS.map((opt) => {
+        {displayOptions.map((opt) => {
           const on = display === opt.value;
           return (
             <Pressable
@@ -53,7 +49,7 @@ export function CurrencyToggle() {
 
       {display !== "ars" ? (
         <View style={styles.usdRow}>
-          {USD_OPTIONS.map((opt) => {
+          {cfg.usdTypes.map((opt) => {
             const on = usdType === opt.value;
             return (
               <Pressable

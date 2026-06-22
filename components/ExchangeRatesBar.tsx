@@ -3,41 +3,38 @@
 
 import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { countryConfig } from "../lib/countries";
 import { useExchangeRates } from "../lib/hooks/use-exchange-rates";
 import { useCurrencyStore } from "../lib/store/currency";
 import { useTheme } from "../lib/theme-context";
 import type { Palette } from "../lib/theme-tokens";
 import { radius, shadow } from "../lib/theme";
 
-type Rate = "oficial" | "mep" | "blue" | "ccl";
-
-const RATE_LABELS: Record<Rate, string> = {
-  oficial: "Oficial",
-  mep: "MEP",
-  blue: "Blue",
-  ccl: "CCL",
-};
-
-const fmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
-
 export function ExchangeRatesBar() {
   const c = useTheme();
   const styles = useMemo(() => makeStyles(c), [c]);
   const { data, isLoading } = useExchangeRates();
+  const country = useCurrencyStore((s) => s.country);
   const activeUsdType = useCurrencyStore((s) => s.usdType);
+
+  const cfg = countryConfig(country);
+  const fmt = useMemo(() => new Intl.NumberFormat(cfg.locale, { maximumFractionDigits: 0 }), [cfg.locale]);
+  // El shape de exchange_rates varía por país (columnas oficial/mep/… en AR,
+  // bcv/paralelo en VE); accedemos por clave de forma laxa.
+  const rates = data as Record<string, number | null> | undefined;
 
   return (
     <View style={styles.bar}>
-      {(Object.keys(RATE_LABELS) as Rate[]).map((rate) => {
-        const active = rate === activeUsdType;
-        const value = data?.[rate];
+      {cfg.usdTypes.map((opt) => {
+        const active = opt.value === activeUsdType;
+        const value = rates?.[opt.value];
         return (
-          <View key={rate} style={[styles.item, active && styles.itemActive]}>
+          <View key={opt.value} style={[styles.item, active && styles.itemActive]}>
             <Text style={[styles.itemLabel, active && styles.itemLabelActive]}>
-              {RATE_LABELS[rate]}
+              {opt.label}
             </Text>
             <Text style={[styles.itemValue, active && styles.itemValueActive]}>
-              {isLoading ? "..." : value != null ? `$${fmt.format(value)}` : "—"}
+              {isLoading ? "..." : value != null ? `${cfg.currencySymbol}${fmt.format(value)}` : "—"}
             </Text>
           </View>
         );

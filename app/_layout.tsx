@@ -8,6 +8,7 @@ import { claimGroupInvites } from "../lib/hooks/use-group-members";
 import { useProfile } from "../lib/hooks/use-profile";
 import { syncPurchasesUser } from "../lib/purchases";
 import { QueryProvider } from "../lib/query-provider";
+import type { CountryCode } from "../lib/countries";
 import {
   type CurrencyDisplay,
   type UsdType,
@@ -61,12 +62,14 @@ function AuthGate() {
   // El profile gana al default del store; el toggle local sigue funcionando.
   const setDisplay = useCurrencyStore((s) => s.setDisplay);
   const setUsdType = useCurrencyStore((s) => s.setUsdType);
+  const setCountry = useCurrencyStore((s) => s.setCountry);
   useEffect(() => {
     const p = profileQuery.data;
     if (!p) return;
+    setCountry((p.country as CountryCode) ?? "AR");
     setDisplay(p.currency_display as CurrencyDisplay);
     setUsdType(p.preferred_usd_type as UsdType);
-  }, [profileQuery.data, setDisplay, setUsdType]);
+  }, [profileQuery.data, setCountry, setDisplay, setUsdType]);
 
   // RevenueCat sigue al usuario de Supabase (logIn con el UUID → el webhook
   // escribe `entitlements` con el user correcto). No-op si el módulo nativo o

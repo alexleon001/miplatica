@@ -5,6 +5,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ChipRow, FormChip, FormField, FormInput, FormScreen, SubmitButton } from "../../components/form";
 import { useAuth } from "../../lib/auth";
 import { useAccounts, useUpdateAccount } from "../../lib/hooks/use-accounts";
+import { countryConfig } from "../../lib/countries";
+import { useCurrencyStore } from "../../lib/store/currency";
 import { supabase } from "../../lib/supabase";
 
 type AccountType = "wallet" | "bank" | "broker" | "cash" | "crypto";
@@ -28,6 +30,10 @@ export default function AddAccountModal() {
   const editing = !!id;
   const accounts = useAccounts();
   const update = useUpdateAccount();
+  const country = useCurrencyStore((s) => s.country);
+  // En VE la moneda local (slot "ARS") se rotula "Bs."; el resto va literal.
+  const currencyLabel = (c: AccountCurrency): string =>
+    c === "ARS" ? countryConfig(country).currencyLabel : c;
 
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("wallet");
@@ -120,7 +126,7 @@ export default function AddAccountModal() {
       <FormField label="Moneda">
         <ChipRow>
           {CURRENCIES.map((c) => (
-            <FormChip key={c} label={c} active={currency === c} onPress={() => setCurrency(c)} />
+            <FormChip key={c} label={currencyLabel(c)} active={currency === c} onPress={() => setCurrency(c)} />
           ))}
         </ChipRow>
       </FormField>

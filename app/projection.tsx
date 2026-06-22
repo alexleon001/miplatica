@@ -13,7 +13,7 @@ import { MoneyAmount } from "../components/MoneyAmount";
 import { StateMessage } from "../components/StateMessage";
 import { Fab } from "../components/ui";
 import { useDebts } from "../lib/hooks/use-debts";
-import { useExchangeRates } from "../lib/hooks/use-exchange-rates";
+import { useLocalUsdRate } from "../lib/hooks/use-exchange-rates";
 import { useNetWorth } from "../lib/hooks/use-net-worth";
 import { useProfile } from "../lib/hooks/use-profile";
 import {
@@ -48,7 +48,6 @@ export default function ProjectionScreen() {
   const { data: debts } = useDebts();
   const { data: incomeOverrides } = useProjectionIncome();
   const { data: profile } = useProfile();
-  const { data: rates } = useExchangeRates();
   const { data: netWorth } = useNetWorth();
   const delItem = useDeleteProjectionItem();
   const clearIncome = useClearProjectionIncome();
@@ -58,7 +57,7 @@ export default function ProjectionScreen() {
   const [horizon, setHorizon] = useState<number>(12);
   const [selected, setSelected] = useState<string>(monthKey(new Date()));
 
-  const mep = rates?.mep ?? null;
+  const mep = useLocalUsdRate();
   const defaultIncome = profile?.monthly_income_ars ?? 0;
   // Efectivo de hoy = saldo de cuentas (líquido). Siembra el saldo proyectado.
   const startingBalanceArs = netWorth?.accounts_ars ?? 0;

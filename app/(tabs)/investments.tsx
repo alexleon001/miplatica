@@ -9,12 +9,14 @@ import { PnLBadge } from "../../components/PnLBadge";
 import { PortfolioDistribution } from "../../components/PortfolioDistribution";
 import { RowsSkeleton } from "../../components/Skeleton";
 import { StateMessage } from "../../components/StateMessage";
-import { freshenFci, freshenPlazoFijo, useDeleteInvestment, useInvestments } from "../../lib/hooks/use-investments";
+import { freshenFci, freshenPlazoFijo, freshenUsdValue, useDeleteInvestment, useInvestments } from "../../lib/hooks/use-investments";
 import { useFciFundsBySlug } from "../../lib/hooks/use-fci-funds";
 import { useInflation } from "../../lib/hooks/use-inflation";
-import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
+import { useLocalUsdRate } from "../../lib/hooks/use-exchange-rates";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
 import { confirmDelete } from "../../lib/confirm";
+import { countryConfig } from "../../lib/countries";
+import { useCurrencyStore } from "../../lib/store/currency";
 import { realReturnForPosition } from "../../lib/inflation";
 import { Fab } from "../../components/ui";
 import { useTheme } from "../../lib/theme-context";
@@ -27,17 +29,20 @@ export default function InvestmentsScreen() {
   const router = useRouter();
   const { data: investments, isLoading, isError, refetch } = useInvestments();
   const { data: inflationRows } = useInflation();
-  const { data: rates } = useExchangeRates();
   const { refreshing, onRefresh } = usePullRefresh();
+  const country = useCurrencyStore((s) => s.country);
+  // El rendimiento real usa la serie de inflación INDEC (Argentina). En VE no hay
+  // fuente API confiable → no mostramos "real", solo nominal.
+  const showInflation = countryConfig(country).features.inflation;
   const del = useDeleteInvestment();
 
   // Recalcula al vuelo: interés devengado de plazos fijos + VCP de hoy de los FCI.
   // La lista de FCI solo se trae si hay alguna posición FCI (evita red al montar).
-  const mep = rates?.mep ?? null;
+  const mep = useLocalUsdRate();
   const hasFci = useMemo(() => (investments ?? []).some((i) => i.type === "fci"), [investments]);
   const fciFundsBySlug = useFciFundsBySlug(hasFci);
   const positions = useMemo(
-    () => (investments ?? []).map((inv) => freshenFci(freshenPlazoFijo(inv, mep), fciFundsBySlug, mep)),
+    () => (investments ?? []).map((inv) => freshenUsdValue(freshenFci(freshenPlazoFijo(inv, mep), fciFundsBySlug, mep), mep)),
     [investments, mep, fciFundsBySlug],
   );
 
@@ -46,7 +51,7 @@ export default function InvestmentsScreen() {
   // desde la compra y lo compara contra el valor actual en pesos.
   const { realByInvestment, summary } = useMemo(() => {
     const list = positions;
-    const rows = inflationRows ?? [];
+    const rows = showInflation ? (inflationRows ?? []) : [];
     const today = new Date().toISOString().slice(0, 10);
     const realMap = new Map<string, number>();
 
@@ -86,7 +91,7 @@ export default function InvestmentsScreen() {
     const plPct = costArs > 0 ? (plArs / costArs) * 100 : null;
     const realPct = hasReal && adjCostArs > 0 ? (realGainArs / adjCostArs) * 100 : null;
     return { realByInvestment: realMap, summary: { valueArs, valueUsd, plArs, plPct, realPct } };
-  }, [positions, inflationRows]);
+  }, [positions, inflationRows, showInflation]);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>

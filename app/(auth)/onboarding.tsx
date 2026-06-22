@@ -5,22 +5,15 @@ import { useRouter } from "expo-router";
 import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
 import { ChipRow, FormChip, FormField, FormInput, SubmitButton } from "../../components/form";
 import { useUpdateProfile } from "../../lib/hooks/use-profile";
+import { COUNTRIES, COUNTRY_CODES, type CountryCode, type RateKey, countryConfig } from "../../lib/countries";
 import { useTheme } from "../../lib/theme-context";
 import type { Palette } from "../../lib/theme-tokens";
 import { spacing } from "../../lib/theme";
 
-type UsdType = "mep" | "blue" | "oficial" | "ccl" | "tarjeta";
 type Display = "ars" | "usd" | "both";
 
-const USD_OPTIONS: { value: UsdType; label: string }[] = [
-  { value: "mep", label: "MEP" },
-  { value: "blue", label: "Blue" },
-  { value: "oficial", label: "Oficial" },
-  { value: "ccl", label: "CCL" },
-];
-
 const DISPLAY_OPTIONS: { value: Display; label: string }[] = [
-  { value: "ars", label: "Solo ARS" },
+  { value: "ars", label: "Solo local" },
   { value: "usd", label: "Solo USD" },
   { value: "both", label: "Ambas" },
 ];
@@ -31,10 +24,20 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const updateProfile = useUpdateProfile();
 
+  const [country, setCountry] = useState<CountryCode>("AR");
   const [name, setName] = useState("");
   const [income, setIncome] = useState("");
-  const [usdType, setUsdType] = useState<UsdType>("mep");
+  const [usdType, setUsdType] = useState<RateKey>(countryConfig("AR").defaultUsdType);
   const [display, setDisplay] = useState<Display>("both");
+
+  const cfg = countryConfig(country);
+
+  // Al cambiar de país, el tipo de dólar elegido puede no existir (AR↔VE no
+  // comparten tasas) → reseteamos al default del nuevo país.
+  function pickCountry(next: CountryCode) {
+    setCountry(next);
+    setUsdType(countryConfig(next).defaultUsdType);
+  }
 
   async function submit() {
     if (!name.trim()) {
@@ -49,6 +52,7 @@ export default function OnboardingScreen() {
 
     try {
       await updateProfile.mutateAsync({
+        country,
         name: name.trim(),
         monthly_income_ars: incomeNum,
         preferred_usd_type: usdType,
@@ -68,17 +72,30 @@ export default function OnboardingScreen() {
           Configurá tus preferencias en 30 segundos. Después podés cambiarlas en cualquier momento.
         </Text>
 
+        <FormField label="¿Desde qué país usás Mi Platica?">
+          <ChipRow>
+            {COUNTRY_CODES.map((code) => (
+              <FormChip
+                key={code}
+                label={`${COUNTRIES[code].flag} ${COUNTRIES[code].name}`}
+                active={country === code}
+                onPress={() => pickCountry(code)}
+              />
+            ))}
+          </ChipRow>
+        </FormField>
+
         <FormField label="¿Cómo te llamamos?">
           <FormInput placeholder="Alex" value={name} onChangeText={setName} />
         </FormField>
 
-        <FormField label="Ingreso mensual aproximado en ARS (opcional)">
+        <FormField label={`Ingreso mensual aproximado en ${cfg.currencyLabel} (opcional)`}>
           <FormInput placeholder="0" keyboardType="decimal-pad" value={income} onChangeText={setIncome} />
         </FormField>
 
         <FormField label="¿Qué dólar preferís para calcular tu patrimonio?">
           <ChipRow>
-            {USD_OPTIONS.map((opt) => (
+            {cfg.usdTypes.map((opt) => (
               <FormChip key={opt.value} label={opt.label} active={usdType === opt.value} onPress={() => setUsdType(opt.value)} />
             ))}
           </ChipRow>
