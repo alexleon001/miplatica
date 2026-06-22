@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "../lib/auth";
+import { useAppFonts } from "../lib/fonts";
 import { claimGroupInvites } from "../lib/hooks/use-group-members";
 import { useProfile } from "../lib/hooks/use-profile";
 import { syncPurchasesUser } from "../lib/purchases";
@@ -15,6 +16,11 @@ import {
 import { ThemeProvider, useTheme } from "../lib/theme-context";
 
 export default function RootLayout() {
+  // Carga Space Grotesk (Fase F) y parchea <Text> para mapear fontWeight→familia.
+  // Si falla, igual seguimos (cae a la fuente del sistema) para no colgar el boot.
+  const fontsReady = useAppFonts();
+  if (!fontsReady) return null; // breve: los assets de fuente son locales (ms)
+
   return (
     <QueryProvider>
       <ThemeProvider>

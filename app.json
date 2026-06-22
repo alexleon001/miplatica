@@ -40,7 +40,8 @@
           "iosAppId": "ca-app-pub-3940256099942544~1458002511",
           "userTrackingUsageDescription": "Usamos tu identificador para mostrarte anuncios más relevantes."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "router": {},

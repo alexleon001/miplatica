@@ -43,7 +43,7 @@
 - **Fase 7 — Tab bar.** ✅ HECHA. `app/(tabs)/_layout.tsx`: activo `accent`, inactivos `textFaint`, surface/border themed.
 - **Fase 8 — Primitivas compartidas.** ✅ HECHA. `components/ui.tsx` (Card/Fab/CtaButton/ScreenTitle/SectionLabel/ProgressBar/IconChip) + `components/form.tsx` (FormScreen/FormField/FormInput/FormChip/SubmitButton) usan `useTheme()`. `MoneyAmount` ya estaba (Fase 2). El `form` export quedó reducido a `multiline` (layout puro).
 - **Fase 9 — Pantallas "no visibles".** ✅ HECHA. Migrados a `useTheme()`: todos los `_layout` (chrome), modales (`add-budget/add-investment/add-transaction/add-projection-item/add-shared-expense/quick-amount/set-income/settle-up/invite-member/import-broker-csv`), `mp-connected`, `(auth)/login`+`onboarding`, `groups/index`+`[id]`, `insights`, `monthly-summary`, `rate-alerts`, `paywall`, `advisor`, `categories`, `invest-sim`, `projection`. Componentes restantes (StateMessage/Skeleton/FirstSteps/UpcomingReminders/BudgetBanner/ExchangeRatesBar/SharedExpensesCard/DateField/MonthField/FundField/BudgetsList/SavingsGoalsList/RecurringList/ProLock/RewardCreditsChip/MercadoPagoConnect). **Único color estático intencional:** `BrandGradient` (gradiente de marca indigo→cyan + fallback, class component) en login/paywall — decorativo, se mantiene como marca.
-- **Fase F — Fuente Space Grotesk** (global, con mapeo de pesos). Requiere `@expo-google-fonts/space-grotesk` + `useFonts`. OTA-safe (assets via eas update). Pendiente, hacer con cuidado por el mapeo de fontWeight→archivo.
+- **Fase F — Fuente Space Grotesk.** ✅ HECHA. `@expo-google-fonts/space-grotesk` (0.4.1) + `expo-font` (~14.0.12, alineado a SDK 54). `lib/fonts.ts`: `useAppFonts()` carga las 4 variantes (400/500/600/700) y, al cargar, **parchea `Text.render`/`TextInput.render`** una vez para mapear `fontWeight→familia` (`familyForWeight`: 100-400→Regular, 500→Medium, 600→SemiBold, 700-900/bold→Bold). Respeta `fontFamily` explícita (ej: el monospace del CSV). Cableado en `app/_layout.tsx` (gate breve: `if (!fontsReady) return null`). **Degradación segura:** si las fuentes no cargan (OTA a APK sin los assets/`expo-font` nativo, error) `useAppFonts` devuelve `true` igual y NO parchea → fuente del sistema, no rompe. **OJO:** para que rinda en producción hace falta **rebuild del APK** (expo-font es módulo nativo nuevo); por OTA a un APK viejo cae a la fuente del sistema.
 
 ## Estado por archivo (marcar al migrar)
 
@@ -56,7 +56,7 @@
 - [x] `components/ui.tsx`, `components/form.tsx`, `components/MoneyAmount.tsx`
 - [x] groups (index/[id]/_layout), advisor, projection, insights, invest-sim, categories, rate-alerts, paywall, monthly-summary, mp-connected, modals/*, (auth)/*
 - [x] Componentes compartidos: StateMessage, Skeleton, FirstSteps, UpcomingReminders, BudgetBanner, ExchangeRatesBar, SharedExpensesCard, DateField, MonthField, FundField, BudgetsList, SavingsGoalsList, RecurringList, ProLock, RewardCreditsChip, MercadoPagoConnect
-- [ ] Fuente Space Grotesk (Fase F)
+- [x] Fuente Space Grotesk (Fase F): `lib/fonts.ts` + `useAppFonts` en `app/_layout.tsx` (patch global de Text por peso). Falta rebuild de APK para producción.
 - [ ] (decorativo, intencional) `BrandGradient` queda con el gradiente de marca estático
 
 ## Notas / gotchas
