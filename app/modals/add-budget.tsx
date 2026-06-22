@@ -4,11 +4,12 @@ import { useRouter } from "expo-router";
 import { ChipRow, FormChip, FormField, FormInput, FormScreen, SubmitButton } from "../../components/form";
 import { useCategoriesByGroup } from "../../lib/hooks/use-categories";
 import { useCreateBudget } from "../../lib/hooks/use-budgets";
-import { colors, typography } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
 
 const monthFmt = new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric" });
 
 export default function AddBudgetModal() {
+  const theme = useTheme();
   const router = useRouter();
   const create = useCreateBudget();
   const EXPENSE_CATEGORIES = useCategoriesByGroup("expense");
@@ -37,7 +38,7 @@ export default function AddBudgetModal() {
 
   return (
     <FormScreen title="Nuevo presupuesto">
-      <Text style={styles.help}>
+      <Text style={[styles.help, { color: theme.textDim }]}>
         Límite mensual para {monthFmt.format(new Date())}. El gasto se actualiza solo con tus movimientos.
       </Text>
 
@@ -64,5 +65,5 @@ export default function AddBudgetModal() {
 }
 
 const styles = StyleSheet.create({
-  help: { ...typography.caption, color: colors.textMuted, lineHeight: 18 },
+  help: { fontSize: 13, lineHeight: 18 },
 });

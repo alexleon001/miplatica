@@ -2,6 +2,7 @@
 // desde Más y desde una card del dashboard). Muestra el saldo neto del usuario en
 // cada grupo. Free: 1 grupo activo; el alta del 2° deriva al paywall.
 
+import { useMemo } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -10,20 +11,35 @@ import { Fab, IconChip } from "../../components/ui";
 import { useGroups, useMyGroupBalances } from "../../lib/hooks/use-groups";
 import type { ExpenseGroup, GroupKind } from "../../lib/groups-types";
 import { usePro } from "../../lib/hooks/use-pro";
-import { colors, radius, spacing, typography, shadow } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
+import type { Palette } from "../../lib/theme-tokens";
+import { radius, spacing, shadow } from "../../lib/theme";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
-export const KIND_META: Record<GroupKind, { icon: IoniconName; label: string; tint: string }> = {
-  trip: { icon: "airplane", label: "Viaje", tint: colors.usd },
-  household: { icon: "home", label: "Convivencia", tint: colors.primary },
-  outing: { icon: "beer", label: "Salida", tint: colors.warning },
-  other: { icon: "people", label: "Grupo", tint: colors.accent },
+// Ícono/etiqueta por tipo de grupo. El tinte se resuelve contra el tema vivo
+// (kindTint) para reaccionar al selector de Apariencia.
+export const KIND_META: Record<GroupKind, { icon: IoniconName; label: string }> = {
+  trip: { icon: "airplane", label: "Viaje" },
+  household: { icon: "home", label: "Convivencia" },
+  outing: { icon: "beer", label: "Salida" },
+  other: { icon: "people", label: "Grupo" },
 };
+
+export function kindTint(c: Palette, kind: GroupKind): string {
+  switch (kind) {
+    case "trip": return c.textDim;
+    case "household": return c.accent;
+    case "outing": return c.warn;
+    default: return c.accent;
+  }
+}
 
 const arsFmt = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
 
 export default function GroupsScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const groups = useGroups();
@@ -36,10 +52,10 @@ export default function GroupsScreen() {
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
       {groups.isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
+          <ActivityIndicator color={c.accent} size="large" />
         </View>
       ) : list.length === 0 ? (
-        <EmptyState onCreate={() => router.push("/modals/add-group")} />
+        <EmptyState onCreate={() => router.push("/modals/add-group")} styles={styles} c={c} />
       ) : (
         <FlatList
           data={list}
@@ -48,7 +64,7 @@ export default function GroupsScreen() {
           ListHeaderComponent={
             !isPro ? (
               <View style={styles.limitNote}>
-                <Ionicons name="information-circle-outline" size={16} color={colors.textMuted} />
+                <Ionicons name="information-circle-outline" size={16} color={c.textDim} />
                 <Text style={styles.limitNoteText}>
                   Plan gratis: 1 grupo activo. Pasá a Pro para grupos ilimitados.
                 </Text>
@@ -60,6 +76,8 @@ export default function GroupsScreen() {
               group={item}
               net={balances.data?.[item.id] ?? 0}
               onPress={() => router.push(`/groups/${item.id}`)}
+              styles={styles}
+              c={c}
             />
           )}
         />
@@ -69,88 +87,92 @@ export default function GroupsScreen() {
   );
 }
 
-function GroupRow({ group, net, onPress }: { group: ExpenseGroup; net: number; onPress: () => void }) {
+type Styles = ReturnType<typeof makeStyles>;
+
+function GroupRow({ group, net, onPress, styles, c }: { group: ExpenseGroup; net: number; onPress: () => void; styles: Styles; c: Palette }) {
   const meta = KIND_META[group.kind] ?? KIND_META.other;
   const atEven = Math.abs(net) < 0.5;
   const positive = net > 0;
   return (
     <Pressable style={({ pressed }) => [styles.row, pressed && { opacity: 0.9 }]} onPress={onPress}>
-      <IconChip icon={meta.icon} tint={meta.tint} size={44} />
+      <IconChip icon={meta.icon} tint={kindTint(c, group.kind)} size={44} />
       <View style={{ flex: 1 }}>
         <Text style={styles.rowName}>{group.name}</Text>
         <Text style={styles.rowKind}>{meta.label}</Text>
       </View>
       <View style={{ alignItems: "flex-end" }}>
-        <Text style={[styles.balanceLabel, atEven ? { color: colors.textMuted } : positive ? { color: colors.positive } : { color: colors.negative }]}>
+        <Text style={[styles.balanceLabel, atEven ? { color: c.textDim } : positive ? { color: c.pos } : { color: c.neg }]}>
           {atEven ? "A mano" : positive ? "Te deben" : "Debés"}
         </Text>
         {!atEven ? (
-          <Text style={[styles.balanceAmount, positive ? { color: colors.positive } : { color: colors.negative }]}>
+          <Text style={[styles.balanceAmount, positive ? { color: c.pos } : { color: c.neg }]}>
             {arsFmt.format(Math.abs(net))}
           </Text>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+      <Ionicons name="chevron-forward" size={20} color={c.textDim} />
     </Pressable>
   );
 }
 
-function EmptyState({ onCreate }: { onCreate: () => void }) {
+function EmptyState({ onCreate, styles, c }: { onCreate: () => void; styles: Styles; c: Palette }) {
   return (
     <View style={styles.empty}>
-      <IconChip icon="people" tint={colors.primary} size={64} />
+      <IconChip icon="people" tint={c.accent} size={64} />
       <Text style={styles.emptyTitle}>Dividí gastos con quien quieras</Text>
       <Text style={styles.emptyText}>
         Armá un grupo para un viaje, la convivencia o una salida. Cargá los gastos y Mi Platica calcula quién le debe a quién.
       </Text>
       <Pressable style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.9 }]} onPress={onCreate}>
-        <Ionicons name="add" size={18} color="#FFFFFF" />
+        <Ionicons name="add" size={18} color={c.accentContrast} />
         <Text style={styles.emptyCtaText}>Crear mi primer grupo</Text>
       </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  container: { padding: spacing.xl, gap: spacing.md, paddingBottom: 96 },
-  limitNote: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.xs,
-  },
-  limitNoteText: { ...typography.caption, color: colors.textMuted, flex: 1 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    backgroundColor: colors.surfaceDark,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadow.sm,
-  },
-  rowName: { ...typography.heading, color: colors.textPrimary },
-  rowKind: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-  balanceLabel: { ...typography.caption, fontWeight: "700" },
-  balanceAmount: { ...typography.body, fontWeight: "700" },
-  empty: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32, gap: spacing.md },
-  emptyTitle: { ...typography.title, color: colors.textPrimary, textAlign: "center", marginTop: spacing.md },
-  emptyText: { ...typography.body, color: colors.textMuted, textAlign: "center", lineHeight: 22 },
-  emptyCta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: radius.full,
-    marginTop: spacing.md,
-  },
-  emptyCtaText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    container: { padding: spacing.xl, gap: spacing.md, paddingBottom: 96 },
+    limitNote: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      marginBottom: spacing.xs,
+    },
+    limitNoteText: { fontSize: 13, color: c.textDim, flex: 1 },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      ...shadow.sm,
+    },
+    rowName: { fontSize: 18, lineHeight: 24, fontWeight: "700", color: c.text },
+    rowKind: { fontSize: 13, color: c.textDim, marginTop: 2 },
+    balanceLabel: { fontSize: 13, fontWeight: "700" },
+    balanceAmount: { fontSize: 15, fontWeight: "700", fontVariant: ["tabular-nums"] },
+    empty: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32, gap: spacing.md },
+    emptyTitle: { fontSize: 24, lineHeight: 30, fontWeight: "700", letterSpacing: -0.3, color: c.text, textAlign: "center", marginTop: spacing.md },
+    emptyText: { fontSize: 15, color: c.textDim, textAlign: "center", lineHeight: 22 },
+    emptyCta: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      backgroundColor: c.accent,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      borderRadius: radius.full,
+      marginTop: spacing.md,
+    },
+    emptyCtaText: { color: c.accentContrast, fontWeight: "700", fontSize: 15 },
+  });
+}

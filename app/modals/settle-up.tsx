@@ -13,13 +13,17 @@ import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
 import { useGroup } from "../../lib/hooks/use-group";
 import { useSettle } from "../../lib/hooks/use-settlements";
 import { useCurrencyStore } from "../../lib/store/currency";
-import { colors, spacing, typography } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
+import type { Palette } from "../../lib/theme-tokens";
+import { spacing } from "../../lib/theme";
 
 function parseNum(s: string): number {
   return Number((s || "").replace(",", "."));
 }
 
 export default function SettleUpModal() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const params = useLocalSearchParams<{ groupId: string; from?: string; to?: string; amount?: string }>();
   const group = useGroup(params.groupId);
@@ -126,7 +130,7 @@ export default function SettleUpModal() {
         <Switch
           value={record}
           onValueChange={setRecord}
-          trackColor={{ true: colors.primary, false: colors.surfaceSunken }}
+          trackColor={{ true: c.accent, false: c.surface2 }}
           thumbColor="#FFFFFF"
         />
       </View>
@@ -151,8 +155,10 @@ export default function SettleUpModal() {
   );
 }
 
-const styles = StyleSheet.create({
-  toggleRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
-  toggleLabel: { ...typography.body, color: colors.textPrimary },
-  toggleHint: { ...typography.caption, color: colors.textMuted },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    toggleRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
+    toggleLabel: { fontSize: 15, color: c.text },
+    toggleHint: { fontSize: 13, color: c.textDim },
+  });
+}

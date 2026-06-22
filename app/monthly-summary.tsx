@@ -3,7 +3,7 @@
 // agrega los números server-side) y cachea el resultado. Botón "Actualizar"
 // fuerza un refetch.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
@@ -15,9 +15,13 @@ import { usePro } from "../lib/hooks/use-pro";
 import { invalidateRewardCredits, useRewardCredits } from "../lib/hooks/use-reward-credits";
 import { currentPeriod, useMonthlySummary } from "../lib/hooks/use-monthly-summary";
 import { monthLabel } from "../lib/projection";
-import { colors, radius, spacing, typography, shadow } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import type { Palette } from "../lib/theme-tokens";
+import { radius, spacing, shadow } from "../lib/theme";
 
 export default function MonthlySummaryScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const period = currentPeriod();
   const { isPro } = usePro();
@@ -55,7 +59,7 @@ export default function MonthlySummaryScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Volver">
-            <Ionicons name="chevron-back" size={24} color={colors.primaryBright} />
+            <Ionicons name="chevron-back" size={24} color={c.accent} />
           </Pressable>
           <View style={styles.headerActions}>
             {data ? (
@@ -65,7 +69,7 @@ export default function MonthlySummaryScreen() {
                 style={styles.refreshBtn}
                 accessibilityLabel="Compartir resumen"
               >
-                <Ionicons name="share-outline" size={18} color={colors.primaryBright} />
+                <Ionicons name="share-outline" size={18} color={c.accent} />
               </Pressable>
             ) : null}
             <Pressable
@@ -75,7 +79,7 @@ export default function MonthlySummaryScreen() {
               style={styles.refreshBtn}
               accessibilityLabel="Actualizar resumen"
             >
-              <Ionicons name="refresh" size={18} color={isFetching ? colors.textMuted : colors.primaryBright} />
+              <Ionicons name="refresh" size={18} color={isFetching ? c.textDim : c.accent} />
             </Pressable>
           </View>
         </View>
@@ -93,7 +97,7 @@ export default function MonthlySummaryScreen() {
           />
         ) : isLoading || (isFetching && !data) ? (
           <View style={styles.loading}>
-            <ActivityIndicator color={colors.primaryBright} />
+            <ActivityIndicator color={c.accent} />
             <Text style={styles.loadingText}>Analizando tus movimientos…</Text>
           </View>
         ) : isError ? (
@@ -115,24 +119,26 @@ export default function MonthlySummaryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: spacing.xl, paddingBottom: 100, gap: spacing.md },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  refreshBtn: {
-    width: 36, height: 36, borderRadius: radius.full, alignItems: "center", justifyContent: "center",
-    backgroundColor: colors.surfaceDark, borderWidth: 1, borderColor: colors.border,
-  },
-  title: { ...typography.title, color: colors.textPrimary },
-  subtitle: { ...typography.caption, color: colors.textMuted },
-  loading: { alignItems: "center", gap: spacing.md, paddingVertical: spacing["3xl"] },
-  loadingText: { ...typography.caption, color: colors.textMuted },
-  card: {
-    backgroundColor: colors.surfaceDark, borderRadius: radius.lg, padding: spacing.lg,
-    borderWidth: 1, borderColor: colors.border, marginTop: spacing.xs, ...shadow.sm,
-  },
-  body: { ...typography.body, color: colors.textPrimary, lineHeight: 22 },
-  updating: { ...typography.caption, color: colors.textMuted, marginTop: spacing.md },
-  disclaimer: { ...typography.caption, color: colors.textMuted, fontSize: 11, marginTop: spacing.sm },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    container: { padding: spacing.xl, paddingBottom: 100, gap: spacing.md },
+    headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    refreshBtn: {
+      width: 36, height: 36, borderRadius: radius.full, alignItems: "center", justifyContent: "center",
+      backgroundColor: c.surface, borderWidth: 1, borderColor: c.border,
+    },
+    title: { fontSize: 24, lineHeight: 30, fontWeight: "700", letterSpacing: -0.3, color: c.text },
+    subtitle: { fontSize: 13, color: c.textDim },
+    loading: { alignItems: "center", gap: spacing.md, paddingVertical: spacing["3xl"] },
+    loadingText: { fontSize: 13, color: c.textDim },
+    card: {
+      backgroundColor: c.surface, borderRadius: radius.lg, padding: spacing.lg,
+      borderWidth: 1, borderColor: c.border, marginTop: spacing.xs, ...shadow.sm,
+    },
+    body: { fontSize: 15, color: c.text, lineHeight: 22 },
+    updating: { fontSize: 13, color: c.textDim, marginTop: spacing.md },
+    disclaimer: { fontSize: 11, color: c.textDim, marginTop: spacing.sm },
+  });
+}

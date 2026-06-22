@@ -20,7 +20,8 @@ import { useCreateInvestment, useUpdateInvestment } from "../../lib/hooks/use-cr
 import { useInvestments } from "../../lib/hooks/use-investments";
 import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
 import { useCurrencyStore } from "../../lib/store/currency";
-import { colors, typography } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
+import type { Palette } from "../../lib/theme-tokens";
 
 const vcpFmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 });
 
@@ -33,6 +34,8 @@ function parseNum(s: string): number {
 }
 
 export default function AddInvestmentModal() {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const editing = !!id;
@@ -281,7 +284,9 @@ export default function AddInvestmentModal() {
   );
 }
 
-const styles = StyleSheet.create({
-  hint: { ...typography.caption, color: colors.textMuted, marginTop: 4 },
-  hintStale: { color: colors.warning },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    hint: { fontSize: 13, color: c.textDim, marginTop: 4 },
+    hintStale: { color: c.warn },
+  });
+}

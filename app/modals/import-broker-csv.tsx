@@ -9,7 +9,9 @@ import {
 } from "../../lib/broker-import";
 import { useAccounts } from "../../lib/hooks/use-accounts";
 import { useImportTransactions } from "../../lib/hooks/use-import-transactions";
-import { colors, radius, spacing, typography } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
+import { type Palette, withAlpha } from "../../lib/theme-tokens";
+import { radius, spacing } from "../../lib/theme";
 
 const TYPE_LABELS: Record<string, string> = {
   income: "Ingresos",
@@ -19,6 +21,8 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function ImportBrokerCsvModal() {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const router = useRouter();
   const accounts = useAccounts();
   const importTx = useImportTransactions();
@@ -139,33 +143,35 @@ export default function ImportBrokerCsvModal() {
   );
 }
 
-const styles = StyleSheet.create({
-  help: { ...typography.caption, color: colors.textMuted, lineHeight: 18 },
-  textarea: {
-    ...form.multiline,
-    minHeight: 140,
-    fontSize: 14,
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-  },
-  analyzeBtn: {
-    borderWidth: 1,
-    borderColor: colors.primary + "55",
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: "center",
-    backgroundColor: colors.primarySoft,
-  },
-  analyzeBtnText: { color: colors.primaryBright, fontWeight: "700" },
-  preview: {
-    backgroundColor: colors.surfaceDark,
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.xs,
-  },
-  previewTitle: { ...typography.bodyStrong, color: colors.textPrimary, marginBottom: spacing.xs },
-  previewRow: { ...typography.caption, color: colors.textPrimary },
-  muted: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
-  error: { ...typography.caption, color: colors.negative },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    help: { fontSize: 13, color: c.textDim, lineHeight: 18 },
+    textarea: {
+      ...form.multiline,
+      minHeight: 140,
+      fontSize: 14,
+      fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    },
+    analyzeBtn: {
+      borderWidth: 1,
+      borderColor: withAlpha(c.accent, 0.33),
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      alignItems: "center",
+      backgroundColor: c.accentSoft,
+    },
+    analyzeBtnText: { color: c.accent, fontWeight: "700" },
+    preview: {
+      backgroundColor: c.surface,
+      borderRadius: radius.md,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: spacing.xs,
+    },
+    previewTitle: { fontSize: 15, fontWeight: "700", color: c.text, marginBottom: spacing.xs },
+    previewRow: { fontSize: 13, color: c.text },
+    muted: { fontSize: 13, color: c.textDim, marginTop: spacing.xs },
+    error: { fontSize: 13, color: c.neg },
+  });
+}

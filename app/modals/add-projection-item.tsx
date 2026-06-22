@@ -10,7 +10,9 @@ import {
   useUpdateProjectionItem,
 } from "../../lib/hooks/use-projection";
 import { addMonths, frenchPayment, monthKey, monthLabel } from "../../lib/projection";
-import { colors, radius, spacing, typography } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
+import { type Palette, withAlpha } from "../../lib/theme-tokens";
+import { radius, spacing } from "../../lib/theme";
 
 type Recurrence = "monthly" | "installments" | "once";
 type Currency = "ARS" | "USD";
@@ -35,6 +37,8 @@ function currentMonthInput(): string {
 }
 
 export default function AddProjectionItemModal() {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const router = useRouter();
   const create = useCreateProjectionItem();
   const update = useUpdateProjectionItem();
@@ -222,7 +226,7 @@ export default function AddProjectionItemModal() {
         </ChipRow>
         {spanPreview ? (
           <View style={styles.spanCallout}>
-            <Ionicons name="calendar-outline" size={14} color={colors.primaryBright} />
+            <Ionicons name="calendar-outline" size={14} color={theme.accent} />
             <Text style={styles.spanText}>{spanPreview}</Text>
           </View>
         ) : null}
@@ -278,26 +282,28 @@ export default function AddProjectionItemModal() {
   );
 }
 
-const styles = StyleSheet.create({
-  suggestChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.primary + "55",
-  },
-  suggestText: { color: colors.primaryBright, fontSize: 12, fontWeight: "600" },
-  preview: { ...typography.caption, color: colors.positive, fontWeight: "700", marginTop: spacing.xs },
-  spanCallout: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    backgroundColor: colors.primarySoft,
-  },
-  spanText: { ...typography.caption, color: colors.primaryBright, fontWeight: "600", flex: 1 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    suggestChip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs + 2,
+      borderRadius: radius.full,
+      backgroundColor: c.accentSoft,
+      borderWidth: 1,
+      borderColor: withAlpha(c.accent, 0.33),
+    },
+    suggestText: { color: c.accent, fontSize: 12, fontWeight: "600" },
+    preview: { fontSize: 13, color: c.pos, fontWeight: "700", marginTop: spacing.xs },
+    spanCallout: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      marginTop: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      backgroundColor: c.accentSoft,
+    },
+    spanText: { fontSize: 13, color: c.accent, fontWeight: "600", flex: 1 },
+  });
+}

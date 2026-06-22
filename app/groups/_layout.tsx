@@ -1,15 +1,16 @@
 import { Stack } from "expo-router";
-import { colors } from "../../lib/colors";
+import { useTheme } from "../../lib/theme-context";
 
 export default function GroupsLayout() {
+  const c = useTheme();
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: colors.surfaceDark },
-        headerTintColor: colors.textPrimary,
+        headerStyle: { backgroundColor: c.surface },
+        headerTintColor: c.text,
         headerTitleStyle: { fontWeight: "700" },
         headerShadowVisible: false,
-        contentStyle: { backgroundColor: colors.backgroundDark },
+        contentStyle: { backgroundColor: c.bg },
       }}
     >
       <Stack.Screen name="index" options={{ title: "Gastos compartidos" }} />

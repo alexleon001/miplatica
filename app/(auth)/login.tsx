@@ -1,14 +1,18 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BrandGradient } from "../../components/BrandGradient";
 import { FormInput } from "../../components/form";
 import { supabase } from "../../lib/supabase";
-import { colors, radius, spacing, typography, shadow } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
+import type { Palette } from "../../lib/theme-tokens";
+import { radius, spacing, shadow } from "../../lib/theme";
 
 type Mode = "signin" | "signup";
 
 export default function LoginScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,33 +75,35 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { flex: 1, justifyContent: "center", paddingHorizontal: spacing["2xl"], gap: spacing.md },
-  brand: { alignItems: "center", gap: spacing.xs, marginBottom: spacing["2xl"] },
-  logo: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.xl,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.primaryBright,
-    ...shadow.glow,
-  },
-  logoText: { color: "#FFFFFF", fontSize: 38, fontWeight: "800" },
-  title: { ...typography.display, color: colors.textPrimary },
-  subtitle: { ...typography.body, color: colors.textMuted, textAlign: "center" },
-  btn: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.lg,
-    borderRadius: radius.md,
-    alignItems: "center",
-    marginTop: spacing.sm,
-    ...shadow.sm,
-  },
-  btnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
-  switch: { color: colors.primaryBright, textAlign: "center", marginTop: spacing.lg, fontWeight: "600" },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    container: { flex: 1, justifyContent: "center", paddingHorizontal: spacing["2xl"], gap: spacing.md },
+    brand: { alignItems: "center", gap: spacing.xs, marginBottom: spacing["2xl"] },
+    logo: {
+      width: 72,
+      height: 72,
+      borderRadius: radius.xl,
+      backgroundColor: c.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: c.accent,
+      ...shadow.glow,
+    },
+    logoText: { color: "#FFFFFF", fontSize: 38, fontWeight: "800" },
+    title: { fontSize: 34, lineHeight: 40, fontWeight: "800", letterSpacing: -0.5, color: c.text },
+    subtitle: { fontSize: 15, lineHeight: 21, color: c.textDim, textAlign: "center" },
+    btn: {
+      backgroundColor: c.accent,
+      paddingVertical: spacing.lg,
+      borderRadius: radius.md,
+      alignItems: "center",
+      marginTop: spacing.sm,
+      ...shadow.sm,
+    },
+    btnText: { color: c.accentContrast, fontWeight: "700", fontSize: 16 },
+    switch: { color: c.accent, textAlign: "center", marginTop: spacing.lg, fontWeight: "600" },
+  });
+}

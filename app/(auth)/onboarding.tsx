@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Alert, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { KeyboardAwareScrollView } from "../../components/KeyboardAwareScrollView";
 import { ChipRow, FormChip, FormField, FormInput, SubmitButton } from "../../components/form";
 import { useUpdateProfile } from "../../lib/hooks/use-profile";
-import { colors, spacing, typography } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
+import type { Palette } from "../../lib/theme-tokens";
+import { spacing } from "../../lib/theme";
 
 type UsdType = "mep" | "blue" | "oficial" | "ccl" | "tarjeta";
 type Display = "ars" | "usd" | "both";
@@ -24,6 +26,8 @@ const DISPLAY_OPTIONS: { value: Display; label: string }[] = [
 ];
 
 export default function OnboardingScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const updateProfile = useUpdateProfile();
 
@@ -94,9 +98,11 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: spacing["2xl"], gap: spacing.lg },
-  title: { ...typography.title, fontSize: 28, color: colors.textPrimary, marginTop: spacing.md },
-  subtitle: { ...typography.body, color: colors.textMuted, marginBottom: spacing.xs },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    container: { padding: spacing["2xl"], gap: spacing.lg },
+    title: { fontSize: 28, lineHeight: 34, fontWeight: "700", letterSpacing: -0.3, color: c.text, marginTop: spacing.md },
+    subtitle: { fontSize: 15, lineHeight: 21, color: c.textDim, marginBottom: spacing.xs },
+  });
+}

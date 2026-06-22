@@ -2,14 +2,17 @@
 // acá vía deep link `miplatica://mp-connected?ok=1` (o ?error=...). Muestra el
 // resultado, refresca el estado de conexión y vuelve a la pestaña "Más".
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { colors } from "../lib/colors";
+import { useTheme } from "../lib/theme-context";
+import type { Palette } from "../lib/theme-tokens";
 
 export default function MpConnected() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const qc = useQueryClient();
   const { ok, error } = useLocalSearchParams<{ ok?: string; error?: string }>();
@@ -31,7 +34,7 @@ export default function MpConnected() {
         </Text>
         {!success && error ? <Text style={styles.detail}>{error}</Text> : null}
         <View style={styles.loader}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={c.accent} />
           <Text style={styles.muted}>Volviendo a la app…</Text>
         </View>
       </View>
@@ -39,12 +42,14 @@ export default function MpConnected() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 12 },
-  icon: { fontSize: 48 },
-  title: { color: colors.textPrimary, fontSize: 20, fontWeight: "700", textAlign: "center" },
-  detail: { color: colors.textMuted, fontSize: 13, textAlign: "center" },
-  loader: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 16 },
-  muted: { color: colors.textMuted, fontSize: 13 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 12 },
+    icon: { fontSize: 48 },
+    title: { color: c.text, fontSize: 20, fontWeight: "700", textAlign: "center" },
+    detail: { color: c.textDim, fontSize: 13, textAlign: "center" },
+    loader: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 16 },
+    muted: { color: c.textDim, fontSize: 13 },
+  });
+}

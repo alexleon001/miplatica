@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react";
 import { Alert, Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChipRow, FormChip, FormField, FormInput, FormScreen, form, SubmitButton } from "../../components/form";
+import { ChipRow, FormChip, FormField, FormInput, FormScreen, SubmitButton } from "../../components/form";
 import { DateField } from "../../components/DateField";
 import { categoriesByGroup } from "../../lib/categories";
 import { useGroup } from "../../lib/hooks/use-group";
@@ -12,7 +12,9 @@ import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
 import { useCreateSharedExpense } from "../../lib/hooks/use-shared-expenses";
 import { useCurrencyStore } from "../../lib/store/currency";
 import { buildSplits, splitsMatchTotal, type SplitType } from "../../lib/splits";
-import { colors, spacing, typography } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
+import type { Palette } from "../../lib/theme-tokens";
+import { radius, spacing } from "../../lib/theme";
 
 const SPLIT_TYPES: { value: SplitType; label: string }[] = [
   { value: "equal", label: "Iguales" },
@@ -26,6 +28,8 @@ function parseNum(s: string): number {
 }
 
 export default function AddSharedExpenseModal() {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const router = useRouter();
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const group = useGroup(groupId);
@@ -158,7 +162,7 @@ export default function AddSharedExpenseModal() {
               <Switch
                 value={isIncluded(m.id)}
                 onValueChange={(v) => setIncluded((prev) => ({ ...prev, [m.id]: v }))}
-                trackColor={{ true: colors.primary, false: colors.surfaceSunken }}
+                trackColor={{ true: theme.accent, false: theme.surface2 }}
                 thumbColor="#FFFFFF"
               />
               <Text style={styles.splitName}>{m.display_name}</Text>
@@ -178,13 +182,13 @@ export default function AddSharedExpenseModal() {
 
       <FormField label="Categoría (opcional)">
         <ChipRow>
-          {expenseCats.map((c) => (
+          {expenseCats.map((cat) => (
             <Pressable
-              key={c.id}
-              style={[styles.catChip, category === c.id && styles.catChipActive]}
-              onPress={() => setCategory(category === c.id ? null : c.id)}
+              key={cat.id}
+              style={[styles.catChip, category === cat.id && styles.catChipActive]}
+              onPress={() => setCategory(category === cat.id ? null : cat.id)}
             >
-              <Text style={styles.catText}>{c.icon} {c.label}</Text>
+              <Text style={[styles.catText, category === cat.id && styles.catTextActive]}>{cat.icon} {cat.label}</Text>
             </Pressable>
           ))}
         </ChipRow>
@@ -199,18 +203,31 @@ export default function AddSharedExpenseModal() {
   );
 }
 
-const styles = StyleSheet.create({
-  splitRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  splitName: { ...typography.body, color: colors.textPrimary, flex: 1 },
-  splitInput: { ...form.input, width: 90, paddingVertical: spacing.sm },
-  catChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  catChipActive: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
-  catText: { color: colors.textPrimary, fontWeight: "600", fontSize: 13 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    splitRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+    splitName: { fontSize: 15, color: c.text, flex: 1 },
+    splitInput: {
+      width: 90,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      backgroundColor: c.surface,
+      color: c.text,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      fontSize: 16,
+    },
+    catChip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: 999,
+      backgroundColor: c.surface2,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    catChipActive: { backgroundColor: c.accent, borderColor: c.accent },
+    catText: { color: c.textDim, fontWeight: "600", fontSize: 13 },
+    catTextActive: { color: c.accentContrast },
+  });
+}

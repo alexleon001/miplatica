@@ -12,7 +12,8 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { FormField, FormInput, SubmitButton } from "../../components/form";
 import { useRegisterDebtPayment } from "../../lib/hooks/use-debts";
 import { useAddGoalContribution } from "../../lib/hooks/use-savings-goals";
-import { colors, spacing, typography } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
+import { spacing } from "../../lib/theme";
 
 type Kind = "payment" | "contribution";
 
@@ -26,6 +27,7 @@ const COPY: Record<Kind, { title: string; label: string; cta: string }> = {
 };
 
 export default function QuickAmountModal() {
+  const c = useTheme();
   const router = useRouter();
   const { kind, id, name, currency } = useLocalSearchParams<{
     kind: Kind;
@@ -58,11 +60,11 @@ export default function QuickAmountModal() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]} edges={["bottom"]}>
       <Stack.Screen options={{ title: copy.title }} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.container}>
-          {name ? <Text style={styles.context} numberOfLines={1}>{name}</Text> : null}
+          {name ? <Text style={[styles.context, { color: c.text }]} numberOfLines={1}>{name}</Text> : null}
 
           <FormField label={`${copy.label}${currency ? ` (${currency})` : ""}`}>
             <FormInput placeholder="0" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} autoFocus />
@@ -76,7 +78,7 @@ export default function QuickAmountModal() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
+  safe: { flex: 1 },
   container: { padding: spacing.xl, gap: spacing.lg },
-  context: { ...typography.heading, color: colors.textPrimary },
+  context: { fontSize: 18, lineHeight: 24, fontWeight: "700" },
 });

@@ -12,7 +12,9 @@ import { useCreateTransaction } from "../../lib/hooks/use-create-transaction";
 import { useTransactions, useUpdateTransaction } from "../../lib/hooks/use-transactions";
 import { maybeShowInterstitial } from "../../lib/interstitial";
 import { useRecurringStore } from "../../lib/store/recurring";
-import { colors, radius, spacing } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
+import { type Palette, withAlpha } from "../../lib/theme-tokens";
+import { radius, spacing } from "../../lib/theme";
 
 type TxType = "income" | "expense" | "transfer" | "investment";
 
@@ -24,6 +26,8 @@ const TYPES: { value: TxType; label: string }[] = [
 ];
 
 export default function AddTransactionModal() {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const editing = !!id;
@@ -193,7 +197,7 @@ export default function AddTransactionModal() {
         onPress={suggestWithAI}
         disabled={categorize.isPending}
       >
-        <Ionicons name={isPro ? "sparkles" : "lock-closed"} size={16} color={colors.primaryBright} />
+        <Ionicons name={isPro ? "sparkles" : "lock-closed"} size={16} color={theme.accent} />
         <Text style={styles.aiBtnText}>{categorize.isPending ? "Pensando…" : `Sugerir categoría con IA${isPro ? "" : " (Pro)"}`}</Text>
       </Pressable>
 
@@ -226,7 +230,7 @@ export default function AddTransactionModal() {
           <Ionicons
             name={repeat ? "checkbox" : "square-outline"}
             size={22}
-            color={repeat ? colors.primaryBright : colors.textMuted}
+            color={repeat ? theme.accent : theme.textDim}
           />
           <View style={{ flex: 1 }}>
             <Text style={styles.repeatLabel}>Repetir todos los meses</Text>
@@ -244,20 +248,22 @@ export default function AddTransactionModal() {
   );
 }
 
-const styles = StyleSheet.create({
-  aiBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.primary + "55",
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.primarySoft,
-  },
-  aiBtnText: { color: colors.primaryBright, fontWeight: "700" },
-  repeatRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xs },
-  repeatLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: "600" },
-  repeatHint: { color: colors.textMuted, fontSize: 12 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    aiBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+      borderWidth: 1,
+      borderColor: withAlpha(c.accent, 0.33),
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      backgroundColor: c.accentSoft,
+    },
+    aiBtnText: { color: c.accent, fontWeight: "700" },
+    repeatRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xs },
+    repeatLabel: { color: c.text, fontSize: 14, fontWeight: "600" },
+    repeatHint: { color: c.textDim, fontSize: 12 },
+  });
+}

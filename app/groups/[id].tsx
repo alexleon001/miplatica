@@ -14,11 +14,15 @@ import { useGroup } from "../../lib/hooks/use-group";
 import { useRemindDebtor } from "../../lib/hooks/use-group-members";
 import { useDeleteSharedExpense } from "../../lib/hooks/use-shared-expenses";
 import { settlementText } from "../../lib/splits";
-import { colors, radius, spacing, typography, shadow } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
+import type { Palette } from "../../lib/theme-tokens";
+import { radius, spacing, shadow } from "../../lib/theme";
 
 const arsFmt = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
 
 export default function GroupDetailScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const group = useGroup(id);
@@ -36,7 +40,7 @@ export default function GroupDetailScreen() {
   if (group.isLoading) {
     return (
       <SafeAreaView style={styles.safe} edges={["bottom"]}>
-        <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>
+        <View style={styles.center}><ActivityIndicator color={c.accent} size="large" /></View>
       </SafeAreaView>
     );
   }
@@ -151,7 +155,7 @@ export default function GroupDetailScreen() {
                   style={({ pressed }) => [styles.expense, pressed && { opacity: 0.9 }]}
                   onLongPress={() => confirmDelete(e.description, () => delExpense.mutate({ groupId: g.id, expenseId: e.id }))}
                 >
-                  <IconChip icon="receipt-outline" tint={cat?.color ?? colors.accent} size={38} />
+                  <IconChip icon="receipt-outline" tint={cat?.color ?? c.accent} size={38} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.expenseDesc}>{e.description}</Text>
                     <Text style={styles.expenseMeta}>
@@ -170,63 +174,65 @@ export default function GroupDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  container: { padding: spacing.xl, gap: spacing.md, paddingBottom: 32 },
-  actions: { flexDirection: "row", gap: spacing.sm },
-  actionItem: { flex: 1 },
-  section: {
-    backgroundColor: colors.surfaceDark,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-    ...shadow.sm,
-  },
-  muted: { ...typography.body, color: colors.textMuted },
-  bold: { fontWeight: "800", color: colors.textPrimary },
-  transfer: {
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  transferMain: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  transferText: { ...typography.body, color: colors.textMuted, flex: 1 },
-  transferAmount: { ...typography.body, fontWeight: "800", color: colors.warning },
-  remindBtn: {
-    alignSelf: "flex-end",
-    backgroundColor: colors.primarySoft,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-  },
-  remindText: { ...typography.caption, color: colors.primaryBright, fontWeight: "700" },
-  memberRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  memberChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  memberName: { ...typography.caption, color: colors.textPrimary, fontWeight: "600" },
-  pending: { ...typography.caption, color: colors.warning, fontSize: 10 },
-  expense: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  expenseDesc: { ...typography.body, color: colors.textPrimary, fontWeight: "600" },
-  expenseMeta: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-  hintTiny: { ...typography.caption, color: colors.textMuted, fontSize: 11, marginTop: spacing.xs },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    container: { padding: spacing.xl, gap: spacing.md, paddingBottom: 32 },
+    actions: { flexDirection: "row", gap: spacing.sm },
+    actionItem: { flex: 1 },
+    section: {
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: spacing.sm,
+      ...shadow.sm,
+    },
+    muted: { fontSize: 15, color: c.textDim },
+    bold: { fontWeight: "800", color: c.text },
+    transfer: {
+      backgroundColor: c.surface2,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: spacing.sm,
+    },
+    transferMain: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    transferText: { fontSize: 15, color: c.textDim, flex: 1 },
+    transferAmount: { fontSize: 15, fontWeight: "800", color: c.warn, fontVariant: ["tabular-nums"] },
+    remindBtn: {
+      alignSelf: "flex-end",
+      backgroundColor: c.accentSoft,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.full,
+    },
+    remindText: { fontSize: 13, color: c.accent, fontWeight: "700" },
+    memberRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    memberChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      backgroundColor: c.surface2,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    memberName: { fontSize: 13, color: c.text, fontWeight: "600" },
+    pending: { fontSize: 10, color: c.warn },
+    expense: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    expenseDesc: { fontSize: 15, color: c.text, fontWeight: "600" },
+    expenseMeta: { fontSize: 13, color: c.textDim, marginTop: 2 },
+    hintTiny: { fontSize: 11, color: c.textDim, marginTop: spacing.xs },
+  });
+}
