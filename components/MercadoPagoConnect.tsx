@@ -1,6 +1,7 @@
 // Conectar / sincronizar / desconectar Mercado Pago. Vive en la sección "Datos"
 // de la pantalla Más. OAuth vía useConnectMp (browser in-app).
 
+import { useMemo } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import {
@@ -9,7 +10,9 @@ import {
   useMpConnection,
   useSyncMp,
 } from "../lib/hooks/use-mp";
-import { colors, radius, spacing, typography } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import { type Palette, withAlpha } from "../lib/theme-tokens";
+import { radius, spacing } from "../lib/theme";
 
 // Recomendado por expo-web-browser para cerrar sesiones de auth pendientes.
 WebBrowser.maybeCompleteAuthSession();
@@ -17,6 +20,8 @@ WebBrowser.maybeCompleteAuthSession();
 const dateFmt = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export function MercadoPagoConnect() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const { data: conn, isLoading } = useMpConnection();
   const connect = useConnectMp();
   const sync = useSyncMp();
@@ -91,29 +96,31 @@ export function MercadoPagoConnect() {
   );
 }
 
-const styles = StyleSheet.create({
-  muted: { ...typography.caption, color: colors.textMuted },
-  connectBtn: {
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.primary + "55",
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: "center",
-  },
-  connectText: { color: colors.primaryBright, fontWeight: "700" },
-  connected: { gap: spacing.md },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  statusDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.positive },
-  statusText: { ...typography.body, color: colors.textPrimary, flex: 1 },
-  actions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  syncBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-  },
-  syncText: { color: "#FFFFFF", fontWeight: "700", fontSize: 13 },
-  disconnectText: { color: colors.negative, fontSize: 13, fontWeight: "600" },
-  note: { ...typography.caption, color: colors.textMuted, fontSize: 11 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    muted: { fontSize: 13, color: c.textDim },
+    connectBtn: {
+      backgroundColor: c.accentSoft,
+      borderWidth: 1,
+      borderColor: withAlpha(c.accent, 0.33),
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      alignItems: "center",
+    },
+    connectText: { color: c.accent, fontWeight: "700" },
+    connected: { gap: spacing.md },
+    statusRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    statusDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: c.pos },
+    statusText: { fontSize: 15, color: c.text, flex: 1 },
+    actions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    syncBtn: {
+      backgroundColor: c.accent,
+      borderRadius: radius.md,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.lg,
+    },
+    syncText: { color: c.accentContrast, fontWeight: "700", fontSize: 13 },
+    disconnectText: { color: c.neg, fontSize: 13, fontWeight: "600" },
+    note: { fontSize: 11, color: c.textDim },
+  });
+}

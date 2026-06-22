@@ -5,10 +5,13 @@
 // CTA al paywall ofrecemos "mirá un anuncio y usá la IA una vez". La pantalla
 // dueña otorga el crédito server-side (useRewardCredits) y desbloquea al ganarlo.
 
+import { useMemo } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, spacing, typography, shadow } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import { type Palette, withAlpha } from "../lib/theme-tokens";
+import { radius, spacing, shadow } from "../lib/theme";
 
 export function ProLock({
   title,
@@ -21,11 +24,13 @@ export function ProLock({
   onWatchAd?: () => void;
   watching?: boolean;
 }) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   return (
     <View style={styles.wrap}>
       <View style={styles.iconRing}>
-        <Ionicons name="sparkles" size={30} color={colors.primaryBright} />
+        <Ionicons name="sparkles" size={30} color={c.accent} />
       </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>
@@ -35,7 +40,7 @@ export function ProLock({
         accessibilityRole="button"
         accessibilityLabel="Ver Mi Platica Pro"
       >
-        <Ionicons name="lock-open-outline" size={16} color="#FFFFFF" />
+        <Ionicons name="lock-open-outline" size={16} color={c.accentContrast} />
         <Text style={styles.ctaText}>Desbloquear con Pro</Text>
       </Pressable>
       {onWatchAd ? (
@@ -49,9 +54,9 @@ export function ProLock({
             accessibilityLabel="Mirá un anuncio para usar la IA una vez"
           >
             {watching ? (
-              <ActivityIndicator size="small" color={colors.primaryBright} />
+              <ActivityIndicator size="small" color={c.accent} />
             ) : (
-              <Ionicons name="play-circle-outline" size={16} color={colors.primaryBright} />
+              <Ionicons name="play-circle-outline" size={16} color={c.accent} />
             )}
             <Text style={styles.adCtaText}>Mirá un anuncio y usala una vez</Text>
           </Pressable>
@@ -61,32 +66,34 @@ export function ProLock({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: spacing["3xl"],
-    paddingHorizontal: spacing.lg,
-  },
-  iconRing: {
-    width: 72, height: 72, borderRadius: radius.full, alignItems: "center", justifyContent: "center",
-    backgroundColor: colors.primarySoft, borderWidth: 1, borderColor: colors.primaryBright + "44",
-    marginBottom: spacing.xs,
-  },
-  title: { ...typography.heading, color: colors.textPrimary, textAlign: "center" },
-  subtitle: { ...typography.caption, color: colors.textMuted, textAlign: "center", lineHeight: 19, maxWidth: 300 },
-  cta: {
-    flexDirection: "row", alignItems: "center", gap: spacing.xs,
-    backgroundColor: colors.primary, borderRadius: radius.full,
-    paddingVertical: spacing.md, paddingHorizontal: spacing.xl, marginTop: spacing.sm, ...shadow.md,
-  },
-  ctaText: { color: "#FFFFFF", fontWeight: "800", fontSize: 15 },
-  or: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
-  adCta: {
-    flexDirection: "row", alignItems: "center", gap: spacing.xs,
-    backgroundColor: colors.surfaceDark, borderRadius: radius.full,
-    paddingVertical: spacing.md, paddingHorizontal: spacing.xl,
-    borderWidth: 1, borderColor: colors.primaryBright + "55",
-  },
-  adCtaText: { color: colors.primaryBright, fontWeight: "700", fontSize: 14 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    wrap: {
+      alignItems: "center",
+      gap: spacing.md,
+      paddingVertical: spacing["3xl"],
+      paddingHorizontal: spacing.lg,
+    },
+    iconRing: {
+      width: 72, height: 72, borderRadius: radius.full, alignItems: "center", justifyContent: "center",
+      backgroundColor: c.accentSoft, borderWidth: 1, borderColor: withAlpha(c.accent, 0.27),
+      marginBottom: spacing.xs,
+    },
+    title: { fontSize: 18, lineHeight: 24, fontWeight: "700", color: c.text, textAlign: "center" },
+    subtitle: { fontSize: 13, color: c.textDim, textAlign: "center", lineHeight: 19, maxWidth: 300 },
+    cta: {
+      flexDirection: "row", alignItems: "center", gap: spacing.xs,
+      backgroundColor: c.accent, borderRadius: radius.full,
+      paddingVertical: spacing.md, paddingHorizontal: spacing.xl, marginTop: spacing.sm, ...shadow.md,
+    },
+    ctaText: { color: c.accentContrast, fontWeight: "800", fontSize: 15 },
+    or: { fontSize: 13, color: c.textDim, marginTop: spacing.xs },
+    adCta: {
+      flexDirection: "row", alignItems: "center", gap: spacing.xs,
+      backgroundColor: c.surface, borderRadius: radius.full,
+      paddingVertical: spacing.md, paddingHorizontal: spacing.xl,
+      borderWidth: 1, borderColor: withAlpha(c.accent, 0.33),
+    },
+    adCtaText: { color: c.accent, fontWeight: "700", fontSize: 14 },
+  });
+}

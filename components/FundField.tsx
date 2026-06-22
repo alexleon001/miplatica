@@ -7,7 +7,9 @@ import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextIn
 import { Ionicons } from "@expo/vector-icons";
 import { fciCategoryLabel, filterFunds, type FciFund } from "../lib/fci";
 import { useFciFunds } from "../lib/hooks/use-fci-funds";
-import { colors, radius, spacing, typography } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import type { Palette } from "../lib/theme-tokens";
+import { radius, spacing } from "../lib/theme";
 
 const vcpFmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 });
 
@@ -18,6 +20,8 @@ type Props = {
 };
 
 export function FundField({ valueLabel, onChange, placeholder = "Elegí tu fondo" }: Props) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const { data: funds, isLoading, isError, refetch } = useFciFunds();
@@ -36,7 +40,7 @@ export function FundField({ valueLabel, onChange, placeholder = "Elegí tu fondo
         <Text style={valueLabel ? styles.valueText : styles.placeholder} numberOfLines={1}>
           {valueLabel || placeholder}
         </Text>
-        <Ionicons name="search" size={18} color={colors.primaryBright} />
+        <Ionicons name="search" size={18} color={c.accent} />
       </Pressable>
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
@@ -44,16 +48,16 @@ export function FundField({ valueLabel, onChange, placeholder = "Elegí tu fondo
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>Elegí tu fondo</Text>
             <Pressable onPress={() => setOpen(false)} hitSlop={12} accessibilityLabel="Cerrar">
-              <Ionicons name="close" size={24} color={colors.textMuted} />
+              <Ionicons name="close" size={24} color={c.textDim} />
             </Pressable>
           </View>
 
           <View style={styles.searchBar}>
-            <Ionicons name="search" size={18} color={colors.textMuted} />
+            <Ionicons name="search" size={18} color={c.textDim} />
             <TextInput
               style={styles.searchInput}
               placeholder="Buscar fondo (ej: Alpha, Galicia)…"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={c.textDim}
               value={query}
               onChangeText={setQuery}
               autoCapitalize="none"
@@ -64,12 +68,12 @@ export function FundField({ valueLabel, onChange, placeholder = "Elegí tu fondo
 
           {isLoading ? (
             <View style={styles.center}>
-              <ActivityIndicator color={colors.primaryBright} />
+              <ActivityIndicator color={c.accent} />
               <Text style={styles.muted}>Cargando fondos…</Text>
             </View>
           ) : isError ? (
             <View style={styles.center}>
-              <Ionicons name="alert-circle-outline" size={26} color={colors.negative} />
+              <Ionicons name="alert-circle-outline" size={26} color={c.neg} />
               <Text style={styles.muted}>No pude cargar la lista de fondos.</Text>
               <Pressable style={styles.retry} onPress={() => refetch()}>
                 <Text style={styles.retryText}>Reintentar</Text>
@@ -100,36 +104,38 @@ export function FundField({ valueLabel, onChange, placeholder = "Elegí tu fondo
   );
 }
 
-const styles = StyleSheet.create({
-  input: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: colors.surfaceDark, borderRadius: radius.md,
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderWidth: 1, borderColor: colors.border,
-  },
-  valueText: { color: colors.textPrimary, fontSize: 16, flex: 1, marginRight: spacing.sm },
-  placeholder: { color: colors.textMuted, fontSize: 16, flex: 1, marginRight: spacing.sm },
-  sheet: { flex: 1, backgroundColor: colors.backgroundDark, paddingTop: spacing["4xl"] },
-  sheetHeader: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: spacing.xl, paddingBottom: spacing.md,
-  },
-  sheetTitle: { ...typography.title, color: colors.textPrimary },
-  searchBar: {
-    flexDirection: "row", alignItems: "center", gap: spacing.sm,
-    marginHorizontal: spacing.xl, paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
-    backgroundColor: colors.surfaceDark, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
-  },
-  searchInput: { flex: 1, color: colors.textPrimary, fontSize: 15 },
-  center: { alignItems: "center", justifyContent: "center", padding: spacing["3xl"], gap: spacing.md },
-  muted: { ...typography.caption, color: colors.textMuted },
-  retry: { borderWidth: 1, borderColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  retryText: { color: colors.primaryBright, fontWeight: "700" },
-  list: { paddingHorizontal: spacing.xl, paddingBottom: spacing["4xl"] },
-  row: {
-    flexDirection: "row", alignItems: "center", gap: spacing.md,
-    paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderSoft,
-  },
-  fondo: { ...typography.bodyStrong, color: colors.textPrimary },
-  meta: { ...typography.caption, color: colors.textMuted, marginTop: 1 },
-  vcp: { ...typography.bodyStrong, color: colors.usd, fontVariant: ["tabular-nums"] },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    input: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      backgroundColor: c.surface, borderRadius: radius.md,
+      paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderWidth: 1, borderColor: c.border,
+    },
+    valueText: { color: c.text, fontSize: 16, flex: 1, marginRight: spacing.sm },
+    placeholder: { color: c.textDim, fontSize: 16, flex: 1, marginRight: spacing.sm },
+    sheet: { flex: 1, backgroundColor: c.bg, paddingTop: spacing["4xl"] },
+    sheetHeader: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      paddingHorizontal: spacing.xl, paddingBottom: spacing.md,
+    },
+    sheetTitle: { fontSize: 24, lineHeight: 30, fontWeight: "700", letterSpacing: -0.3, color: c.text },
+    searchBar: {
+      flexDirection: "row", alignItems: "center", gap: spacing.sm,
+      marginHorizontal: spacing.xl, paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+      backgroundColor: c.surface, borderRadius: radius.md, borderWidth: 1, borderColor: c.border,
+    },
+    searchInput: { flex: 1, color: c.text, fontSize: 15 },
+    center: { alignItems: "center", justifyContent: "center", padding: spacing["3xl"], gap: spacing.md },
+    muted: { fontSize: 13, color: c.textDim },
+    retry: { borderWidth: 1, borderColor: c.accent, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+    retryText: { color: c.accent, fontWeight: "700" },
+    list: { paddingHorizontal: spacing.xl, paddingBottom: spacing["4xl"] },
+    row: {
+      flexDirection: "row", alignItems: "center", gap: spacing.md,
+      paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: c.border,
+    },
+    fondo: { fontSize: 15, fontWeight: "700", color: c.text },
+    meta: { fontSize: 13, color: c.textDim, marginTop: 1 },
+    vcp: { fontSize: 15, fontWeight: "700", color: c.textDim, fontVariant: ["tabular-nums"] },
+  });
+}

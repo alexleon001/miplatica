@@ -1,48 +1,61 @@
 // Primitivas de formulario compartidas. Antes cada modal repetía el mismo
 // bloque de estilos (field/label/input/chip/submit) + el contenedor
 // SafeAreaView + scroll teclado-aware. Esto lo centraliza.
+// Rediseño "Línea": los componentes usan useTheme() para reaccionar al tema en
+// vivo. El StyleSheet `form` exportado queda con la paleta base (compat con los
+// pocos modales que componen sobre `form.input`/`form.multiline`; se migran en F9).
 
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { Pressable, StyleSheet, Text, TextInput, type TextInputProps, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import { KeyboardAwareScrollView } from "./KeyboardAwareScrollView";
+import { useTheme } from "../lib/theme-context";
+import type { Palette } from "../lib/theme-tokens";
 import { colors, radius, spacing, typography } from "../lib/theme";
 
 // Contenedor estándar de un modal-formulario (con scroll teclado-aware).
 export function FormScreen({ title, children }: { title: string; children: ReactNode }) {
+  const c = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+    <SafeAreaView style={s.safe} edges={["bottom"]}>
       <Stack.Screen options={{ title }} />
-      <KeyboardAwareScrollView contentContainerStyle={styles.container}>{children}</KeyboardAwareScrollView>
+      <KeyboardAwareScrollView contentContainerStyle={s.container}>{children}</KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
 
 export function FormField({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  const c = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+    <View style={s.field}>
+      <Text style={s.fieldLabel}>{label}</Text>
       {children}
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {hint ? <Text style={s.hint}>{hint}</Text> : null}
     </View>
   );
 }
 
 export function FormInput({ style, ...props }: TextInputProps) {
-  return <TextInput placeholderTextColor={colors.textMuted} style={[styles.input, style]} {...props} />;
+  const c = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
+  return <TextInput placeholderTextColor={c.textDim} style={[s.input, style]} {...props} />;
 }
 
 export function FormChip({ label, active, onPress }: { label: string; active?: boolean; onPress: () => void }) {
+  const c = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   return (
-    <Pressable style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+    <Pressable style={[s.chip, active && s.chipActive]} onPress={onPress}>
+      <Text style={[s.chipText, active && s.chipTextActive]}>{label}</Text>
     </Pressable>
   );
 }
 
 export function ChipRow({ children }: { children: ReactNode }) {
-  return <View style={styles.row}>{children}</View>;
+  return <View style={staticStyles.row}>{children}</View>;
 }
 
 export function SubmitButton({
@@ -56,20 +69,67 @@ export function SubmitButton({
   busy?: boolean;
   disabled?: boolean;
 }) {
+  const c = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.submit, pressed && { opacity: 0.85 }, (busy || disabled) && { opacity: 0.5 }]}
+      style={({ pressed }) => [s.submit, pressed && { opacity: 0.85 }, (busy || disabled) && { opacity: 0.5 }]}
       onPress={onPress}
       disabled={busy || disabled}
     >
-      <Text style={styles.submitText}>{label}</Text>
+      <Text style={s.submitText}>{label}</Text>
     </Pressable>
   );
 }
 
-// Estilos compartidos expuestos para casos puntuales (hints, help, multiline…).
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    container: { padding: spacing.xl, gap: spacing.lg },
+    field: { gap: spacing.sm },
+    fieldLabel: { fontSize: 10, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase", color: c.textDim },
+    hint: { fontSize: 13, color: c.textDim, lineHeight: 18 },
+    input: {
+      backgroundColor: c.surface,
+      color: c.text,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      fontSize: 16,
+    },
+    chip: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.surface2,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipActive: { backgroundColor: c.accent, borderColor: c.accent },
+    chipText: { color: c.textDim, fontWeight: "600", fontSize: 13 },
+    chipTextActive: { color: c.accentContrast },
+    submit: {
+      backgroundColor: c.accent,
+      paddingVertical: spacing.lg,
+      borderRadius: radius.md,
+      alignItems: "center",
+      marginTop: spacing.sm,
+    },
+    submitText: { color: c.accentContrast, fontWeight: "700", fontSize: 16 },
+  });
+}
+
+const staticStyles = StyleSheet.create({
+  row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+});
+
+// Estilos compartidos con la paleta base, expuestos para casos puntuales que
+// componen sobre ellos (hints, help, multiline, inputs custom). Los componentes
+// de arriba usan la versión themed; esto es solo compat para imports externos.
 export const form = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundDark },
   container: { padding: spacing.xl, gap: spacing.lg },
@@ -87,33 +147,4 @@ export const form = StyleSheet.create({
   },
   multiline: { minHeight: 70, textAlignVertical: "top" },
   hint: { ...typography.caption, color: colors.textMuted, lineHeight: 18 },
-});
-
-const styles = StyleSheet.create({
-  safe: form.safe,
-  container: form.container,
-  field: form.field,
-  fieldLabel: form.fieldLabel,
-  hint: form.hint,
-  input: form.input,
-  row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  chip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
-  chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
-  chipTextActive: { color: "#FFFFFF" },
-  submit: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.lg,
-    borderRadius: radius.md,
-    alignItems: "center",
-    marginTop: spacing.sm,
-  },
-  submitText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
 });

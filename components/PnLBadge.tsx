@@ -4,7 +4,9 @@
 // Se usa por posición (InvestmentRow) y en el resumen del portafolio.
 
 import { StyleSheet, Text, View } from "react-native";
-import { colors, radius } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import { withAlpha } from "../lib/theme-tokens";
+import { radius } from "../lib/theme";
 
 type Size = "sm" | "md";
 
@@ -23,24 +25,25 @@ export function PnLBadge({
   realPct?: number | null;
   size?: Size;
 }) {
+  const c = useTheme();
   if (pct == null) {
-    return <Text style={[styles.neutral, size === "md" && styles.mdText]}>—</Text>;
+    return <Text style={[styles.neutral, { color: c.textDim }, size === "md" && styles.mdText]}>—</Text>;
   }
 
   const positive = pct >= 0;
-  const color = positive ? colors.positive : colors.negative;
+  const color = positive ? c.pos : c.neg;
   const arrow = positive ? "▲" : "▼";
 
   return (
     <View style={styles.wrap}>
-      <View style={[styles.badge, { backgroundColor: color + "22" }, size === "md" && styles.mdBadge]}>
+      <View style={[styles.badge, { backgroundColor: withAlpha(color, 0.13) }, size === "md" && styles.mdBadge]}>
         <Text style={[styles.text, { color }, size === "md" && styles.mdText]}>
           {arrow} {pctFmt.format(pct)}%
         </Text>
       </View>
       {realPct != null && (
         <Text
-          style={[styles.real, { color: realPct >= 0 ? colors.positive : colors.negative }, size === "md" && styles.realMd]}
+          style={[styles.real, { color: realPct >= 0 ? c.pos : c.neg }, size === "md" && styles.realMd]}
         >
           real {pctFmt.format(realPct)}%
         </Text>
@@ -62,5 +65,5 @@ const styles = StyleSheet.create({
   mdText: { fontSize: 15 },
   real: { fontSize: 10, fontWeight: "600", opacity: 0.9 },
   realMd: { fontSize: 12 },
-  neutral: { color: colors.textMuted, fontSize: 12, fontWeight: "600" },
+  neutral: { fontSize: 12, fontWeight: "600" },
 });

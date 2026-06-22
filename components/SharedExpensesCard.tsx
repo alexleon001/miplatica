@@ -1,16 +1,21 @@
 // Card del dashboard que resume los gastos compartidos: el neto agregado del
 // usuario en todos sus grupos (te deben / debés) o una invitación a empezar.
 
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { IconChip } from "./ui";
 import { useGroups, useMyGroupBalances } from "../lib/hooks/use-groups";
-import { colors, radius, spacing, typography, shadow } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import type { Palette } from "../lib/theme-tokens";
+import { radius, spacing, shadow } from "../lib/theme";
 
 const arsFmt = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
 
 export function SharedExpensesCard() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const groups = useGroups();
   const balances = useMyGroupBalances();
@@ -30,7 +35,7 @@ export function SharedExpensesCard() {
       accessibilityRole="button"
       accessibilityLabel="Gastos compartidos"
     >
-      <IconChip icon="people" tint={colors.primary} size={44} />
+      <IconChip icon="people" tint={c.accent} size={44} />
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>Gastos compartidos</Text>
         {!hasGroups ? (
@@ -38,28 +43,30 @@ export function SharedExpensesCard() {
         ) : atEven ? (
           <Text style={styles.subtitle}>Estás a mano en todos tus grupos</Text>
         ) : (
-          <Text style={[styles.subtitle, positive ? { color: colors.positive } : { color: colors.negative }]}>
+          <Text style={[styles.subtitle, positive ? { color: c.pos } : { color: c.neg }]}>
             {positive ? "Te deben " : "Debés "}{arsFmt.format(Math.abs(net))} en total
           </Text>
         )}
       </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+      <Ionicons name="chevron-forward" size={20} color={c.textDim} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    backgroundColor: colors.surfaceDark,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadow.sm,
-  },
-  title: { ...typography.heading, color: colors.textPrimary },
-  subtitle: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      ...shadow.sm,
+    },
+    title: { fontSize: 18, lineHeight: 24, fontWeight: "700", color: c.text },
+    subtitle: { fontSize: 13, lineHeight: 18, color: c.textDim, marginTop: 2 },
+  });
+}

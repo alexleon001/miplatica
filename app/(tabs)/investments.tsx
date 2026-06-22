@@ -16,10 +16,14 @@ import { useExchangeRates } from "../../lib/hooks/use-exchange-rates";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
 import { confirmDelete } from "../../lib/confirm";
 import { realReturnForPosition } from "../../lib/inflation";
-import { Card, Fab, ScreenTitle, SectionLabel } from "../../components/ui";
-import { colors, spacing, typography } from "../../lib/theme";
+import { Fab } from "../../components/ui";
+import { useTheme } from "../../lib/theme-context";
+import type { Palette } from "../../lib/theme-tokens";
+import { spacing } from "../../lib/theme";
 
 export default function InvestmentsScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { data: investments, isLoading, isError, refetch } = useInvestments();
   const { data: inflationRows } = useInflation();
@@ -100,25 +104,25 @@ export default function InvestmentsScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} />
         }
         ListHeaderComponent={
           <View style={styles.header}>
-            <ScreenTitle>Inversiones</ScreenTitle>
+            <Text style={styles.title}>Inversiones</Text>
             <CurrencyToggle />
 
-            <Card style={styles.summaryCard}>
-              <SectionLabel>Valor del portafolio</SectionLabel>
+            <View style={styles.summary}>
+              <Text style={styles.label}>Valor del portafolio</Text>
               <MoneyAmount ars={summary.valueArs} usd={summary.valueUsd} size="lg" />
               <View style={styles.summaryPnl}>
                 <Text style={styles.summaryPnlLabel}>Resultado</Text>
                 <PnLBadge pct={summary.plPct} realPct={summary.realPct} size="md" />
               </View>
-            </Card>
+            </View>
 
             <PortfolioDistribution />
 
-            <SectionLabel>Posiciones</SectionLabel>
+            <Text style={styles.label}>Posiciones</Text>
           </View>
         }
         ListEmptyComponent={
@@ -143,20 +147,24 @@ export default function InvestmentsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  list: { padding: spacing.xl, paddingBottom: 100, gap: 0, flexGrow: 1 },
-  header: { gap: spacing.lg, marginBottom: spacing.sm },
-  summaryCard: { padding: spacing.xl, gap: spacing.sm },
-  summaryPnl: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
-    paddingTop: spacing.md,
-  },
-  summaryPnlLabel: { ...typography.caption, color: colors.textMuted },
-  separator: { height: 1, backgroundColor: colors.borderSoft, marginVertical: 2 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    list: { padding: spacing.xl, paddingBottom: 100, gap: 0, flexGrow: 1 },
+    header: { gap: spacing.lg, marginBottom: spacing.sm },
+    title: { fontSize: 24, lineHeight: 30, fontWeight: "700", letterSpacing: -0.3, color: c.text },
+    label: { fontSize: 10, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase", color: c.textDim },
+    summary: { gap: spacing.sm },
+    summaryPnl: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+      paddingTop: spacing.md,
+    },
+    summaryPnlLabel: { fontSize: 13, color: c.textDim },
+    separator: { height: 1, backgroundColor: c.border, marginVertical: 2 },
+  });
+}

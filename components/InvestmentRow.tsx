@@ -2,9 +2,10 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { instrumentById } from "../lib/instruments";
 import type { Investment } from "../lib/hooks/use-investments";
 import { isPriceStale, staleLabel } from "../lib/prices";
+import { useTheme } from "../lib/theme-context";
+import { withAlpha } from "../lib/theme-tokens";
 import { MoneyAmount } from "./MoneyAmount";
 import { PnLBadge } from "./PnLBadge";
-import { colors } from "../lib/colors";
 
 const qtyFmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 4 });
 
@@ -19,6 +20,7 @@ export function InvestmentRow({
   onPress?: () => void;
   onLongPress?: () => void;
 }) {
+  const c = useTheme();
   const instrument = instrumentById(inv.type);
   const isFci = inv.type === "fci";
 
@@ -41,19 +43,19 @@ export function InvestmentRow({
       onLongPress={onLongPress}
       style={({ pressed }) => [styles.row, pressed && (onPress || onLongPress) ? { opacity: 0.6 } : null]}
     >
-      <View style={[styles.icon, { backgroundColor: (instrument?.color ?? colors.border) + "33" }]}>
+      <View style={[styles.icon, { backgroundColor: withAlpha(instrument?.color ?? c.textFaint, 0.18), borderColor: c.border }]}>
         <Text style={styles.iconText}>{instrument?.icon ?? "💎"}</Text>
       </View>
 
       <View style={styles.middle}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, { color: c.text }]} numberOfLines={1}>
           {inv.name}
         </Text>
-        <Text style={styles.sub} numberOfLines={1}>
+        <Text style={[styles.sub, { color: c.textDim }]} numberOfLines={1}>
           {subtitle}
         </Text>
         {stale ? (
-          <Text style={styles.stale} numberOfLines={1}>
+          <Text style={[styles.stale, { color: c.warn }]} numberOfLines={1}>
             ⚠ {staleLabel(inv.last_updated)}
           </Text>
         ) : null}
@@ -76,16 +78,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   icon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  iconText: { fontSize: 20 },
+  iconText: { fontSize: 18 },
   middle: { flex: 1, gap: 2 },
-  title: { color: colors.textPrimary, fontWeight: "600", fontSize: 15 },
-  sub: { color: colors.textMuted, fontSize: 12 },
-  stale: { color: colors.warning, fontSize: 11, fontWeight: "600" },
+  title: { fontWeight: "600", fontSize: 15 },
+  sub: { fontSize: 12 },
+  stale: { fontSize: 11, fontWeight: "600" },
   right: { alignItems: "flex-end", gap: 4 },
 });

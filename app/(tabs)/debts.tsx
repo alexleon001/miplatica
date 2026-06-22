@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { CurrencyToggle } from "../../components/CurrencyToggle";
@@ -10,10 +10,14 @@ import { StateMessage } from "../../components/StateMessage";
 import { useDebts, useDeleteDebt } from "../../lib/hooks/use-debts";
 import { usePullRefresh } from "../../lib/hooks/use-pull-refresh";
 import { confirmDelete } from "../../lib/confirm";
-import { Card, Fab, ScreenTitle, SectionLabel } from "../../components/ui";
-import { colors, spacing } from "../../lib/theme";
+import { Fab } from "../../components/ui";
+import { useTheme } from "../../lib/theme-context";
+import type { Palette } from "../../lib/theme-tokens";
+import { spacing } from "../../lib/theme";
 
 export default function DebtsScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { data: debts, isLoading, isError, refetch } = useDebts();
   const { refreshing, onRefresh } = usePullRefresh();
@@ -50,19 +54,19 @@ export default function DebtsScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} />
         }
         ListHeaderComponent={
           <View style={styles.header}>
-            <ScreenTitle>Deudas</ScreenTitle>
+            <Text style={styles.title}>Deudas</Text>
             <CurrencyToggle />
 
-            <Card style={styles.summaryCard}>
-              <SectionLabel>Total adeudado</SectionLabel>
+            <View style={styles.summary}>
+              <Text style={styles.label}>Total adeudado</Text>
               <MoneyAmount ars={totals.ars} usd={totals.usd} size="lg" tone="negative" />
-            </Card>
+            </View>
 
-            <SectionLabel>Tus deudas</SectionLabel>
+            <Text style={styles.label}>Tus deudas</Text>
           </View>
         }
         ListEmptyComponent={
@@ -87,10 +91,14 @@ export default function DebtsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  list: { padding: spacing.xl, paddingBottom: 100, flexGrow: 1 },
-  header: { gap: spacing.lg, marginBottom: spacing.sm },
-  summaryCard: { padding: spacing.xl, gap: spacing.sm },
-  separator: { height: 1, backgroundColor: colors.borderSoft, marginVertical: 2 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    list: { padding: spacing.xl, paddingBottom: 100, flexGrow: 1 },
+    header: { gap: spacing.lg, marginBottom: spacing.sm },
+    title: { fontSize: 24, lineHeight: 30, fontWeight: "700", letterSpacing: -0.3, color: c.text },
+    label: { fontSize: 10, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase", color: c.textDim },
+    summary: { gap: spacing.sm },
+    separator: { height: 1, backgroundColor: c.border, marginVertical: 2 },
+  });
+}

@@ -1,9 +1,12 @@
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useDeleteGoal, useSavingsGoals } from "../lib/hooks/use-savings-goals";
 import { confirmDelete } from "../lib/confirm";
 import { CtaButton, ProgressBar } from "./ui";
-import { colors, radius, spacing, typography } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import { type Palette, withAlpha } from "../lib/theme-tokens";
+import { radius, spacing } from "../lib/theme";
 
 const fmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 
@@ -14,6 +17,8 @@ function etaMonths(remaining: number, monthly: number | null): number | null {
 }
 
 export function SavingsGoalsList() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const { data: goals, isLoading } = useSavingsGoals();
   const del = useDeleteGoal();
   const router = useRouter();
@@ -45,7 +50,7 @@ export function SavingsGoalsList() {
         const done = g.current_amount >= g.target_amount && g.target_amount > 0;
         const remaining = Math.max(0, g.target_amount - g.current_amount);
         const eta = etaMonths(remaining, g.monthly_contribution);
-        const barColor = done ? colors.positive : colors.primary;
+        const barColor = done ? c.pos : c.accent;
 
         return (
           <Pressable
@@ -93,21 +98,23 @@ export function SavingsGoalsList() {
   );
 }
 
-const styles = StyleSheet.create({
-  list: { gap: spacing.lg },
-  muted: { ...typography.caption, color: colors.textMuted },
-  row: { gap: spacing.sm },
-  head: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.sm },
-  label: { ...typography.bodyStrong, color: colors.textPrimary, flex: 1 },
-  amounts: { ...typography.caption, color: colors.textMuted, fontVariant: ["tabular-nums"] },
-  contribPill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.primary + "55",
-  },
-  contribPillText: { color: colors.primaryBright, fontSize: 12, fontWeight: "700" },
-  sub: { ...typography.caption, color: colors.textMuted, fontSize: 11 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    list: { gap: spacing.lg },
+    muted: { fontSize: 13, color: c.textDim },
+    row: { gap: spacing.sm },
+    head: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.sm },
+    label: { fontSize: 15, fontWeight: "700", color: c.text, flex: 1 },
+    amounts: { fontSize: 13, color: c.textDim, fontVariant: ["tabular-nums"] },
+    contribPill: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.full,
+      backgroundColor: c.accentSoft,
+      borderWidth: 1,
+      borderColor: withAlpha(c.accent, 0.33),
+    },
+    contribPillText: { color: c.accent, fontSize: 12, fontWeight: "700" },
+    sub: { fontSize: 11, color: c.textDim },
+  });
+}

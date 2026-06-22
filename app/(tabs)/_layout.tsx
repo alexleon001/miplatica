@@ -6,7 +6,7 @@ import { useBudgetAlerts } from "../../lib/hooks/use-budget-alerts";
 import { useRateAlerts } from "../../lib/hooks/use-rate-alerts";
 import { useNotificationRouting } from "../../lib/hooks/use-notification-routing";
 import { useCustomCategoriesStore } from "../../lib/store/custom-categories";
-import { colors } from "../../lib/colors";
+import { useTheme } from "../../lib/theme-context";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -18,6 +18,7 @@ function tabIcon(focused: string, unfocused: string) {
 }
 
 export default function TabsLayout() {
+  const c = useTheme();
   // Programa/reprograma notificaciones locales de vencimientos al entrar a la app.
   useRemindersSync();
   // Avisa al cruzar 80%/100% de un presupuesto (notificación inmediata, con dedup).
@@ -40,16 +41,16 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.surfaceDark,
-          borderTopColor: colors.borderSoft,
+          backgroundColor: c.surface,
+          borderTopColor: c.border,
           borderTopWidth: 1,
           height: 58 + bottomInset,
           paddingTop: 8,
           paddingBottom: bottomInset,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
-        tabBarActiveTintColor: colors.primaryBright,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: c.accent,
+        tabBarInactiveTintColor: c.textFaint,
       }}
     >
       <Tabs.Screen

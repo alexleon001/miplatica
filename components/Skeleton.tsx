@@ -3,7 +3,7 @@
 
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View, type DimensionValue, type ViewStyle } from "react-native";
-import { colors } from "../lib/colors";
+import { useTheme } from "../lib/theme-context";
 
 type SkeletonProps = {
   width?: DimensionValue;
@@ -13,6 +13,7 @@ type SkeletonProps = {
 };
 
 export function Skeleton({ width = "100%", height = 14, radius = 8, style }: SkeletonProps) {
+  const c = useTheme();
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -28,7 +29,7 @@ export function Skeleton({ width = "100%", height = 14, radius = 8, style }: Ske
 
   return (
     <Animated.View
-      style={[{ width, height, borderRadius: radius, backgroundColor: colors.border, opacity }, style]}
+      style={[{ width, height, borderRadius: radius, backgroundColor: c.surface2, opacity }, style]}
     />
   );
 }

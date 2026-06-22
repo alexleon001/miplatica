@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -7,14 +8,16 @@ import { BudgetsList } from "../../components/BudgetsList";
 import { MercadoPagoConnect } from "../../components/MercadoPagoConnect";
 import { RecurringList } from "../../components/RecurringList";
 import { SavingsGoalsList } from "../../components/SavingsGoalsList";
-import { CtaButton, IconChip, ScreenTitle, SectionLabel } from "../../components/ui";
+import { CtaButton, IconChip } from "../../components/ui";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth";
 import { usePro } from "../../lib/hooks/use-pro";
 import { useProfile } from "../../lib/hooks/use-profile";
 import { useNotifPrefsStore } from "../../lib/store/notif-prefs";
 import { transactionsToCsv } from "../../lib/csv-export";
-import { colors, radius, spacing, typography, shadow } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
+import { type Palette, withAlpha } from "../../lib/theme-tokens";
+import { radius, spacing } from "../../lib/theme";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -22,6 +25,8 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 const PRIVACY_POLICY_URL = "https://miplatica.vercel.app/";
 
 export default function MoreScreen() {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { session } = useAuth();
   const { data: profile } = useProfile();
@@ -60,7 +65,7 @@ export default function MoreScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <ScreenTitle>Más</ScreenTitle>
+        <Text style={styles.title}>Más</Text>
 
         {!isPro ? (
           <Pressable
@@ -69,91 +74,43 @@ export default function MoreScreen() {
             accessibilityRole="button"
             accessibilityLabel="Ver Mi Platica Pro"
           >
-            <IconChip icon="sparkles" tint={colors.primaryBright} size={44} />
+            <IconChip icon="sparkles" tint={c.accent} size={44} />
             <View style={{ flex: 1 }}>
               <Text style={styles.proUpsellTitle}>Mejorá a Mi Platica Pro</Text>
               <Text style={styles.proUpsellSubtitle}>Desbloqueá toda la IA y sacá los anuncios</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.primaryBright} />
+            <Ionicons name="chevron-forward" size={20} color={c.accent} />
           </Pressable>
         ) : null}
 
-        <FeatureCard
-          icon="people-outline"
-          tint={colors.primary}
-          title="Gastos compartidos"
-          subtitle="Dividí viajes, convivencia y salidas; calculamos quién le debe a quién"
-          onPress={() => router.push("/groups")}
-        />
-        <FeatureCard
-          icon="sparkles"
-          tint={colors.primary}
-          title="Asesor financiero IA"
-          subtitle="Chateá sobre tu plata con contexto real"
-          pro={!isPro}
-          onPress={() => router.push("/advisor")}
-        />
-        <FeatureCard
-          icon="calendar-outline"
-          tint={colors.accent}
-          title="Proyección de pagos"
-          subtitle="Tu flujo de caja mes a mes, como el Excel pero solo"
-          onPress={() => router.push("/projection")}
-        />
-        <FeatureCard
-          icon="newspaper-outline"
-          tint={colors.primaryBright}
-          title="Resumen del mes"
-          subtitle="Qué pasó con tu plata este mes, contado por la IA"
-          pro={!isPro}
-          onPress={() => router.push("/monthly-summary")}
-        />
-        <FeatureCard
-          icon="bar-chart-outline"
-          tint={colors.positive}
-          title="Insights de gastos"
-          subtitle="Tu tendencia mensual y qué cambió"
-          onPress={() => router.push("/insights")}
-        />
-        <FeatureCard
-          icon="calculator-outline"
-          tint={colors.warning}
-          title="Simulador de inversiones"
-          subtitle="¿Dónde le ganás a la inflación?"
-          onPress={() => router.push("/invest-sim")}
-        />
-        <FeatureCard
-          icon="pricetags-outline"
-          tint={colors.accent}
-          title="Categorías"
-          subtitle="Creá las tuyas para clasificar mejor"
-          onPress={() => router.push("/categories")}
-        />
-        <FeatureCard
-          icon="notifications-outline"
-          tint={colors.usd}
-          title="Alertas de cotización"
-          subtitle="Avisame cuando el dólar cruce un valor"
-          onPress={() => router.push("/rate-alerts")}
-        />
+        <View style={styles.featureList}>
+          <FeatureRow icon="people-outline" tint={c.accent} title="Gastos compartidos" subtitle="Dividí viajes, convivencia y salidas; calculamos quién le debe a quién" onPress={() => router.push("/groups")} styles={styles} c={c} />
+          <FeatureRow icon="sparkles" tint={c.accent} title="Asesor financiero IA" subtitle="Chateá sobre tu plata con contexto real" pro={!isPro} onPress={() => router.push("/advisor")} styles={styles} c={c} />
+          <FeatureRow icon="calendar-outline" tint={c.accent} title="Proyección de pagos" subtitle="Tu flujo de caja mes a mes, como el Excel pero solo" onPress={() => router.push("/projection")} styles={styles} c={c} />
+          <FeatureRow icon="newspaper-outline" tint={c.accent} title="Resumen del mes" subtitle="Qué pasó con tu plata este mes, contado por la IA" pro={!isPro} onPress={() => router.push("/monthly-summary")} styles={styles} c={c} />
+          <FeatureRow icon="bar-chart-outline" tint={c.pos} title="Insights de gastos" subtitle="Tu tendencia mensual y qué cambió" onPress={() => router.push("/insights")} styles={styles} c={c} />
+          <FeatureRow icon="calculator-outline" tint={c.warn} title="Simulador de inversiones" subtitle="¿Dónde le ganás a la inflación?" onPress={() => router.push("/invest-sim")} styles={styles} c={c} />
+          <FeatureRow icon="pricetags-outline" tint={c.accent} title="Categorías" subtitle="Creá las tuyas para clasificar mejor" onPress={() => router.push("/categories")} styles={styles} c={c} />
+          <FeatureRow icon="notifications-outline" tint={c.textDim} title="Alertas de cotización" subtitle="Avisame cuando el dólar cruce un valor" onPress={() => router.push("/rate-alerts")} styles={styles} c={c} last />
+        </View>
 
         <View style={styles.section}>
-          <SectionLabel>Presupuestos del mes</SectionLabel>
+          <Text style={styles.sectionLabel}>Presupuestos del mes</Text>
           <BudgetsList />
         </View>
 
         <View style={styles.section}>
-          <SectionLabel>Metas de ahorro</SectionLabel>
+          <Text style={styles.sectionLabel}>Metas de ahorro</Text>
           <SavingsGoalsList />
         </View>
 
         <View style={styles.section}>
-          <SectionLabel>Gastos recurrentes</SectionLabel>
+          <Text style={styles.sectionLabel}>Gastos recurrentes</Text>
           <RecurringList />
         </View>
 
         <View style={styles.section}>
-          <SectionLabel>Datos</SectionLabel>
+          <Text style={styles.sectionLabel}>Datos</Text>
           <MercadoPagoConnect />
           <View style={styles.dataDivider} />
           <CtaButton
@@ -171,36 +128,21 @@ export default function MoreScreen() {
         </View>
 
         <View style={styles.section}>
-          <SectionLabel>Apariencia</SectionLabel>
+          <Text style={styles.sectionLabel}>Apariencia</Text>
           <AppearanceSettings />
         </View>
 
         <View style={styles.section}>
-          <SectionLabel>Notificaciones</SectionLabel>
-          <ToggleRow
-            label="Recordatorios de vencimiento"
-            hint="Deudas y metas, el día previo"
-            value={notif.reminders}
-            onValueChange={notif.setReminders}
-          />
+          <Text style={styles.sectionLabel}>Notificaciones</Text>
+          <ToggleRow label="Recordatorios de vencimiento" hint="Deudas y metas, el día previo" value={notif.reminders} onValueChange={notif.setReminders} styles={styles} c={c} />
           <View style={styles.dataDivider} />
-          <ToggleRow
-            label="Alertas de presupuesto"
-            hint="Aviso al llegar al 80% y 100%"
-            value={notif.budgetAlerts}
-            onValueChange={notif.setBudgetAlerts}
-          />
+          <ToggleRow label="Alertas de presupuesto" hint="Aviso al llegar al 80% y 100%" value={notif.budgetAlerts} onValueChange={notif.setBudgetAlerts} styles={styles} c={c} />
           <View style={styles.dataDivider} />
-          <ToggleRow
-            label="Alertas de cotización"
-            hint="Cuando el dólar cruza un umbral tuyo"
-            value={notif.rateAlerts}
-            onValueChange={notif.setRateAlerts}
-          />
+          <ToggleRow label="Alertas de cotización" hint="Cuando el dólar cruza un umbral tuyo" value={notif.rateAlerts} onValueChange={notif.setRateAlerts} styles={styles} c={c} />
         </View>
 
         <View style={styles.section}>
-          <SectionLabel>Perfil</SectionLabel>
+          <Text style={styles.sectionLabel}>Perfil</Text>
           <Text style={styles.kvLabel}>Nombre</Text>
           <Text style={styles.kvValue}>{profile?.name ?? "—"}</Text>
           <Text style={styles.kvLabel}>Ingreso mensual</Text>
@@ -222,13 +164,13 @@ export default function MoreScreen() {
         </View>
 
         <View style={styles.section}>
-          <SectionLabel>Sesión</SectionLabel>
-          <Text style={styles.email}>{session?.user.email ?? "—"}</Text>
+          <Text style={styles.sectionLabel}>Sesión</Text>
+          <Text style={styles.kvValue}>{session?.user.email ?? "—"}</Text>
           <Pressable
             style={({ pressed }) => [styles.btn, pressed && { opacity: 0.85 }]}
             onPress={signOut}
           >
-            <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
+            <Ionicons name="log-out-outline" size={18} color={c.neg} />
             <Text style={styles.btnText}>Cerrar sesión</Text>
           </Pressable>
         </View>
@@ -246,16 +188,22 @@ export default function MoreScreen() {
   );
 }
 
+type Styles = ReturnType<typeof makeStyles>;
+
 function ToggleRow({
   label,
   hint,
   value,
   onValueChange,
+  styles,
+  c,
 }: {
   label: string;
   hint: string;
   value: boolean;
   onValueChange: (v: boolean) => void;
+  styles: Styles;
+  c: Palette;
 }) {
   return (
     <View style={styles.toggleRow}>
@@ -266,20 +214,23 @@ function ToggleRow({
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ true: colors.primary, false: colors.surfaceSunken }}
+        trackColor={{ true: c.accent, false: c.surface2 }}
         thumbColor="#FFFFFF"
       />
     </View>
   );
 }
 
-function FeatureCard({
+function FeatureRow({
   icon,
   tint,
   title,
   subtitle,
   pro,
   onPress,
+  styles,
+  c,
+  last,
 }: {
   icon: IoniconName;
   tint: string;
@@ -287,13 +238,16 @@ function FeatureCard({
   subtitle: string;
   pro?: boolean;
   onPress: () => void;
+  styles: Styles;
+  c: Palette;
+  last?: boolean;
 }) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.featureCard, pressed && { opacity: 0.9 }]}
+      style={({ pressed }) => [styles.featureRow, !last && styles.featureRowBorder, pressed && { opacity: 0.6 }]}
       onPress={onPress}
     >
-      <IconChip icon={icon} tint={tint} size={38} />
+      <IconChip icon={icon} tint={tint} size={36} />
       <View style={{ flex: 1 }}>
         <View style={styles.featureTitleRow}>
           <Text style={styles.featureTitle}>{title}</Text>
@@ -305,72 +259,68 @@ function FeatureCard({
         </View>
         <Text style={styles.featureSubtitle} numberOfLines={1}>{subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+      <Ionicons name="chevron-forward" size={18} color={c.textDim} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.backgroundDark },
-  container: { padding: spacing.xl, gap: spacing.md },
-  section: {
-    backgroundColor: colors.surfaceDark,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-    ...shadow.sm,
-  },
-  kvLabel: { ...typography.caption, color: colors.textMuted, marginTop: spacing.sm },
-  kvValue: { ...typography.body, color: colors.textPrimary },
-  email: { ...typography.body, color: colors.textPrimary },
-  btn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xs,
-    backgroundColor: colors.negative,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    marginTop: spacing.md,
-  },
-  btnText: { color: "#FFFFFF", fontWeight: "700" },
-  dataDivider: { height: 1, backgroundColor: colors.borderSoft, marginVertical: spacing.xs },
-  toggleRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
-  toggleLabel: { ...typography.body, color: colors.textPrimary },
-  toggleHint: { ...typography.caption, color: colors.textMuted },
-  featureCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    ...shadow.sm,
-  },
-  featureTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  featureTitle: { ...typography.body, fontWeight: "700", color: colors.textPrimary },
-  featureSubtitle: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-  proBadge: { backgroundColor: colors.primarySoft, paddingHorizontal: spacing.sm, paddingVertical: 1, borderRadius: radius.full },
-  proBadgeText: { color: colors.primaryBright, fontWeight: "800", fontSize: 10, letterSpacing: 0.8 },
-  proUpsell: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.primaryBright + "55",
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    ...shadow.sm,
-  },
-  proUpsellTitle: { ...typography.heading, color: colors.textPrimary },
-  proUpsellSubtitle: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-  legalLink: { alignSelf: "center", paddingVertical: spacing.sm },
-  legalLinkText: { ...typography.caption, color: colors.textMuted, textDecorationLine: "underline" },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg },
+    container: { padding: spacing.xl, gap: spacing.lg },
+    title: { fontSize: 24, lineHeight: 30, fontWeight: "700", letterSpacing: -0.3, color: c.text },
+    featureList: { borderTopWidth: 1, borderTopColor: c.border },
+    featureRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    featureRowBorder: { borderBottomWidth: 1, borderBottomColor: c.border },
+    featureTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    featureTitle: { fontSize: 15, lineHeight: 21, fontWeight: "600", color: c.text },
+    featureSubtitle: { fontSize: 13, lineHeight: 18, color: c.textDim, marginTop: 2 },
+    proBadge: { backgroundColor: c.accentSoft, paddingHorizontal: spacing.sm, paddingVertical: 1, borderRadius: radius.full },
+    proBadgeText: { color: c.accent, fontWeight: "800", fontSize: 10, letterSpacing: 0.8 },
+    section: {
+      gap: spacing.sm,
+      paddingTop: spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    sectionLabel: { fontSize: 10, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase", color: c.textDim },
+    kvLabel: { fontSize: 13, lineHeight: 18, color: c.textDim, marginTop: spacing.sm },
+    kvValue: { fontSize: 15, lineHeight: 21, color: c.text },
+    btn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+      backgroundColor: withAlpha(c.neg, 0.13),
+      borderWidth: 1,
+      borderColor: withAlpha(c.neg, 0.4),
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      marginTop: spacing.md,
+    },
+    btnText: { color: c.neg, fontWeight: "700" },
+    dataDivider: { height: 1, backgroundColor: c.border, marginVertical: spacing.xs },
+    toggleRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
+    toggleLabel: { fontSize: 15, lineHeight: 21, color: c.text },
+    toggleHint: { fontSize: 13, lineHeight: 18, color: c.textDim },
+    proUpsell: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      backgroundColor: c.accentSoft,
+      borderWidth: 1,
+      borderColor: withAlpha(c.accent, 0.4),
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+    },
+    proUpsellTitle: { fontSize: 18, lineHeight: 24, fontWeight: "700", color: c.text },
+    proUpsellSubtitle: { fontSize: 13, lineHeight: 18, color: c.textDim, marginTop: 2 },
+    legalLink: { alignSelf: "center", paddingVertical: spacing.sm },
+    legalLinkText: { fontSize: 13, lineHeight: 18, color: c.textDim, textDecorationLine: "underline" },
+  });
+}

@@ -1,27 +1,32 @@
 // Mensaje de estado reutilizable (loading / empty / error) para listas y cards.
 // Centraliza el "Cargando…" / vacío / error con reintento que antes se repetía
-// en cada pantalla.
+// en cada pantalla. Rediseño "Línea": useTheme().
 
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, spacing, typography } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import type { Palette } from "../lib/theme-tokens";
+import { radius, spacing } from "../lib/theme";
 
 type Kind = "loading" | "empty" | "error";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
-const ICON: Record<Kind, { name: IoniconName; color: string }> = {
-  loading: { name: "hourglass-outline", color: colors.textMuted },
-  empty: { name: "file-tray-outline", color: colors.textMuted },
-  error: { name: "alert-circle-outline", color: colors.negative },
+const ICON_NAME: Record<Kind, IoniconName> = {
+  loading: "hourglass-outline",
+  empty: "file-tray-outline",
+  error: "alert-circle-outline",
 };
 
 export function StateMessage({ kind = "empty", message, onRetry, actionLabel, onAction, actionIcon }: Props) {
-  const icon = ICON[kind];
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
+  const iconColor = kind === "error" ? c.neg : c.textDim;
   return (
     <View style={styles.wrap}>
       <View style={styles.iconWrap}>
-        <Ionicons name={icon.name} size={26} color={icon.color} />
+        <Ionicons name={ICON_NAME[kind]} size={26} color={iconColor} />
       </View>
       <Text style={[styles.text, kind === "error" && styles.errorText]}>{message}</Text>
       {kind === "error" && onRetry ? (
@@ -43,7 +48,7 @@ export function StateMessage({ kind = "empty", message, onRetry, actionLabel, on
           style={({ pressed }) => [styles.action, pressed && { opacity: 0.85 }]}
           onPress={onAction}
         >
-          {actionIcon ? <Ionicons name={actionIcon} size={16} color="#FFFFFF" /> : null}
+          {actionIcon ? <Ionicons name={actionIcon} size={16} color={c.accentContrast} /> : null}
           <Text style={styles.actionText}>{actionLabel}</Text>
         </Pressable>
       ) : null}
@@ -62,37 +67,39 @@ type Props = {
   actionIcon?: IoniconName;
 };
 
-const styles = StyleSheet.create({
-  wrap: { alignItems: "center", gap: spacing.md, paddingVertical: spacing["3xl"], paddingHorizontal: spacing.xl },
-  iconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  text: { ...typography.body, color: colors.textMuted, textAlign: "center" },
-  errorText: { color: colors.negative },
-  retry: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  retryText: { color: colors.primaryBright, fontWeight: "700" },
-  action: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    marginTop: spacing.xs,
-  },
-  actionText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    wrap: { alignItems: "center", gap: spacing.md, paddingVertical: spacing["3xl"], paddingHorizontal: spacing.xl },
+    iconWrap: {
+      width: 52,
+      height: 52,
+      borderRadius: radius.full,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    text: { fontSize: 15, lineHeight: 21, color: c.textDim, textAlign: "center" },
+    errorText: { color: c.neg },
+    retry: {
+      borderWidth: 1,
+      borderColor: c.accent,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+    },
+    retryText: { color: c.accent, fontWeight: "700" },
+    action: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      backgroundColor: c.accent,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      marginTop: spacing.xs,
+    },
+    actionText: { color: c.accentContrast, fontWeight: "700", fontSize: 15 },
+  });
+}

@@ -1,10 +1,12 @@
 // Selector de mes+año 100% JS (OTA-safe). Reemplaza el TextInput "AAAA-MM".
 // Devuelve/recibe "YYYY-MM". Abre un Modal con stepper de año + 12 meses.
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, spacing } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import type { Palette } from "../lib/theme-tokens";
+import { radius, spacing } from "../lib/theme";
 
 const MONTHS_ES = [
   "Ene", "Feb", "Mar", "Abr", "May", "Jun",
@@ -38,6 +40,8 @@ type Props = {
 };
 
 export function MonthField({ value, onChange, placeholder = "Elegí el mes" }: Props) {
+  const c = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [open, setOpen] = useState(false);
   const sel = parseYM(value);
   const now = new Date();
@@ -59,7 +63,7 @@ export function MonthField({ value, onChange, placeholder = "Elegí el mes" }: P
         <Text style={value ? styles.valueText : styles.placeholder}>
           {value ? formatMonthLabel(value) : placeholder}
         </Text>
-        <Ionicons name="calendar-outline" size={18} color={colors.primaryBright} />
+        <Ionicons name="calendar-outline" size={18} color={c.accent} />
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -96,29 +100,31 @@ export function MonthField({ value, onChange, placeholder = "Elegí el mes" }: P
   );
 }
 
-const styles = StyleSheet.create({
-  input: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: colors.surfaceDark, borderRadius: radius.md,
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderWidth: 1, borderColor: colors.border,
-  },
-  valueText: { color: colors.textPrimary, fontSize: 16 },
-  placeholder: { color: colors.textMuted, fontSize: 16 },
-  backdrop: { flex: 1, backgroundColor: "#000B", alignItems: "center", justifyContent: "center", padding: spacing["2xl"] },
-  card: {
-    width: "100%", maxWidth: 360, backgroundColor: colors.surfaceElevated, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: colors.border, padding: spacing.lg, gap: spacing.md,
-  },
-  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.sm },
-  navArrow: { color: colors.primaryBright, fontSize: 30, fontWeight: "700", width: 36, textAlign: "center" },
-  navTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "700" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  monthCell: {
-    flexGrow: 1, flexBasis: "22%", // ~4 por fila con gap
-    paddingVertical: spacing.md, alignItems: "center", borderRadius: radius.md,
-    backgroundColor: colors.surfaceSunken, borderWidth: 1, borderColor: colors.border,
-  },
-  monthCellSelected: { backgroundColor: colors.primary, borderColor: colors.primaryBright },
-  monthText: { color: colors.textPrimary, fontSize: 14, fontWeight: "600" },
-  monthTextSelected: { color: "#FFFFFF", fontWeight: "700" },
-});
+function makeStyles(c: Palette) {
+  return StyleSheet.create({
+    input: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      backgroundColor: c.surface, borderRadius: radius.md,
+      paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderWidth: 1, borderColor: c.border,
+    },
+    valueText: { color: c.text, fontSize: 16 },
+    placeholder: { color: c.textDim, fontSize: 16 },
+    backdrop: { flex: 1, backgroundColor: "#000B", alignItems: "center", justifyContent: "center", padding: spacing["2xl"] },
+    card: {
+      width: "100%", maxWidth: 360, backgroundColor: c.surface2, borderRadius: radius.xl,
+      borderWidth: 1, borderColor: c.border, padding: spacing.lg, gap: spacing.md,
+    },
+    navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.sm },
+    navArrow: { color: c.accent, fontSize: 30, fontWeight: "700", width: 36, textAlign: "center" },
+    navTitle: { color: c.text, fontSize: 18, fontWeight: "700" },
+    grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    monthCell: {
+      flexGrow: 1, flexBasis: "22%", // ~4 por fila con gap
+      paddingVertical: spacing.md, alignItems: "center", borderRadius: radius.md,
+      backgroundColor: c.bg, borderWidth: 1, borderColor: c.border,
+    },
+    monthCellSelected: { backgroundColor: c.accent, borderColor: c.accent },
+    monthText: { color: c.text, fontSize: 14, fontWeight: "600" },
+    monthTextSelected: { color: c.accentContrast, fontWeight: "700" },
+  });
+}
