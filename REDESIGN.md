@@ -3,6 +3,8 @@
 > Rediseño total de la UI de Mi Plática al sistema visual **"Línea"** (minimalista).
 > Multi-sesión. Este archivo es el punto de retome: actualizarlo al cerrar cada fase.
 
+> **Estado 2026-06-22 — TODAS las fases (0–9 + F) hechas y commiteadas (6 commits, hasta `323114d`).** Verde: type-check + lint + 142 tests. **OTA publicado** a `preview` (group `4156a692`, runtime 0.1.0). **APK preview en build** en EAS: ID `746225f3` (version code 3) — incluye `expo-font` para la fuente. **Pendiente:** confirmar build OK + bajar APK, **validar en device** (selector Esmeralda/Terracota × claro/oscuro/auto en todas las pantallas + fuente Space Grotesk solo en APK nuevo), y push a `main` (lo corre el user).
+
 ## Decisiones de diseño (del usuario + handoff)
 
 - **2 temas seleccionables**: `esmeralda` (paleta de la versión **A** del mockup) y `terracota` (paleta de la versión **C**). Cada uno con modo **claro/oscuro**.
