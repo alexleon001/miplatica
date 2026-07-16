@@ -24,7 +24,7 @@ import { radius, spacing } from "../../lib/theme";
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 // Requisito de Google Play: la política debe ser accesible desde la app.
-const PRIVACY_POLICY_URL = "https://miplatica.vercel.app/";
+const PRIVACY_POLICY_URL = "https://miplatica.vercel.app/privacidad.html";
 
 export default function MoreScreen() {
   const c = useTheme();
@@ -79,11 +79,11 @@ export default function MoreScreen() {
             style={({ pressed }) => [styles.proUpsell, pressed && { opacity: 0.9 }]}
             onPress={() => router.push("/paywall")}
             accessibilityRole="button"
-            accessibilityLabel="Ver Mi Platica Pro"
+            accessibilityLabel="Ver Mi Plata Pro"
           >
             <IconChip icon="sparkles" tint={c.accent} size={44} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.proUpsellTitle}>Mejorá a Mi Platica Pro</Text>
+              <Text style={styles.proUpsellTitle}>Mejorá a Mi Plata Pro</Text>
               <Text style={styles.proUpsellSubtitle}>Desbloqueá toda la IA y sacá los anuncios</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={c.accent} />

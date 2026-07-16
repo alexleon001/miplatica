@@ -29,7 +29,7 @@ export async function requireProAi(supabase: any): Promise<Response | null> {
     const { data: credited, error: creditErr } = await supabase.rpc("consume_ai_reward_credit");
     if (creditErr || !credited) {
       return gateJson(
-        { error: "pro_required", message: "Esta función es parte de Mi Platica Pro." },
+        { error: "pro_required", message: "Esta función es parte de Mi Plata Pro." },
         402,
       );
     }

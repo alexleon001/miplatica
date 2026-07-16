@@ -42,8 +42,8 @@ export default function LoginScreen() {
           <BrandGradient style={styles.logo}>
             <Text style={styles.logoText}>$</Text>
           </BrandGradient>
-          <Text style={styles.title}>Mi Platica</Text>
-          <Text style={styles.subtitle}>Tus finanzas, con inteligencia argentina.</Text>
+          <Text style={styles.title}>Mi Plata</Text>
+          <Text style={styles.subtitle}>Tu plata, con inteligencia.</Text>
         </View>
 
         <FormInput

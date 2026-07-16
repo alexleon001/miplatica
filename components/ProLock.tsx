@@ -38,7 +38,7 @@ export function ProLock({
         style={({ pressed }) => [styles.cta, pressed && { opacity: 0.88 }]}
         onPress={() => router.push("/paywall")}
         accessibilityRole="button"
-        accessibilityLabel="Ver Mi Platica Pro"
+        accessibilityLabel="Ver Mi Plata Pro"
       >
         <Ionicons name="lock-open-outline" size={16} color={c.accentContrast} />
         <Text style={styles.ctaText}>Desbloquear con Pro</Text>

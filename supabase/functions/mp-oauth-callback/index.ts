@@ -106,7 +106,7 @@ function redirectToApp(query: string): Response {
   const target = `${APP_SCHEME}://mp-connected?${query}`;
   return new Response(
     `<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${target}">` +
-      `<p>Volviendo a Mi Platica… <a href="${target}">Abrir la app</a></p>`,
+      `<p>Volviendo a Mi Plata… <a href="${target}">Abrir la app</a></p>`,
     { status: 302, headers: { Location: target, "Content-Type": "text/html; charset=utf-8" } },
   );
 }

@@ -67,12 +67,12 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Bienvenido a Mi Platica</Text>
+        <Text style={styles.title}>Bienvenido a Mi Plata</Text>
         <Text style={styles.subtitle}>
           Configurá tus preferencias en 30 segundos. Después podés cambiarlas en cualquier momento.
         </Text>
 
-        <FormField label="¿Desde qué país usás Mi Platica?">
+        <FormField label="¿Desde qué país usás Mi Plata?">
           <ChipRow>
             {COUNTRY_CODES.map((code) => (
               <FormChip

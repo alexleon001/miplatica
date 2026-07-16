@@ -100,7 +100,7 @@ export default function PaywallScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <Stack.Screen options={{ title: "Mi Platica Pro", headerShown: false }} />
+      <Stack.Screen options={{ title: "Mi Plata Pro", headerShown: false }} />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.closeRow}>
           <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Cerrar" style={styles.closeBtn}>
@@ -113,9 +113,9 @@ export default function PaywallScreen() {
             <Ionicons name="sparkles" size={13} color="#FFFFFF" />
             <Text style={styles.heroBadgeText}>PRO</Text>
           </View>
-          <Text style={styles.heroTitle}>Tu plata, con inteligencia argentina</Text>
+          <Text style={styles.heroTitle}>Tu plata, con inteligencia</Text>
           <Text style={styles.heroSubtitle}>
-            Desbloqueá toda la IA de Mi Platica y sacá los anuncios.
+            Desbloqueá toda la IA de Mi Plata y sacá los anuncios.
           </Text>
         </BrandGradient>
 

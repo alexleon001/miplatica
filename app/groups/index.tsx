@@ -121,7 +121,7 @@ function EmptyState({ onCreate, styles, c }: { onCreate: () => void; styles: Sty
       <IconChip icon="people" tint={c.accent} size={64} />
       <Text style={styles.emptyTitle}>Dividí gastos con quien quieras</Text>
       <Text style={styles.emptyText}>
-        Armá un grupo para un viaje, la convivencia o una salida. Cargá los gastos y Mi Platica calcula quién le debe a quién.
+        Armá un grupo para un viaje, la convivencia o una salida. Cargá los gastos y Mi Plata calcula quién le debe a quién.
       </Text>
       <Pressable style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.9 }]} onPress={onCreate}>
         <Ionicons name="add" size={18} color={c.accentContrast} />

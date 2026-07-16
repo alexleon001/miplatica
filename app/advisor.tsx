@@ -140,7 +140,7 @@ export default function AdvisorScreen() {
       {!canUseAi && messages.length === 0 ? (
         <ProLock
           title="El asesor IA es Pro"
-          subtitle="Chateá sobre tu plata con un asesor que ve tus cuentas, inversiones y deudas reales. Desbloquealo con Mi Platica Pro."
+          subtitle="Chateá sobre tu plata con un asesor que ve tus cuentas, inversiones y deudas reales. Desbloquealo con Mi Plata Pro."
           onWatchAd={reward.adsAvailable ? handleWatchAd : undefined}
           watching={reward.watching}
         />

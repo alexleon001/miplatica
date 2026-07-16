@@ -198,6 +198,6 @@ export function settlementText(
       lines.push(`• ${nameOf(t.from)} → ${nameOf(t.to)}: ${fmt(t.amount)}`);
     }
   }
-  lines.push("", "Generado con Mi Platica");
+  lines.push("", "Generado con Mi Plata");
   return lines.join("\n");
 }

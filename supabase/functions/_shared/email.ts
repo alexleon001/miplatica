@@ -14,14 +14,14 @@
 // Resend responde error, la edge sigue (no rompe el alta del miembro / el cron).
 
 const RESEND_API = "https://api.resend.com/emails";
-const APP_NAME = "Mi Platica";
+const APP_NAME = "Mi Plata";
 const BRAND = "#6366F1";
 
 export type SendResult = { ok: true; id?: string } | { ok: false; error: string };
 
 export async function sendEmail(opts: { to: string; subject: string; html: string }): Promise<SendResult> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("RESEND_FROM") ?? "Mi Platica <onboarding@resend.dev>";
+  const from = Deno.env.get("RESEND_FROM") ?? "Mi Plata <onboarding@resend.dev>";
   if (!apiKey) return { ok: false, error: "RESEND_API_KEY missing" };
 
   try {
@@ -45,7 +45,7 @@ function layout(inner: string): string {
   <div style="max-width:480px;margin:0 auto;background:#111827;border:1px solid #1F2937;border-radius:16px;overflow:hidden">
     <div style="background:${BRAND};padding:20px 24px"><span style="font-size:18px;font-weight:800;color:#fff">💸 ${APP_NAME}</span></div>
     <div style="padding:24px">${inner}</div>
-    <div style="padding:16px 24px;border-top:1px solid #1F2937;font-size:12px;color:#6B7280">Tus finanzas, con inteligencia argentina.</div>
+    <div style="padding:16px 24px;border-top:1px solid #1F2937;font-size:12px;color:#6B7280">Tu plata, con inteligencia.</div>
   </div></body></html>`;
 }
 

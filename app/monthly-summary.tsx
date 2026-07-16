@@ -64,7 +64,7 @@ export default function MonthlySummaryScreen() {
           <View style={styles.headerActions}>
             {data ? (
               <Pressable
-                onPress={() => Share.share({ message: `Resumen de ${monthLabel(period)} — Mi Platica\n\n${data.summary.trim()}` }).catch(() => {})}
+                onPress={() => Share.share({ message: `Resumen de ${monthLabel(period)} — Mi Plata\n\n${data.summary.trim()}` }).catch(() => {})}
                 hitSlop={12}
                 style={styles.refreshBtn}
                 accessibilityLabel="Compartir resumen"
@@ -91,7 +91,7 @@ export default function MonthlySummaryScreen() {
         {!hasAccess ? (
           <ProLock
             title="El resumen del mes es Pro"
-            subtitle="La IA analiza tus movimientos, los compara con el mes anterior y con la inflación. Desbloquealo con Mi Platica Pro."
+            subtitle="La IA analiza tus movimientos, los compara con el mes anterior y con la inflación. Desbloquealo con Mi Plata Pro."
             onWatchAd={reward.adsAvailable ? handleWatchAd : undefined}
             watching={reward.watching}
           />

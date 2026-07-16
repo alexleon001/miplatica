@@ -96,7 +96,7 @@ test("projectionToText: resumen legible con saldo, neto y aviso de déficit", ()
     startingBalanceArs: 100000,
   });
   const text = projectionToText(proj);
-  expect(text).toContain("Mi Platica — Proyección (2 meses)");
+  expect(text).toContain("Mi Plata — Proyección (2 meses)");
   expect(text).toContain("Efectivo hoy: $100.000");
   expect(text).toContain("Junio 2026");
   expect(text).toContain("Te quedás sin efectivo"); // déficit: gasto > ingreso

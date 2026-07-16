@@ -47,7 +47,7 @@ export default function InviteMemberModal() {
   async function shareLink() {
     if (!link) return;
     try {
-      await Share.share({ message: `Te invito a dividir gastos en Mi Platica: ${link}` });
+      await Share.share({ message: `Te invito a dividir gastos en Mi Plata: ${link}` });
     } catch {
       // cancelado
     }

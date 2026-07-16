@@ -202,7 +202,7 @@ export type BuildProjectionArgs = {
 export function projectionToText(p: Projection): string {
   const fmt = (n: number) => Math.round(n).toLocaleString("es-AR");
   const lines: string[] = [];
-  lines.push(`📊 Mi Platica — Proyección (${p.months.length} meses)`);
+  lines.push(`📊 Mi Plata — Proyección (${p.months.length} meses)`);
   lines.push(`Efectivo hoy: $${fmt(p.startingBalanceArs)}`);
   lines.push("");
 
