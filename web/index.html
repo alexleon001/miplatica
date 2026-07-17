@@ -39,6 +39,8 @@
     --muted: #9CA3AF;
     --accent: #6366F1;
     --accent2: #22D3EE;
+    --green: #34D399;
+    --red: #F87171;
     --pill: #172036;
   }
   * { box-sizing: border-box; margin: 0; }
@@ -47,50 +49,132 @@
     background: var(--bg);
     color: var(--fg);
     font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow-x: hidden;
   }
   a { color: var(--accent2); text-decoration: none; }
-  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
 
-  header { padding: 20px 0; }
+  /* ── glows de fondo ── */
+  .glow { position: absolute; border-radius: 50%; filter: blur(110px); opacity: .35; pointer-events: none; z-index: 0; }
+  .glow.a { width: 480px; height: 480px; background: var(--accent); top: -140px; right: -120px; }
+  .glow.b { width: 380px; height: 380px; background: var(--accent2); top: 320px; left: -180px; opacity: .18; }
+
+  header { padding: 20px 0; position: relative; z-index: 2; }
   .nav { display: flex; align-items: center; justify-content: space-between; }
   .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.15rem; color: var(--fg); }
   .logo-badge {
     width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     color: #fff; font-weight: 800; font-size: 1.05rem;
+    box-shadow: 0 4px 18px rgba(99,102,241,.45);
   }
-  .nav a.cta { color: var(--fg); border: 1px solid var(--border); padding: 8px 16px; border-radius: 10px; font-weight: 600; font-size: .92rem; }
+  .nav a.cta { color: var(--fg); border: 1px solid var(--border); padding: 8px 16px; border-radius: 10px; font-weight: 600; font-size: .92rem; transition: border-color .2s; }
+  .nav a.cta:hover { border-color: var(--accent2); }
 
-  .hero { padding: 64px 0 48px; text-align: center; }
+  /* ── hero ── */
+  .hero-outer { position: relative; }
+  .hero {
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center;
+    padding: 56px 0 72px;
+  }
   .hero h1 {
-    font-size: clamp(2rem, 5.5vw, 3.2rem); line-height: 1.12; font-weight: 800; letter-spacing: -0.02em;
+    font-size: clamp(2.1rem, 5vw, 3.3rem); line-height: 1.1; font-weight: 800; letter-spacing: -0.02em;
     background: linear-gradient(120deg, #fff 30%, var(--accent2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
   }
-  .hero p.sub { color: var(--muted); font-size: 1.15rem; max-width: 640px; margin: 18px auto 0; }
+  .hero p.sub { color: var(--muted); font-size: 1.12rem; margin-top: 18px; max-width: 520px; }
   .hero .flags { margin-top: 14px; color: var(--muted); font-size: .95rem; }
-  .cta-row { margin-top: 30px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .cta-row { margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap; }
   .btn {
     display: inline-block; padding: 13px 26px; border-radius: 12px; font-weight: 700; font-size: 1rem;
     background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff;
+    box-shadow: 0 8px 28px rgba(99,102,241,.35); transition: transform .15s, box-shadow .15s;
   }
-  .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--fg); }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 34px rgba(99,102,241,.5); }
+  .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--fg); box-shadow: none; }
+  .btn.ghost:hover { border-color: var(--accent2); }
   .soon { display: block; margin-top: 12px; color: var(--muted); font-size: .88rem; }
-
-  .pills { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 26px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
   .pill { background: var(--pill); border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 6px 14px; font-size: .85rem; }
 
-  section { padding: 48px 0; }
-  h2 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 8px; }
-  .lede { color: var(--muted); max-width: 620px; margin-bottom: 28px; }
+  /* ── mockup de teléfono (CSS puro) ── */
+  .phone {
+    width: 290px; border-radius: 36px; padding: 12px;
+    background: #05070f; border: 1px solid #2a3448;
+    box-shadow: 0 24px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04) inset;
+    flex-shrink: 0;
+  }
+  .phone .screen {
+    border-radius: 26px; overflow: hidden; background: var(--bg);
+    border: 1px solid var(--border);
+    font-size: 12.5px; line-height: 1.45;
+  }
+  .phone .notch { width: 84px; height: 18px; background: #05070f; border-radius: 0 0 12px 12px; margin: 0 auto; position: relative; z-index: 3; margin-bottom: -18px; }
+  .phone .app { padding: 26px 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .hero .phone { justify-self: center; transform: rotate(3deg); animation: float 7s ease-in-out infinite; }
+  @keyframes float { 0%,100% { transform: rotate(3deg) translateY(0); } 50% { transform: rotate(3deg) translateY(-12px); } }
+
+  .app .brandrow { display: flex; align-items: center; justify-content: space-between; }
+  .app .brandname { font-weight: 800; font-size: 13px; }
+  .app .avatar { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+
+  .networth {
+    border-radius: 16px; padding: 14px;
+    background: linear-gradient(135deg, #4338CA, #6366F1 55%, #0891B2);
+    position: relative; overflow: hidden;
+  }
+  .networth::after { content: ""; position: absolute; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,.12); top: -50px; right: -30px; }
+  .networth .lbl { font-size: 10.5px; color: rgba(255,255,255,.75); text-transform: uppercase; letter-spacing: .08em; }
+  .networth .amt { font-size: 21px; font-weight: 800; color: #fff; margin-top: 2px; }
+  .networth .usd { font-size: 11.5px; color: rgba(255,255,255,.85); margin-top: 2px; }
+  .networth .delta { display: inline-block; margin-top: 8px; background: rgba(255,255,255,.18); color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 10.5px; font-weight: 700; }
+
+  .ratesbar { display: flex; gap: 6px; overflow: hidden; }
+  .rate { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 5px 9px; white-space: nowrap; }
+  .rate b { display: block; font-size: 11.5px; }
+  .rate span { font-size: 9.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+
+  .row { display: flex; align-items: center; gap: 9px; background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 9px 11px; }
+  .row .ic { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; font-size: 13px; background: var(--pill); flex-shrink: 0; }
+  .row .tx { flex: 1; min-width: 0; }
+  .row .tx b { display: block; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .tx span { font-size: 10.5px; color: var(--muted); }
+  .row .val { text-align: right; font-weight: 700; font-size: 12px; white-space: nowrap; }
+  .row .val small { display: block; font-weight: 400; font-size: 10px; color: var(--muted); }
+  .up { color: var(--green); } .down { color: var(--red); }
+
+  .chat { display: flex; flex-direction: column; gap: 8px; }
+  .bubble { max-width: 88%; border-radius: 14px; padding: 8px 11px; font-size: 11.5px; }
+  .bubble.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+  .bubble.ai { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .bubble.ai .who { font-size: 9.5px; color: var(--accent2); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
+
+  .sectitle-sm { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+
+  /* ── secciones ── */
+  section { padding: 56px 0; position: relative; z-index: 1; }
+  h2 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 8px; }
+  .lede { color: var(--muted); max-width: 620px; margin-bottom: 32px; }
+
+  .screens { display: flex; gap: 34px; justify-content: center; flex-wrap: wrap; align-items: flex-start; }
+  .screens figure { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .screens .phone:nth-child(odd) { transform: none; }
+  .screens figcaption { color: var(--muted); font-size: .92rem; text-align: center; max-width: 270px; }
+  .screens figcaption b { color: var(--fg); display: block; margin-bottom: 2px; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
-  .card .ico { font-size: 1.5rem; }
-  .card h3 { font-size: 1.05rem; margin: 10px 0 6px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; transition: border-color .2s, transform .2s; }
+  .card:hover { border-color: #2d3a55; transform: translateY(-3px); }
+  .card .ico {
+    width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 1.25rem;
+    background: linear-gradient(135deg, rgba(99,102,241,.22), rgba(34,211,238,.16)); border: 1px solid #2a3652;
+  }
+  .card h3 { font-size: 1.05rem; margin: 12px 0 6px; }
   .card p { color: var(--muted); font-size: .95rem; }
 
   .countries { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
-  .country { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 26px; }
+  .country { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 26px; position: relative; overflow: hidden; }
+  .country::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
   .country h3 { font-size: 1.2rem; margin-bottom: 12px; }
   .country ul { padding-left: 20px; color: var(--muted); }
   .country li { margin: 6px 0; }
@@ -99,38 +183,138 @@
   summary { cursor: pointer; font-weight: 600; }
   details p { color: var(--muted); margin-top: 10px; }
 
-  footer { border-top: 1px solid var(--border); padding: 32px 0 48px; color: var(--muted); font-size: .9rem; }
+  .cta-final { text-align: center; padding: 72px 0; }
+  .cta-final h2 { font-size: 2rem; }
+  .cta-final p { color: var(--muted); margin: 10px 0 26px; }
+
+  footer { border-top: 1px solid var(--border); padding: 32px 0 48px; color: var(--muted); font-size: .9rem; position: relative; z-index: 1; }
   footer .cols { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  @media (max-width: 820px) {
+    .hero { grid-template-columns: 1fr; text-align: center; padding-top: 36px; }
+    .hero p.sub { margin-left: auto; margin-right: auto; }
+    .cta-row, .pills { justify-content: center; }
+    .hero .phone { margin-top: 10px; }
+  }
 </style>
 </head>
 <body>
 
-<header class="wrap">
-  <nav class="nav">
-    <div class="logo"><span class="logo-badge">$</span> Mi Plata</div>
-    <a class="cta" href="#descargar">Descargar</a>
-  </nav>
-</header>
+<div class="hero-outer">
+  <div class="glow a"></div>
+  <div class="glow b"></div>
 
-<main>
+  <header class="wrap">
+    <nav class="nav">
+      <div class="logo"><span class="logo-badge">$</span> Mi Plata</div>
+      <a class="cta" href="#descargar">Descargar</a>
+    </nav>
+  </header>
+
   <div class="hero wrap">
-    <h1>Tu plata, con inteligencia.</h1>
-    <p class="sub">La app de finanzas personales con IA hecha para economías reales: pesos que se devalúan, bolívares que vuelan y dólares de todos los colores. Entendé a dónde se va tu plata y hacela rendir.</p>
-    <p class="flags">🇦🇷 Argentina · 🇻🇪 Venezuela</p>
-    <div class="cta-row" id="descargar">
-      <a class="btn" href="mailto:alexanderleon001@gmail.com?subject=Quiero%20probar%20Mi%20Plata">Sumate a la beta</a>
-      <a class="btn ghost" href="#funciones">Ver qué hace</a>
+    <div>
+      <h1>Tu plata, con inteligencia.</h1>
+      <p class="sub">La app de finanzas personales con IA hecha para economías reales: pesos que se devalúan, bolívares que vuelan y dólares de todos los colores. Entendé a dónde se va tu plata y hacela rendir.</p>
+      <p class="flags">🇦🇷 Argentina · 🇻🇪 Venezuela</p>
+      <div class="cta-row" id="descargar">
+        <a class="btn" href="mailto:alexanderleon001@gmail.com?subject=Quiero%20probar%20Mi%20Plata">Sumate a la beta</a>
+        <a class="btn ghost" href="#funciones">Ver qué hace</a>
+      </div>
+      <span class="soon">Muy pronto en Google Play.</span>
+      <div class="pills">
+        <span class="pill">Dólar MEP · blue · CCL</span>
+        <span class="pill">BCV · paralelo</span>
+        <span class="pill">Inflación real</span>
+        <span class="pill">Asesor con IA</span>
+        <span class="pill">Gastos compartidos</span>
+      </div>
     </div>
-    <span class="soon">Muy pronto en Google Play.</span>
-    <div class="pills">
-      <span class="pill">Dólar MEP · blue · CCL</span>
-      <span class="pill">BCV · paralelo</span>
-      <span class="pill">Inflación real</span>
-      <span class="pill">Asesor con IA</span>
-      <span class="pill">Gastos compartidos</span>
-      <span class="pill">CEDEARs · FCI · cripto</span>
+
+    <!-- Mockup: dashboard -->
+    <div class="phone" aria-hidden="true">
+      <div class="notch"></div>
+      <div class="screen"><div class="app">
+        <div class="brandrow"><span class="brandname">Hola, Alex 👋</span><span class="avatar"></span></div>
+        <div class="networth">
+          <div class="lbl">Patrimonio neto</div>
+          <div class="amt">$ 14.860.500</div>
+          <div class="usd">≈ US$ 9.805 <span style="opacity:.7">(MEP)</span></div>
+          <span class="delta">▲ +3,2% este mes</span>
+        </div>
+        <div class="ratesbar">
+          <div class="rate"><span>MEP</span><b>$1.515,7</b></div>
+          <div class="rate"><span>Blue</span><b>$1.525</b></div>
+          <div class="rate"><span>Oficial</span><b>$1.495</b></div>
+          <div class="rate"><span>CCL</span><b>$1.567</b></div>
+        </div>
+        <div class="sectitle-sm">Tus cuentas</div>
+        <div class="row"><span class="ic">🏦</span><div class="tx"><b>Banco Galicia</b><span>Caja de ahorro</span></div><div class="val">$ 2.340.000</div></div>
+        <div class="row"><span class="ic">💠</span><div class="tx"><b>Mercado Pago</b><span>Billetera</span></div><div class="val">$ 486.200</div></div>
+        <div class="row"><span class="ic">💵</span><div class="tx"><b>Dólares billete</b><span>Efectivo</span></div><div class="val">US$ 3.200<small>$ 4.850.240</small></div></div>
+      </div></div>
     </div>
   </div>
+</div>
+
+<main>
+  <section class="wrap">
+    <h2>Así se ve por dentro</h2>
+    <p class="lede">Oscura, rápida y al grano. Cada número en tu moneda y en dólares, siempre.</p>
+    <div class="screens">
+      <figure>
+        <div class="phone" aria-hidden="true">
+          <div class="notch"></div>
+          <div class="screen"><div class="app">
+            <div class="brandrow"><span class="brandname">Asesor IA</span><span class="sectitle-sm">✨ Pro</span></div>
+            <div class="chat">
+              <div class="bubble user">Tengo $500.000 parados en la cuenta, ¿qué hago?</div>
+              <div class="bubble ai"><div class="who">Asesor de Mi Plata</div>Con la inflación de junio (1,6%) tenerlos quietos es perder plata. Opciones concretas:<br>• FCI money market: liquidez inmediata<br>• Plazo fijo UVA si no los tocás 90 días<br>• Dólar MEP a $1.515 si querés cobertura<br>Con tu perfil, yo arrancaría por el FCI.</div>
+              <div class="bubble user">¿Y cuánto me rinde el FCI?</div>
+            </div>
+          </div></div>
+        </div>
+        <figcaption><b>Asesor financiero IA</b>Ve tus números reales y responde en tu contexto, sin humo.</figcaption>
+      </figure>
+      <figure>
+        <div class="phone" aria-hidden="true">
+          <div class="notch"></div>
+          <div class="screen"><div class="app">
+            <div class="brandrow"><span class="brandname">Inversiones</span><span class="sectitle-sm">$ 7.180.260</span></div>
+            <div class="row"><span class="ic">📈</span><div class="tx"><b>CEDEAR AAPL</b><span>12 nominales</span></div><div class="val up">+18,4%<small class="up">real +4,1%</small></div></div>
+            <div class="row"><span class="ic">🏛️</span><div class="tx"><b>Plazo fijo UVA</b><span>Vence 12/08</span></div><div class="val up">+9,2%<small class="up">real +1,8%</small></div></div>
+            <div class="row"><span class="ic">💰</span><div class="tx"><b>FCI Money Market</b><span>Cocos Ahorro</span></div><div class="val up">+7,1%<small class="down">real −0,4%</small></div></div>
+            <div class="row"><span class="ic">₿</span><div class="tx"><b>Bitcoin</b><span>0,012 BTC</span></div><div class="val up">+31,7%<small class="up">real +15,2%</small></div></div>
+            <div class="sectitle-sm" style="margin-top:2px">Rendimiento real = contra inflación</div>
+          </div></div>
+        </div>
+        <figcaption><b>Inversiones honestas</b>Ganarle al plazo fijo no alcanza: te mostramos el rendimiento real, descontada la inflación.</figcaption>
+      </figure>
+      <figure>
+        <div class="phone" aria-hidden="true">
+          <div class="notch"></div>
+          <div class="screen"><div class="app">
+            <div class="brandrow"><span class="brandname">Patrimonio</span><span class="avatar"></span></div>
+            <div class="networth" style="background:linear-gradient(135deg,#0E7490,#0891B2 55%,#6366F1)">
+              <div class="lbl">Patrimonio neto</div>
+              <div class="amt">Bs 728.450</div>
+              <div class="usd">≈ US$ 894 <span style="opacity:.7">(paralelo)</span></div>
+              <span class="delta">🇻🇪 Venezuela</span>
+            </div>
+            <div class="ratesbar">
+              <div class="rate"><span>BCV</span><b>Bs 727,45</b></div>
+              <div class="rate"><span>Paralelo</span><b>Bs 814,48</b></div>
+              <div class="rate"><span>Brecha</span><b class="up">12%</b></div>
+            </div>
+            <div class="sectitle-sm">Tus ahorros</div>
+            <div class="row"><span class="ic">💵</span><div class="tx"><b>Efectivo USD</b><span>Guardado</span></div><div class="val">US$ 450</div></div>
+            <div class="row"><span class="ic">🪙</span><div class="tx"><b>USDT</b><span>Binance</span></div><div class="val">US$ 320</div></div>
+            <div class="row"><span class="ic">📱</span><div class="tx"><b>Banesco</b><span>Pago Móvil</span></div><div class="val">Bs 101.300</div></div>
+          </div></div>
+        </div>
+        <figcaption><b>Modo Venezuela</b>Bolívares y dólares juntos, con tasa BCV y paralelo siempre a mano.</figcaption>
+      </figure>
+    </div>
+  </section>
 
   <section class="wrap" id="funciones">
     <h2>Todo tu dinero, en un solo lugar</h2>
@@ -194,6 +378,12 @@
       <summary>¿Cuándo llega a Google Play?</summary>
       <p>Estamos en beta cerrada preparando el lanzamiento en Argentina y Venezuela. Escribinos y te sumamos a la beta con el APK.</p>
     </details>
+  </section>
+
+  <section class="cta-final wrap">
+    <h2>Empezá a entender tu plata</h2>
+    <p>Gratis, en tu moneda y con un asesor que no te vende humo.</p>
+    <a class="btn" href="mailto:alexanderleon001@gmail.com?subject=Quiero%20probar%20Mi%20Plata">Sumate a la beta</a>
   </section>
 </main>
 
