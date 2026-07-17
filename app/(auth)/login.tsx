@@ -24,12 +24,36 @@ export default function LoginScreen() {
       return;
     }
     setBusy(true);
-    const { error } =
+    const { data, error } =
       mode === "signin"
         ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+        : await supabase.auth.signUp({
+            email,
+            password,
+            options: { emailRedirectTo: "https://miplatica.vercel.app/confirmado" },
+          });
     setBusy(false);
-    if (error) Alert.alert("Ups", error.message);
+    if (error) {
+      // Traducir el error más común a algo accionable.
+      if (/not confirmed/i.test(error.message)) {
+        Alert.alert(
+          "Falta confirmar tu correo 📬",
+          `Tu cuenta existe pero todavía no está confirmada. Buscá el mail que te mandamos a ${email.trim()} (mirá spam) y tocá el enlace. Después volvé y entrá.`,
+        );
+      } else {
+        Alert.alert("Ups", error.message);
+      }
+      return;
+    }
+    // signUp con confirmación de email pendiente: hay user pero NO session.
+    // Sin este aviso la pantalla queda muda y el usuario no sabe qué pasó.
+    if (mode === "signup" && !data.session) {
+      Alert.alert(
+        "¡Revisá tu correo! 📬",
+        `Te mandamos un mail a ${email.trim()} con un enlace para activar tu cuenta (mirá spam si no aparece). Cuando lo confirmes, volvé acá y entrá con tu contraseña.`,
+      );
+      setMode("signin");
+    }
   }
 
   return (
