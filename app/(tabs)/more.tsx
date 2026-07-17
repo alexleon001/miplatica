@@ -24,7 +24,7 @@ import { radius, spacing } from "../../lib/theme";
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 // Requisito de Google Play: la política debe ser accesible desde la app.
-const PRIVACY_POLICY_URL = "https://miplatica.vercel.app/privacidad.html";
+const PRIVACY_POLICY_URL = "https://miplatica.vercel.app/privacidad";
 
 export default function MoreScreen() {
   const c = useTheme();
