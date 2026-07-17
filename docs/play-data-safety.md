@@ -1,0 +1,59 @@
+# Mi Plata — Formulario Data Safety de Play Console (pre-redactado)
+
+> Respuestas listas para el cuestionario **App content → Data safety** de Play Console.
+> Basado en lo que la app efectivamente recolecta (Supabase + Anthropic + RevenueCat + AdMob + Resend).
+> Regla general que aplicamos: declarar de más nunca rechaza; declarar de menos sí.
+
+## Overview
+
+| Pregunta | Respuesta |
+|---|---|
+| ¿Tu app recopila o comparte datos de usuario? | **Sí** |
+| ¿Los datos se cifran en tránsito? | **Sí** (HTTPS/TLS en todo) |
+| ¿Los usuarios pueden solicitar la eliminación de sus datos? | **Sí** (mail a alexanderleon001@gmail.com; poner ese mail o la URL de la privacy como mecanismo) |
+
+## Tipos de datos a declarar
+
+### Información personal
+| Dato | ¿Recolectado? | ¿Compartido? | Propósito | Obligatorio/Opcional |
+|---|---|---|---|---|
+| Email | Sí | No | Funcionalidad de la app (cuenta) | Obligatorio |
+| Nombre | Sí | No | Funcionalidad de la app (perfil) | Opcional |
+
+### Información financiera
+| Dato | ¿Recolectado? | ¿Compartido? | Propósito |
+|---|---|---|---|
+| Historial de compras del usuario (subs Pro) | Sí | Sí (RevenueCat/Google Play como procesadores) | Funcionalidad de la app |
+| Otra info financiera (movimientos, cuentas, inversiones, deudas que el usuario carga) | Sí | Sí* | Funcionalidad de la app |
+
+> *"Compartido": un resumen se envía a Anthropic SOLO cuando el usuario usa una función de IA, como service provider (no para publicidad ni entrenamiento). En el formulario esto califica como transferencia a service provider — Play permite marcar "data shared" con propósito "App functionality".
+
+### IDs del dispositivo
+| Dato | ¿Recolectado? | ¿Compartido? | Propósito |
+|---|---|---|---|
+| Device ID / Advertising ID | Sí (solo usuarios Free, vía AdMob) | Sí (Google AdMob) | Publicidad |
+
+### Actividad en la app
+| Dato | ¿Recolectado? | ¿Compartido? | Propósito |
+|---|---|---|---|
+| Interacciones (contador diario de llamadas de IA) | Sí | No | Funcionalidad (límite de uso) |
+
+### NO se recolecta (marcar "No" en el resto)
+Ubicación, contactos, fotos/videos, audio, archivos, calendario, SMS/llamadas, salud, historial web, apps instaladas.
+
+## Notas para el cuestionario
+
+- **Cifrado en tránsito:** Sí para todo.
+- **Eliminación:** la privacy (https://miplatica.vercel.app/privacidad) documenta el proceso (30 días).
+- **Cuenta requerida:** Sí (email + contraseña, Supabase Auth).
+- **Advertising ID:** declarar el permiso `com.google.android.gms.permission.AD_ID` (lo agrega react-native-google-mobile-ads automáticamente).
+- **Familias / niños:** app 13+, NO dirigida a niños → en "Target audience" elegir 18+ (o 13+ y completar lo extra); NO al programa Families.
+
+## Otros formularios de App content (respuestas rápidas)
+
+- **Privacy policy URL:** `https://miplatica.vercel.app/privacidad`
+- **Ads:** Sí, la app contiene anuncios (AdMob, solo Free).
+- **Content rating (IARC):** categoría "Utility/Productivity"; sin violencia/apuestas/contenido sexual → sale rating "Everyone"/PEGI 3. Ojo: hay pregunta sobre "gambling" → No; "compras digitales" → Sí (subs).
+- **Financial features declaration:** la app es un **tracker de finanzas personales**; NO ofrece préstamos, ni banca, ni transferencias, ni trading, ni cripto exchange → declarar "My app doesn't provide any financial features" o la opción de personal finance management según el desplegable vigente.
+- **Government apps:** No. **News:** No. **COVID:** No.
+- **Data safety → app-ads.txt:** ya publicado en `https://miplatica.vercel.app/app-ads.txt` (pub-9459018521108034); verificar en AdMob → Apps → app-ads.txt una vez que la ficha esté publicada y el "developer website" apunte a miplatica.vercel.app.
