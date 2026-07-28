@@ -114,12 +114,30 @@ Tu plata, con inteligencia.
 - **AR:** finanzas personales, control de gastos, dólar blue, dólar MEP, inflación, presupuesto, inversiones, CEDEARs, plazo fijo, FCI, patrimonio, app de gastos.
 - **VE:** finanzas personales, control de gastos, dólar BCV, dólar paralelo, bolívares, Zelle, USDT, presupuesto, ahorro en dólares, app de gastos.
 
-## Pendientes de assets (no bloqueantes para drafts)
+## Assets
 
-- Ícono definitivo 512×512 (hoy placeholder generado por `scripts/gen-icons.py`).
-- Feature graphic 1024×500.
-- 4–8 screenshots por país (dashboard, movimientos, inversiones con "real +X%", asesor IA; en VE mostrar Bs/BCV/paralelo).
-- Video promocional (opcional).
+Generados por `python scripts/gen-play-assets.py` (idempotente; usa Space Grotesk del
+paquete `@expo-google-fonts` para que la tipografía sea la misma que la app):
+
+| Asset | Archivo | Estado |
+|---|---|---|
+| Ícono de Play 512×512 | `assets/play/icon-512.png` | ✅ listo para subir |
+| Feature graphic 1024×500 | `assets/play/feature-graphic-1024x500.png` | ✅ listo para subir |
+| Ícono de la app (1024) + adaptive + splash | `assets/icon.png`, `assets/adaptive-icon.png`, `assets/splash-icon.png` | ✅ regenerados con la misma marca (entran en el próximo build nativo) |
+
+**Pendiente: screenshots (requiere device, no se pueden generar acá).** Play pide mínimo 2 por
+tipo de dispositivo; apuntar a 4–6. Cómo capturarlas:
+
+1. Instalar el APK/AAB de preview y loguearse con el usuario de prueba **AR** (datos sembrados).
+2. Capturar en este orden: **Dashboard** (patrimonio + cotizaciones) · **Movimientos** con el
+   desglose por categoría · **Inversiones** con "real +X%" · **Asesor IA** con una respuesta ·
+   **Proyección de pagos**.
+3. Repetir logueado con el usuario **VE** para el custom listing de Venezuela (mostrar Bs,
+   BCV/paralelo). Alcanza con 3–4.
+4. Subirlas tal cual salen del teléfono (Play acepta 16:9/9:16, mínimo 320 px de lado corto).
+   No maquetarlas con marcos ni texto inventado: tienen que ser la app real.
+
+- Video promocional: opcional, saltear en el lanzamiento.
 
 ## Notas de lanzamiento sugeridas (release notes v0.1.0)
 
