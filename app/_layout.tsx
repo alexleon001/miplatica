@@ -8,6 +8,7 @@ import { claimGroupInvites } from "../lib/hooks/use-group-members";
 import { useProfile } from "../lib/hooks/use-profile";
 import { syncPurchasesUser } from "../lib/purchases";
 import { QueryProvider } from "../lib/query-provider";
+import { syncNavigationBar } from "../lib/system-bars";
 import type { CountryCode } from "../lib/countries";
 import {
   type CurrencyDisplay,
@@ -45,10 +46,16 @@ function brightness(hex: string): number {
   return 0.299 * r + 0.587 * g + 0.114 * b;
 }
 
-// La barra de estado sigue el modo del tema (texto claro en oscuro, oscuro en claro).
+// Las barras del sistema siguen el modo del tema: texto/íconos claros sobre
+// fondo oscuro y viceversa. Incluye la barra de navegación de Android, cuyos
+// botones quedaban invisibles en tema claro.
 function ThemedStatusBar() {
   const c = useTheme();
-  return <StatusBar style={brightness(c.bg) < 128 ? "light" : "dark"} />;
+  const isDark = brightness(c.bg) < 128;
+  useEffect(() => {
+    syncNavigationBar(isDark);
+  }, [isDark]);
+  return <StatusBar style={isDark ? "light" : "dark"} />;
 }
 
 function AuthGate() {
