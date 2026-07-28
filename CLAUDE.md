@@ -64,8 +64,16 @@
 - **Web live** (push hecho): `/eliminar-cuenta`, `/app-ads.txt` y `/restablecer` responden 200. Toda la
   web pasó a **esmeralda** con el ícono real como logo + favicon 192/512 + `og-image.png` 1200×630
   (los links compartidos ahora muestran tarjeta). Verificado en Chrome contra un server local.
-- **Fixes de producto (OTA `c7ef1c14` PUBLICADO al branch `production`, runtime 0.1.0 — el AAB los
-  levanta al reabrir la app dos veces):**
+- **🔴 DECLARACIÓN ANTE PLAY (decidida por el user, 2026-07-28): "Mi aplicación NO proporciona
+  funciones financieras".** Consecuencia permanente: **el copy no puede prometer asesoramiento
+  financiero**. Todo lo user-facing dice **"asistente de finanzas"**, nunca "asesor"; las personas de
+  la IA se presentan como asistente y tienen "no sos un asesor matriculado/colegiado"; el chat lleva
+  el mismo descargo que el resumen mensual. `financial-advisor` redeployada **v16** y verificada en
+  prod ("Soy el asistente de Mi Plata…"); `monthly-summary` mantiene el string viejo hasta su próximo
+  deploy. Si algún día se agrega una función financiera real (pagos, custodia, trading), hay que
+  actualizar la declaración ANTES de publicarla.
+- **Fixes de producto (OTAs `c7ef1c14` + `4255653a` PUBLICADOS al branch `production`, runtime 0.1.0
+  — el AAB los levanta al reabrir la app dos veces):**
   alertas de cotización **multi-país** (VE elegía dólares AR: ahora BCV/paralelo, umbrales en Bs,
   textos con locale del país, +2 tests → 144 verdes) · dos strings "Mi Plática" que sobrevivieron al
   rebrand (wordmark del dashboard y FirstSteps) · **AdBanner** movido del fondo del scroll del
