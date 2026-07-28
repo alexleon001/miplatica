@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Restablecer contraseña — Mi Plata</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    min-height: 100svh; display: grid; place-items: center;
+    background: #0B1120; color: #F3F4F6; padding: 24px;
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .card {
+    max-width: 420px; width: 100%; text-align: center;
+    background: #111827; border: 1px solid #1F2937; border-radius: 20px; padding: 36px 28px;
+    box-shadow: 0 24px 70px rgba(0,0,0,.5);
+  }
+  .badge {
+    width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center;
+    margin: 0 auto 18px; font-size: 30px;
+    background: linear-gradient(135deg, #6366F1, #22D3EE);
+    box-shadow: 0 8px 28px rgba(99,102,241,.4);
+  }
+  h1 { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.01em; }
+  p { color: #9CA3AF; margin-top: 10px; font-size: .95rem; }
+  form { margin-top: 22px; display: grid; gap: 12px; text-align: left; }
+  input {
+    width: 100%; background: #0B1120; border: 1px solid #1F2937; border-radius: 12px;
+    padding: 13px 14px; color: #F3F4F6; font-size: 16px; outline: none;
+  }
+  input:focus { border-color: #6366F1; }
+  button {
+    background: linear-gradient(135deg, #6366F1, #22D3EE); color: #fff; border: 0;
+    border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  button:disabled { opacity: .5; cursor: default; }
+  .note { margin-top: 16px; font-size: .88rem; color: #C7D2FE; background: #172036; border: 1px solid #1F2937; border-radius: 12px; padding: 11px 14px; display: none; }
+  .note.err { color: #FCA5A5; }
+  .note.show { display: block; }
+  footer { margin-top: 24px; font-size: .85rem; color: #6B7280; }
+  a { color: #22D3EE; text-decoration: none; }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="badge" id="icon">🔑</div>
+  <h1 id="title">Elegí tu nueva contraseña</h1>
+  <p id="msg">Para tu cuenta de <strong>Mi Plata</strong>. Mínimo 6 caracteres.</p>
+  <form id="form">
+    <input type="password" id="pw1" placeholder="Nueva contraseña" autocomplete="new-password" minlength="6" required>
+    <input type="password" id="pw2" placeholder="Repetila" autocomplete="new-password" minlength="6" required>
+    <button type="submit" id="btn">Guardar contraseña</button>
+  </form>
+  <div class="note" id="note"></div>
+  <footer><a href="/">miplatica.vercel.app</a> — Tu plata, con inteligencia.</footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  // La única credencial acá es la anon key publishable, diseñada para exponerse.
+  // El permiso real viene del token de recuperación que Supabase pone en el hash
+  // de la URL al hacer click en el mail (flujo implícito, detectSessionInUrl).
+  var client = window.supabase.createClient(
+    "https://jgszdxqhrbpfjqtqqlpw.supabase.co",
+    "sb_publishable_N7ejxLSZqz0j4FUSI5A2Lw_cs5oamT7",
+    { auth: { detectSessionInUrl: true, persistSession: false } }
+  );
+
+  var note = document.getElementById("note");
+  var form = document.getElementById("form");
+  var btn = document.getElementById("btn");
+
+  function show(text, isErr) {
+    note.textContent = text;
+    note.className = "note show" + (isErr ? " err" : "");
+  }
+  function fail(title, msg) {
+    document.getElementById("icon").textContent = "⏳";
+    document.getElementById("title").textContent = title;
+    document.getElementById("msg").textContent = msg;
+    form.style.display = "none";
+  }
+
+  // Enlace vencido/ya usado → Supabase lo reporta en el hash como error.
+  var h = new URLSearchParams(location.hash.slice(1));
+  if (h.get("error")) {
+    fail(
+      "Este enlace ya no es válido",
+      h.get("error_code") === "otp_expired"
+        ? "El enlace venció o ya fue usado. Pedí uno nuevo desde la app con “¿Olvidaste tu contraseña?”."
+        : "No pudimos procesar el enlace. Pedí uno nuevo desde la app.",
+    );
+  } else {
+    // Sin tokens en el hash = entraron directo, sin pasar por el mail.
+    client.auth.getSession().then(function (res) {
+      if (!res.data.session) {
+        fail(
+          "Abrí esta página desde el correo",
+          "Este formulario solo funciona con el enlace de recuperación que te llega por mail. Pedilo desde la app con “¿Olvidaste tu contraseña?”.",
+        );
+      }
+    });
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var p1 = document.getElementById("pw1").value;
+    var p2 = document.getElementById("pw2").value;
+    if (p1 !== p2) { show("Las contraseñas no coinciden.", true); return; }
+    btn.disabled = true;
+    show("Guardando…");
+    client.auth.updateUser({ password: p1 }).then(function (res) {
+      if (res.error) {
+        btn.disabled = false;
+        show(res.error.message, true);
+        return;
+      }
+      document.getElementById("icon").textContent = "✅";
+      document.getElementById("title").textContent = "¡Contraseña actualizada!";
+      document.getElementById("msg").innerHTML = "Ya podés cerrar esta página. Volvé a <strong>Mi Plata</strong> y entrá con tu contraseña nueva.";
+      form.style.display = "none";
+      note.className = "note";
+      client.auth.signOut();
+    });
+  });
+</script>
+</body>
+</html>
