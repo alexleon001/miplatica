@@ -23,7 +23,7 @@ const WHAT_GETS_DELETED = [
   "Movimientos, presupuestos y categorías",
   "Inversiones, deudas y metas de ahorro",
   "Proyección de pagos y recordatorios",
-  "Historial del asesor y conexión con Mercado Pago",
+  "Historial del asistente y conexión con Mercado Pago",
   "Los grupos de gastos compartidos que hayas creado",
 ];
 

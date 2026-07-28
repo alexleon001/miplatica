@@ -41,8 +41,8 @@ Mi Plata es la app de finanzas personales con inteligencia artificial hecha para
 • Plazos fijos, FCI, CEDEARs, acciones, bonos, ON, LECAP y cripto con precios en vivo.
 • Rendimiento REAL: comparamos cada posición contra el IPC del INDEC desde que la compraste. Ganarle al plazo fijo no alcanza; hay que ganarle a la inflación.
 
-🤖 ASESOR FINANCIERO CON IA (PRO)
-• Chateá con un asesor que ve tus números reales y habla en argentino.
+🤖 ASISTENTE DE FINANZAS CON IA (PRO)
+• Chateá con un asistente que ve tus números reales y habla en argentino.
 • Resumen mensual inteligente: en qué gastaste de más, cómo venís contra la inflación y un consejo concreto para el mes que viene.
 
 📅 PROYECCIÓN DE PAGOS
@@ -85,8 +85,8 @@ Mi Plata es la app de finanzas personales con inteligencia artificial hecha para
 • Dólares en efectivo, Zelle, USDT y Bitcoin con precios en vivo.
 • Pensada para una economía dolarizada: razona en USD, gasta en Bs.
 
-🤖 ASESOR FINANCIERO CON IA (PRO)
-• Chatea con un asesor que ve tus números reales y habla en venezolano.
+🤖 ASISTENTE DE FINANZAS CON IA (PRO)
+• Chatea con un asistente que ve tus números reales y habla en venezolano.
 • Resumen mensual inteligente: en qué gastaste de más y un consejo concreto para el mes que viene.
 
 📅 PROYECCIÓN DE PAGOS
@@ -132,7 +132,7 @@ tipo de dispositivo; apuntar a 4–6. Cómo capturarlas:
 
 1. Instalar el APK/AAB de preview y loguearse con el usuario de prueba **AR** (datos sembrados).
 2. Capturar en este orden: **Dashboard** (patrimonio + cotizaciones) · **Movimientos** con el
-   desglose por categoría · **Inversiones** con "real +X%" · **Asesor IA** con una respuesta ·
+   desglose por categoría · **Inversiones** con "real +X%" · **Asistente IA** con una respuesta ·
    **Proyección de pagos**.
 3. Repetir logueado con el usuario **VE** para el custom listing de Venezuela (mostrar Bs,
    BCV/paralelo). Alcanza con 3–4.
@@ -148,6 +148,6 @@ Primera versión pública de Mi Plata 🎉
 • Control de gastos con categorización por IA
 • Multi-moneda: ARS/Bs + USD (MEP, blue, BCV, paralelo y más)
 • Inversiones con rendimiento real contra la inflación
-• Asesor financiero con IA
+• Asistente de finanzas con IA
 • Proyección de pagos y gastos compartidos
 ```

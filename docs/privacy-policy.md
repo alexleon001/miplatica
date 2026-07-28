@@ -20,7 +20,7 @@ Mi Platica ("la app") es una aplicación de finanzas personales desarrollada por
 - Si conectás tu cuenta de Mercado Pago (flujo OAuth oficial), sincronizamos tus **pagos aprobados** para registrarlos como movimientos. Los tokens de acceso se guardan **cifrados**. Nunca vemos tu contraseña de Mercado Pago. Podés desconectar la integración cuando quieras.
 
 ### Datos de uso de IA
-- Si usás las funciones de inteligencia artificial (asesor, resumen mensual, categorización automática), un resumen de tus datos financieros (montos agregados, categorías, descripciones de movimientos) se envía a **Anthropic** (proveedor del modelo Claude) para generar la respuesta. Anthropic no usa estos datos para entrenar sus modelos según sus términos de servicio API.
+- Si usás las funciones de inteligencia artificial (asistente, resumen mensual, categorización automática), un resumen de tus datos financieros (montos agregados, categorías, descripciones de movimientos) se envía a **Anthropic** (proveedor del modelo Claude) para generar la respuesta. Anthropic no usa estos datos para entrenar sus modelos según sus términos de servicio API.
 - Registramos un contador diario de llamadas de IA por usuario para aplicar límites de uso.
 
 ### Datos de suscripción (Mi Platica Pro)
@@ -43,7 +43,7 @@ Mi Platica ("la app") es una aplicación de finanzas personales desarrollada por
 
 Tus datos se almacenan en **Supabase** (PostgreSQL gestionado), en servidores ubicados en **São Paulo, Brasil (región AWS sa-east-1)**, protegidos con aislamiento por usuario (Row Level Security): cada usuario solo puede leer y escribir sus propios datos.
 
-Algunas preferencias (configuración de notificaciones, categorías personalizadas, historial de chat del asesor) se guardan **localmente en tu dispositivo** y no salen de él.
+Algunas preferencias (configuración de notificaciones, categorías personalizadas, historial de chat del asistente) se guardan **localmente en tu dispositivo** y no salen de él.
 
 ## 4. Procesadores de datos (terceros)
 
@@ -80,4 +80,4 @@ Si cambiamos esta política de forma sustancial, lo vamos a avisar dentro de la 
 
 ## 9. Aviso sobre la IA
 
-Las respuestas del asesor y los resúmenes generados por IA son **orientativos** y no constituyen asesoramiento financiero, impositivo ni legal profesional.
+Las respuestas del asistente y los resúmenes generados por IA son **orientativos** y no constituyen asesoramiento financiero, impositivo ni legal profesional.

@@ -18,17 +18,24 @@ import { type AdvisorMessage, useAdvisor } from "../lib/hooks/use-advisor";
 import { usePro } from "../lib/hooks/use-pro";
 import { invalidateRewardCredits, useRewardCredits } from "../lib/hooks/use-reward-credits";
 import { useAdvisorChatStore } from "../lib/store/advisor";
+import { useCurrencyStore } from "../lib/store/currency";
+import { countryConfig } from "../lib/countries";
 import { useKeyboardHeight } from "../lib/hooks/use-keyboard-height";
 import { useTheme } from "../lib/theme-context";
 import { type Palette, withAlpha } from "../lib/theme-tokens";
 import { radius, spacing } from "../lib/theme";
 
-const SUGGESTIONS = [
+// La última sugerencia es por país: en VE la capa de inflación está apagada
+// (no hay fuente API), así que preguntar por el IPC no lleva a ningún lado.
+const SUGGESTIONS_BASE = [
   "¿Cómo viene mi mes?",
   "¿En qué me conviene ahorrar hoy?",
   "¿Tengo gastos que pueda recortar?",
-  "¿Cómo le gano a la inflación?",
 ];
+const SUGGESTION_BY_COUNTRY: Record<string, string> = {
+  AR: "¿Cómo le gano a la inflación?",
+  VE: "¿Cuánto me conviene tener en dólares?",
+};
 
 export default function AdvisorScreen() {
   const c = useTheme();
@@ -43,6 +50,11 @@ export default function AdvisorScreen() {
   const messages = useAdvisorChatStore((s) => s.messages);
   const setMessages = useAdvisorChatStore((s) => s.setMessages);
   const clearChat = useAdvisorChatStore((s) => s.clear);
+  const country = useCurrencyStore((s) => s.country);
+  const suggestions = useMemo(
+    () => [...SUGGESTIONS_BASE, SUGGESTION_BY_COUNTRY[country] ?? SUGGESTION_BY_COUNTRY.AR],
+    [country],
+  );
   const [input, setInput] = useState("");
   const listRef = useRef<FlatList<AdvisorMessage>>(null);
   // KeyboardAvoidingView no es confiable bajo Fabric (ver CLAUDE.md): subimos la
@@ -120,7 +132,7 @@ export default function AdvisorScreen() {
         </Pressable>
         <View style={styles.titleWrap}>
           <Ionicons name="sparkles" size={15} color={c.accent} />
-          <Text style={styles.title}>Asesor IA</Text>
+          <Text style={styles.title}>Asistente IA</Text>
         </View>
         {messages.length > 0 ? (
           <Pressable onPress={confirmClear} hitSlop={12} accessibilityLabel="Nueva conversación">
@@ -139,8 +151,8 @@ export default function AdvisorScreen() {
 
       {!canUseAi && messages.length === 0 ? (
         <ProLock
-          title="El asesor IA es Pro"
-          subtitle="Chateá sobre tu plata con un asesor que ve tus cuentas, inversiones y deudas reales. Desbloquealo con Mi Plata Pro."
+          title="El asistente IA es Pro"
+          subtitle="Chateá sobre tu plata con un asistente que ve tus cuentas, inversiones y deudas reales. Desbloquealo con Mi Plata Pro."
           onWatchAd={reward.adsAvailable ? handleWatchAd : undefined}
           watching={reward.watching}
         />
@@ -148,14 +160,21 @@ export default function AdvisorScreen() {
       <View style={{ flex: 1, marginBottom: kbHeight }}>
         {messages.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>🧉</Text>
-            <Text style={styles.emptyTitle}>Tu asesor financiero argentino</Text>
+            {/* El emoji y el título eran fijos "argentinos": a un usuario VE le
+                hablaba de un asesor argentino. Ahora sigue al país del perfil. */}
+            <Text style={styles.emptyIcon}>{countryConfig(country).flag}</Text>
+            <Text style={styles.emptyTitle}>Tu asistente de finanzas</Text>
             <Text style={styles.emptyText}>
               Preguntame sobre tu plata: ve tus cuentas, inversiones, deudas y
               presupuestos. No invento datos.
             </Text>
+            {/* Play: declaramos que la app NO ofrece asesoramiento financiero.
+                El aviso tiene que estar donde el usuario lee las respuestas. */}
+            <Text style={styles.disclaimer}>
+              Orientativo, generado por IA con tus datos. No es asesoramiento financiero profesional.
+            </Text>
             <View style={styles.suggestions}>
-              {SUGGESTIONS.map((s) => (
+              {suggestions.map((s) => (
                 <Pressable
                   key={s}
                   style={({ pressed }) => [styles.suggestion, pressed && { opacity: 0.8 }]}
@@ -273,6 +292,7 @@ function makeStyles(c: Palette) {
     emptyIcon: { fontSize: 44 },
     emptyTitle: { fontSize: 18, lineHeight: 24, fontWeight: "700", color: c.text, textAlign: "center" },
     emptyText: { fontSize: 15, color: c.textDim, textAlign: "center", lineHeight: 20 },
+    disclaimer: { fontSize: 11.5, color: c.textFaint, textAlign: "center", lineHeight: 16, marginTop: spacing.sm },
     suggestions: { gap: spacing.sm, marginTop: spacing.md, alignSelf: "stretch" },
     suggestion: {
       backgroundColor: c.surface,

@@ -92,7 +92,7 @@ export default function MoreScreen() {
 
         <View style={styles.featureList}>
           <FeatureRow icon="people-outline" tint={c.accent} title="Gastos compartidos" subtitle="Dividí viajes, convivencia y salidas; calculamos quién le debe a quién" onPress={() => router.push("/groups")} styles={styles} c={c} />
-          <FeatureRow icon="sparkles" tint={c.accent} title="Asesor financiero IA" subtitle="Chateá sobre tu plata con contexto real" pro={!isPro} onPress={() => router.push("/advisor")} styles={styles} c={c} />
+          <FeatureRow icon="sparkles" tint={c.accent} title="Asistente de finanzas IA" subtitle="Chateá sobre tu plata con contexto real" pro={!isPro} onPress={() => router.push("/advisor")} styles={styles} c={c} />
           <FeatureRow icon="calendar-outline" tint={c.accent} title="Proyección de pagos" subtitle="Tu flujo de caja mes a mes, como el Excel pero solo" onPress={() => router.push("/projection")} styles={styles} c={c} />
           <FeatureRow icon="newspaper-outline" tint={c.accent} title="Resumen del mes" subtitle="Qué pasó con tu plata este mes, contado por la IA" pro={!isPro} onPress={() => router.push("/monthly-summary")} styles={styles} c={c} />
           <FeatureRow icon="bar-chart-outline" tint={c.pos} title="Insights de gastos" subtitle="Tu tendencia mensual y qué cambió" onPress={() => router.push("/insights")} styles={styles} c={c} />

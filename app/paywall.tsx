@@ -31,7 +31,7 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 type Plan = "annual" | "monthly";
 
 const BENEFITS: { icon: IoniconName; title: string; subtitle: string }[] = [
-  { icon: "sparkles", title: "Asesor financiero IA", subtitle: "Chateá sobre tu plata con contexto real, cuando quieras" },
+  { icon: "sparkles", title: "Asistente de finanzas IA", subtitle: "Chateá sobre tu plata con contexto real, cuando quieras" },
   { icon: "newspaper-outline", title: "Resumen del mes con IA", subtitle: "Qué pasó con tu plata, contado y comparado con inflación" },
   { icon: "pricetags-outline", title: "Categorización automática", subtitle: "La IA ordena tus movimientos sin categoría de una" },
   { icon: "remove-circle-outline", title: "Sin anuncios", subtitle: "Toda la app, limpia y sin interrupciones" },
