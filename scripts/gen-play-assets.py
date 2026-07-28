@@ -1,10 +1,16 @@
-"""Genera los assets gráficos de Mi Plata: ícono de app, adaptive, splash y los
-que pide Google Play (ícono 512² y feature graphic 1024×500).
+"""Genera los assets gráficos de Mi Plata a partir del ícono definitivo.
 
-Marca: gradiente diagonal indigo (#6366F1) → cyan (#22D3EE), glifo "$" en
-Space Grotesk Bold (la misma tipografía de la app, se lee del paquete
-@expo-google-fonts instalado) y una flecha ascendente que convierte el signo en
-"plata que crece". Fondo oscuro #0B1120, igual que la landing.
+Fuente: `assets/source/icon-source.png` — la ilustración elegida (billetera con
+tarjetas sobre degradé verde), que viene con margen blanco y esquinas
+redondeadas ya dibujadas. Este script:
+
+  1. recorta el arte y lo lleva a **full-bleed** (las esquinas se rellenan con el
+     mismo degradé, porque Android/iOS/Play aplican su propia máscara y un borde
+     blanco se vería como un halo);
+  2. saca el fondo para el foreground del adaptive icon (flood fill desde las
+     esquinas) y genera el background como degradé aparte;
+  3. arma el splash y el feature graphic 1024×500 de Play con la paleta
+     esmeralda, que es el tema por defecto de la app.
 
 Re-ejecutable e idempotente:  python scripts/gen-play-assets.py
 """
@@ -16,13 +22,14 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "assets"
 PLAY = ASSETS / "play"
+SOURCE = ASSETS / "source" / "icon-source.png"
 
-INDIGO = (99, 102, 241)    # #6366F1
-CYAN = (34, 211, 238)      # #22D3EE
-NAVY = (11, 17, 32)        # #0B1120
-DARK = (15, 23, 42)        # #0F172A
-WHITE = (248, 250, 252)    # #F8FAFC
-DIM = (156, 163, 175)      # #9CA3AF
+# Paleta esmeralda (lib/theme-tokens.ts) — el tema por defecto de la app.
+DARK_BG = (10, 13, 16)      # #0A0D10
+SURFACE = (18, 22, 25)      # #121619
+ACCENT = (47, 179, 137)     # #2FB389
+WHITE = (245, 250, 247)
+DIM = (150, 165, 158)
 
 FONT_DIR = ROOT / "node_modules" / "@expo-google-fonts" / "space-grotesk"
 FONTS = {
@@ -30,117 +37,160 @@ FONTS = {
     "medium": FONT_DIR / "500Medium" / "SpaceGrotesk_500Medium.ttf",
 }
 
-S = 1024  # lienzo de trabajo del ícono; se baja a 512 para Play
+S = 1024  # lienzo de trabajo; Play pide 512, el resto sale de acá
 
 
 def font(weight: str, px: int) -> ImageFont.FreeTypeFont:
     path = FONTS[weight]
-    if not path.exists():  # pnpm store / instalación distinta
+    if not path.exists():
         raise SystemExit(f"No encuentro la fuente {path}. Corré pnpm install primero.")
     return ImageFont.truetype(str(path), px)
 
 
-def diagonal_gradient(w: int, h: int, a, b) -> Image.Image:
-    """Gradiente diagonal de a (sup-izq) a b (inf-der). Se dibuja chico y se
-    escala: mismo resultado visual, ~100x más rápido que píxel por píxel."""
-    small = Image.new("RGB", (64, 64))
-    px = small.load()
-    for y in range(64):
-        for x in range(64):
-            t = (x + y) / 126
-            px[x, y] = (
-                round(a[0] + (b[0] - a[0]) * t),
-                round(a[1] + (b[1] - a[1]) * t),
-                round(a[2] + (b[2] - a[2]) * t),
-            )
-    return small.resize((w, h), Image.BICUBIC)
+def load_source() -> Image.Image:
+    if not SOURCE.exists():
+        raise SystemExit(f"Falta {SOURCE.relative_to(ROOT)} (el ícono definitivo).")
+    return Image.open(SOURCE).convert("RGB")
 
 
-def glow(size: tuple[int, int], center: tuple[int, int], radius: int, color, alpha: int) -> Image.Image:
-    """Halo radial suave (para dar profundidad sin verse plano)."""
-    layer = Image.new("RGBA", size, (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    d.ellipse(
-        [center[0] - radius, center[1] - radius, center[0] + radius, center[1] + radius],
-        fill=(*color, alpha),
-    )
-    return layer.filter(ImageFilter.GaussianBlur(radius * 0.55))
+def artwork_mask(src: Image.Image, seed_color=(255, 0, 255), thresh: int = 70) -> Image.Image:
+    """Máscara del arte (255) contra el fondo blanco del archivo (0).
+
+    Flood fill desde las cuatro esquinas: sólo pinta el blanco EXTERIOR, así el
+    blanco de la billetera (que está adentro) se conserva."""
+    work = src.copy()
+    w, h = work.size
+    for corner in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
+        ImageDraw.floodfill(work, corner, seed_color, thresh=thresh)
+    mask = Image.new("L", (w, h), 255)
+    mpx, wpx = mask.load(), work.load()
+    for y in range(h):
+        for x in range(w):
+            if wpx[x, y] == seed_color:
+                mpx[x, y] = 0
+    # Encoge 1 px y suaviza: mata el halo blanco del antialiasing original.
+    return mask.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.8))
 
 
-def draw_centered(img: Image.Image, text: str, f: ImageFont.FreeTypeFont, color, cx: float, cy: float):
-    d = ImageDraw.Draw(img)
-    box = d.textbbox((0, 0), text, font=f)
-    w, h = box[2] - box[0], box[3] - box[1]
-    d.text((cx - w / 2 - box[0], cy - h / 2 - box[1]), text, font=f, fill=color)
+def edge_gradient(art: Image.Image, mask: Image.Image, size: int) -> Image.Image:
+    """Degradé de fondo reconstruido fila por fila desde el propio arte.
+
+    Se muestrea el color a 6 px del borde izquierdo del arte; en las filas de las
+    esquinas redondeadas (donde ese punto cae fuera) se usa la fila válida más
+    cercana. Resultado: el relleno de las esquinas empalma exacto con el borde."""
+    w, h = art.size
+    apx, mpx = art.load(), mask.load()
+    rows: list[tuple[int, int, int] | None] = []
+    for y in range(h):
+        x = next((i for i in range(w) if mpx[i, y] > 200), None)
+        rows.append(apx[min(x + 6, w - 1), y] if x is not None else None)
+    known = [i for i, c in enumerate(rows) if c is not None]
+    if not known:
+        raise SystemExit("No pude leer el degradé del ícono fuente.")
+    first, last = known[0], known[-1]
+    for y in range(h):
+        if rows[y] is None:
+            rows[y] = rows[first] if y < first else rows[last]
+
+    grad = Image.new("RGB", (1, h))
+    gpx = grad.load()
+    for y in range(h):
+        gpx[0, y] = rows[y]
+    return grad.resize((size, size), Image.BICUBIC)
 
 
-def brand_tile(size: int, radius_ratio: float = 0.0) -> Image.Image:
-    """Baldosa de marca: gradiente + halo + '$' + flecha ascendente.
-    radius_ratio > 0 redondea las esquinas (para el splash y el feature graphic;
-    el ícono va full-bleed porque Android/iOS enmascaran solos)."""
-    tile = diagonal_gradient(size, size, INDIGO, CYAN).convert("RGBA")
-    tile.alpha_composite(glow((size, size), (int(size * 0.26), int(size * 0.2)), int(size * 0.3), (255, 255, 255), 70))
+def full_bleed_icon(size: int = S) -> Image.Image:
+    """Ícono a sangre: arte sobre su propio degradé, sin margen ni esquinas."""
+    src = load_source()
+    mask = artwork_mask(src)
+    box = mask.getbbox()
+    art, m = src.crop(box), mask.crop(box)
+    bg = edge_gradient(art, m, max(art.size))
+    bg = bg.resize(art.size, Image.BICUBIC)
+    bg.paste(art, (0, 0), m)
+    return bg.resize((size, size), Image.LANCZOS)
 
-    # Flecha ascendente detrás del glifo: da el significado "crece" sin ruido.
-    # Va en su propia capa y se compone con alpha_composite (ImageDraw pisa el
-    # canal alfa en vez de mezclar, y el semitransparente saldría blanco pleno).
-    arrow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    ad = ImageDraw.Draw(arrow)
-    u = size / 100
-    ink = (255, 255, 255, 66)
-    stroke = max(2, int(6 * u))
-    # Recta y punta triangular: a 48 dp cualquier quiebre se lee como mancha, así
-    # que la flecha es una sola diagonal limpia detrás del glifo.
-    ad.line([(18 * u, 74 * u), (76 * u, 30 * u)], fill=ink, width=stroke, joint="curve")
-    ad.polygon([(84 * u, 22 * u), (58 * u, 26 * u), (78 * u, 44 * u)], fill=ink)
-    tile.alpha_composite(arrow)
 
-    draw_centered(tile, "$", font("bold", int(size * 0.66)), (*WHITE, 255), size / 2, size * 0.5)
+def subject_cutout(size: int) -> Image.Image:
+    """Billetera + moneda recortadas del fondo verde, con alfa. Para el
+    foreground del adaptive icon (el fondo lo pone Android).
 
-    if radius_ratio:
-        mask = Image.new("L", (size, size), 0)
-        ImageDraw.Draw(mask).rounded_rectangle([0, 0, size - 1, size - 1], radius=int(size * radius_ratio), fill=255)
-        tile.putalpha(mask)
-    return tile
+    Se resta el fondo en vez de hacer flood fill: para cada fila se conoce el
+    color del degradé (el ícono ya es full-bleed, así que la columna x=2 siempre
+    es fondo) y el alfa sale de la distancia a ese color. Con una rampa suave la
+    sombra proyectada queda semitransparente — que es lo que es — en lugar del
+    parche rectangular que dejaba el flood fill."""
+    icon = full_bleed_icon(1024).convert("RGB")
+    px = icon.load()
+    alpha = Image.new("L", icon.size, 0)
+    apx = alpha.load()
+    lo, hi = 14, 62  # distancia L1: <lo es fondo puro, >hi es sujeto opaco
+    for y in range(1024):
+        br, bg_, bb = px[2, y]
+        for x in range(1024):
+            r, g, b = px[x, y]
+            dist = abs(r - br) + abs(g - bg_) + abs(b - bb)
+            apx[x, y] = 0 if dist <= lo else 255 if dist >= hi else round((dist - lo) * 255 / (hi - lo))
+    alpha = alpha.filter(ImageFilter.GaussianBlur(0.6))
+    cut = icon.convert("RGBA")
+    cut.putalpha(alpha)
+    cut = cut.crop(cut.getbbox())
+
+    # Zona segura del adaptive icon: el sistema recorta hasta un 33%.
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    scale = (size * 0.62) / max(cut.size)
+    cut = cut.resize((round(cut.width * scale), round(cut.height * scale)), Image.LANCZOS)
+    canvas.alpha_composite(cut, ((size - cut.width) // 2, (size - cut.height) // 2))
+    return canvas
 
 
 def main() -> None:
     PLAY.mkdir(parents=True, exist_ok=True)
+    (ASSETS / "source").mkdir(parents=True, exist_ok=True)
 
-    # 1) Ícono de la app (full-bleed) + versión 512 para Play.
-    icon = brand_tile(S).convert("RGB")
+    # 1) Ícono de app (full-bleed) + el 512 que pide Play.
+    icon = full_bleed_icon()
     icon.save(ASSETS / "icon.png")
     icon.resize((512, 512), Image.LANCZOS).save(PLAY / "icon-512.png")
 
-    # 2) Adaptive foreground: transparente, glifo dentro de la zona segura (~66%
-    #    del lienzo; Android recorta hasta un círculo inscripto).
-    fg = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    draw_centered(fg, "$", font("bold", int(S * 0.42)), (*WHITE, 255), S / 2, S / 2)
-    fg.save(ASSETS / "adaptive-icon.png")
+    # 2) Adaptive icon: foreground recortado + background con el mismo degradé.
+    subject_cutout(S).save(ASSETS / "adaptive-icon.png")
+    src = load_source()
+    m = artwork_mask(src)
+    box = m.getbbox()
+    edge_gradient(src.crop(box), m.crop(box), S).save(ASSETS / "adaptive-icon-bg.png")
 
-    # 3) Splash: baldosa redondeada sobre fondo oscuro.
-    splash = Image.new("RGB", (S, S), DARK)
-    tile = brand_tile(int(S * 0.56), radius_ratio=0.22)
-    splash.paste(tile, (int(S * 0.22), int(S * 0.22)), tile)
+    # 3) Splash: el ícono redondeado sobre el fondo oscuro del tema.
+    splash = Image.new("RGB", (S, S), DARK_BG)
+    tile_size = int(S * 0.56)
+    tile = icon.resize((tile_size, tile_size), Image.LANCZOS).convert("RGBA")
+    rounded = Image.new("L", (tile_size, tile_size), 0)
+    ImageDraw.Draw(rounded).rounded_rectangle([0, 0, tile_size - 1, tile_size - 1],
+                                              radius=int(tile_size * 0.22), fill=255)
+    tile.putalpha(rounded)
+    splash.paste(tile, ((S - tile_size) // 2, (S - tile_size) // 2), tile)
     splash.save(ASSETS / "splash-icon.png")
 
-    # 4) Feature graphic 1024×500. Play recorta los bordes en algunas
-    #    superficies → todo lo importante vive dentro de un margen de 80 px.
+    # 4) Feature graphic 1024×500 de Play. Play recorta bordes en algunas
+    #    superficies → todo lo importante dentro de un margen de 80 px.
     W, H = 1024, 500
-    fg_img = Image.new("RGBA", (W, H), (*NAVY, 255))
-    fg_img.alpha_composite(glow((W, H), (760, 250), 300, INDIGO, 150))
-    fg_img.alpha_composite(glow((W, H), (300, 430), 260, CYAN, 60))
+    fg = Image.new("RGBA", (W, H), (*DARK_BG, 255))
+    halo = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    ImageDraw.Draw(halo).ellipse([560, 20, 1000, 460], fill=(*ACCENT, 90))
+    fg.alpha_composite(halo.filter(ImageFilter.GaussianBlur(150)))
 
-    tile = brand_tile(232, radius_ratio=0.24)
-    fg_img.alpha_composite(tile, (712, 134))
+    tile_size = 236
+    tile = icon.resize((tile_size, tile_size), Image.LANCZOS).convert("RGBA")
+    rounded = Image.new("L", (tile_size, tile_size), 0)
+    ImageDraw.Draw(rounded).rounded_rectangle([0, 0, tile_size - 1, tile_size - 1],
+                                              radius=int(tile_size * 0.24), fill=255)
+    tile.putalpha(rounded)
+    fg.alpha_composite(tile, (712, 132))
 
-    d = ImageDraw.Draw(fg_img)
+    d = ImageDraw.Draw(fg)
     d.text((80, 168), "Mi Plata", font=font("bold", 92), fill=(*WHITE, 255))
     d.text((80, 278), "Tu plata, con inteligencia.", font=font("medium", 38), fill=(*DIM, 255))
 
-    # Píldoras de features: lo que un vistazo de 2 segundos tiene que retener.
-    # Capa aparte por lo mismo que la flecha: los rellenos semitransparentes hay
-    # que componerlos, no dibujarlos directo sobre el lienzo.
     pills = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     pd = ImageDraw.Draw(pills)
     f = font("medium", 24)
@@ -149,16 +199,15 @@ def main() -> None:
         box = pd.textbbox((0, 0), label, font=f)
         w = box[2] - box[0]
         pd.rounded_rectangle([x, 344, x + w + 44, 396], radius=26,
-                             fill=(255, 255, 255, 20), outline=(255, 255, 255, 46), width=2)
-        pd.text((x + 22 - box[0], 370 - (box[3] - box[1]) / 2 - box[1]), label, font=f, fill=(*WHITE, 235))
+                             fill=(*ACCENT, 38), outline=(*ACCENT, 120), width=2)
+        pd.text((x + 22 - box[0], 370 - (box[3] - box[1]) / 2 - box[1]), label, font=f, fill=(*WHITE, 240))
         x += w + 60
-    fg_img.alpha_composite(pills)
-
-    fg_img.convert("RGB").save(PLAY / "feature-graphic-1024x500.png")
+    fg.alpha_composite(pills)
+    fg.convert("RGB").save(PLAY / "feature-graphic-1024x500.png")
 
     print("OK ->")
-    for p in (ASSETS / "icon.png", ASSETS / "adaptive-icon.png", ASSETS / "splash-icon.png",
-              PLAY / "icon-512.png", PLAY / "feature-graphic-1024x500.png"):
+    for p in (ASSETS / "icon.png", ASSETS / "adaptive-icon.png", ASSETS / "adaptive-icon-bg.png",
+              ASSETS / "splash-icon.png", PLAY / "icon-512.png", PLAY / "feature-graphic-1024x500.png"):
         print(f"  {p.relative_to(ROOT)}  {Image.open(p).size}")
 
 

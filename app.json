@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F172A"
+      "backgroundColor": "#0A0D10"
     },
     "ios": {
       "supportsTablet": false,
@@ -21,7 +21,8 @@
       "package": "com.alexleon001.miplatica",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#6366F1"
+        "backgroundImage": "./assets/adaptive-icon-bg.png",
+        "backgroundColor": "#28BA6D"
       }
     },
     "plugins": [
@@ -29,7 +30,7 @@
       [
         "expo-notifications",
         {
-          "color": "#6366F1"
+          "color": "#2FB389"
         }
       ],
       "expo-web-browser",
