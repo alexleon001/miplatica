@@ -57,13 +57,15 @@
 - **Nav bar de Android:** `expo-navigation-bar` (dep nativa, `require()` guardado en
   `lib/system-bars.ts`) → los botones del sistema siguen la luminancia del tema (se veían invisibles
   en tema claro).
-- **AAB de producción `9a5d07e6` (versionCode 6) en build** con todo lo anterior + el ícono definitivo
-  + el rediseño de login. Reemplaza a `1ce60f68` (vc 4); el vc 5 (`703c2509`) se canceló al llegar el
-  ícono nuevo para no quemar cuota de EAS.
+- **AAB de producción `9a5d07e6` (versionCode 6) TERMINADO** (2026-07-28 15:15) con todo lo anterior +
+  el ícono definitivo + el rediseño de login → **listo para subir a closed testing**. Reemplaza a
+  `1ce60f68` (vc 4); el vc 5 (`703c2509`) se canceló al llegar el ícono nuevo para no quemar cuota.
+  Artifact: `expo.dev/artifacts/eas/lX8mHm3pg5EbU24kL7o0yBMKj-lzfE1S9l8d5cQn_YQ.aab`.
 - **Web live** (push hecho): `/eliminar-cuenta`, `/app-ads.txt` y `/restablecer` responden 200. Toda la
   web pasó a **esmeralda** con el ícono real como logo + favicon 192/512 + `og-image.png` 1200×630
   (los links compartidos ahora muestran tarjeta). Verificado en Chrome contra un server local.
-- **Fixes de producto (OTA-safe, van por `eas update` al canal production cuando salga el AAB):**
+- **Fixes de producto (OTA `c7ef1c14` PUBLICADO al branch `production`, runtime 0.1.0 — el AAB los
+  levanta al reabrir la app dos veces):**
   alertas de cotización **multi-país** (VE elegía dólares AR: ahora BCV/paralelo, umbrales en Bs,
   textos con locale del país, +2 tests → 144 verdes) · dos strings "Mi Plática" que sobrevivieron al
   rebrand (wordmark del dashboard y FirstSteps) · **AdBanner** movido del fondo del scroll del
