@@ -10,7 +10,12 @@
 |---|---|
 | ¿Tu app recopila o comparte datos de usuario? | **Sí** |
 | ¿Los datos se cifran en tránsito? | **Sí** (HTTPS/TLS en todo) |
-| ¿Los usuarios pueden solicitar la eliminación de sus datos? | **Sí** (mail a alexanderleon001@gmail.com; poner ese mail o la URL de la privacy como mecanismo) |
+| ¿Los usuarios pueden solicitar la eliminación de sus datos? | **Sí** — URL a declarar: `https://miplatica.vercel.app/eliminar-cuenta` |
+
+> **Data deletion (obligatorio desde 2023).** Play pide las dos vías y las dos existen:
+> - **In-app:** Más → Sesión → **Eliminar cuenta** (pantalla `app/delete-account.tsx` → edge `delete-account`, borrado inmediato y permanente).
+> - **Web, sin instalar la app:** `https://miplatica.vercel.app/eliminar-cuenta` (pasos + pedido por email + qué se borra y qué se conserva 30 días).
+> En el formulario, cuando pregunte si además de borrar la cuenta se borran los datos, la respuesta es **sí, todos** (cascada sobre `auth.users`).
 
 ## Tipos de datos a declarar
 

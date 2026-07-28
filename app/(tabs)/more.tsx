@@ -186,6 +186,16 @@ export default function MoreScreen() {
             <Ionicons name="log-out-outline" size={18} color={c.neg} />
             <Text style={styles.btnText}>Cerrar sesión</Text>
           </Pressable>
+          {/* Requisito de Google Play: el borrado de cuenta tiene que poder
+              pedirse desde la app, no solo por mail. */}
+          <Pressable
+            style={({ pressed }) => [styles.deleteAccountLink, pressed && { opacity: 0.7 }]}
+            onPress={() => router.push("/delete-account")}
+            accessibilityRole="button"
+            accessibilityLabel="Eliminar cuenta"
+          >
+            <Text style={styles.deleteAccountText}>Eliminar cuenta</Text>
+          </Pressable>
         </View>
 
         <Pressable
@@ -318,6 +328,8 @@ function makeStyles(c: Palette) {
     },
     btnText: { color: c.neg, fontWeight: "700" },
     dataDivider: { height: 1, backgroundColor: c.border, marginVertical: spacing.xs },
+    deleteAccountLink: { alignSelf: "center", paddingVertical: spacing.md },
+    deleteAccountText: { fontSize: 13, lineHeight: 18, color: c.textDim, textDecorationLine: "underline" },
     toggleRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
     toggleLabel: { fontSize: 15, lineHeight: 21, color: c.text },
     toggleHint: { fontSize: 13, lineHeight: 18, color: c.textDim },

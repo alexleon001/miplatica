@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eliminar tu cuenta — Mi Plata</title>
+<meta name="description" content="Cómo eliminar tu cuenta de Mi Plata y todos tus datos: desde la app o por email. Qué se borra y en cuánto tiempo.">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: #0B1120; color: #F3F4F6; padding: 32px 20px 64px;
+    font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 720px; margin: 0 auto; }
+  .badge {
+    width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center;
+    font-size: 28px; background: linear-gradient(135deg, #6366F1, #22D3EE);
+    box-shadow: 0 8px 28px rgba(99,102,241,.4);
+  }
+  h1 { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 20px; }
+  h2 { font-size: 1.15rem; font-weight: 700; margin-top: 36px; }
+  p { color: #9CA3AF; margin-top: 12px; }
+  ul, ol { color: #9CA3AF; margin-top: 12px; padding-left: 22px; }
+  li { margin-top: 6px; }
+  strong { color: #F3F4F6; }
+  a { color: #22D3EE; }
+  .app { color: #C7D2FE; font-weight: 700; }
+  .card {
+    background: #111827; border: 1px solid #1F2937; border-radius: 16px;
+    padding: 20px 22px; margin-top: 18px;
+  }
+  .card.warn { background: #211a12; border-color: #4a3a1c; }
+  .card h3 { font-size: 1rem; font-weight: 700; }
+  .steps { counter-reset: step; list-style: none; padding: 0; margin-top: 16px; }
+  .steps li {
+    counter-increment: step; position: relative; padding-left: 42px; margin-top: 14px; color: #D1D5DB;
+  }
+  .steps li::before {
+    content: counter(step); position: absolute; left: 0; top: 0;
+    width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center;
+    background: #1F2937; color: #C7D2FE; font-size: .85rem; font-weight: 700;
+  }
+  .mailbtn {
+    display: inline-block; margin-top: 16px; padding: 12px 20px; border-radius: 12px;
+    background: linear-gradient(135deg, #6366F1, #22D3EE); color: #0B1120;
+    font-weight: 700; text-decoration: none;
+  }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: .95rem; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #1F2937; color: #9CA3AF; vertical-align: top; }
+  th { color: #F3F4F6; font-weight: 700; }
+  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #1F2937; font-size: .88rem; color: #6B7280; }
+</style>
+</head>
+<body>
+<main>
+  <div class="badge">🗑️</div>
+  <h1>Eliminar tu cuenta de Mi Plata</h1>
+  <p>
+    <span class="app">Mi Plata</span> (<code>com.alexleon001.miplatica</code>) te deja borrar tu cuenta
+    y todos tus datos cuando quieras, sin pedirte explicaciones. Podés hacerlo vos mismo desde la app
+    o pedirlo por email si ya la desinstalaste.
+  </p>
+
+  <h2>Opción 1 — Desde la app (inmediato)</h2>
+  <ol class="steps">
+    <li>Abrí <strong>Mi Plata</strong> y entrá con tu cuenta.</li>
+    <li>Andá a la pestaña <strong>Más</strong>.</li>
+    <li>Bajá hasta <strong>Sesión</strong> y tocá <strong>Eliminar cuenta</strong>.</li>
+    <li>Escribí <strong>ELIMINAR</strong> para confirmar y tocá <strong>Eliminar mi cuenta</strong>.</li>
+  </ol>
+  <p>El borrado es inmediato y permanente: no queda copia ni forma de recuperar los datos.</p>
+
+  <h2>Opción 2 — Por email (si ya desinstalaste la app)</h2>
+  <p>
+    Escribinos desde <strong>la misma dirección de email con la que te registraste</strong> y borramos
+    la cuenta a mano. Verificamos que el pedido venga de esa dirección antes de borrar nada.
+  </p>
+  <a class="mailbtn" href="mailto:alexanderleon001@gmail.com?subject=Eliminar%20mi%20cuenta%20de%20Mi%20Plata&amp;body=Hola%2C%20quiero%20eliminar%20mi%20cuenta%20de%20Mi%20Plata%20y%20todos%20mis%20datos.%20Me%20registr%C3%A9%20con%20esta%20direcci%C3%B3n%20de%20email.">
+    Pedir la eliminación por email
+  </a>
+  <p>Respondemos y ejecutamos el borrado dentro de los <strong>30 días</strong> (normalmente en 72 horas).</p>
+
+  <h2>Qué datos se borran</h2>
+  <table>
+    <tr><th>Dato</th><th>Qué pasa</th></tr>
+    <tr><td>Cuenta y credenciales (email, contraseña)</td><td>Se eliminan</td></tr>
+    <tr><td>Perfil, cuentas y saldos</td><td>Se eliminan</td></tr>
+    <tr><td>Movimientos, presupuestos y categorías</td><td>Se eliminan</td></tr>
+    <tr><td>Inversiones, deudas y metas de ahorro</td><td>Se eliminan</td></tr>
+    <tr><td>Proyección de pagos y recordatorios</td><td>Se eliminan</td></tr>
+    <tr><td>Historial del asesor con IA</td><td>Se elimina (vive en tu teléfono y se va con la app)</td></tr>
+    <tr><td>Conexión con Mercado Pago</td><td>Se elimina; podés revocar el acceso también desde tu cuenta de Mercado Pago</td></tr>
+    <tr><td>Grupos de gastos compartidos que creaste</td><td>Se eliminan junto con sus gastos</td></tr>
+    <tr><td>Gastos que cargaste en grupos de otras personas</td><td>Quedan en el grupo sin tu nombre ni tus datos, para no romper los saldos del resto</td></tr>
+  </table>
+
+  <h2>Qué se conserva y por cuánto</h2>
+  <ul>
+    <li>
+      <strong>Registros de facturación</strong> de suscripciones Pro: los conservan Google Play y
+      nuestro procesador de pagos por obligación legal/contable. No incluyen tus datos financieros
+      personales cargados en la app.
+    </li>
+    <li>
+      <strong>Copias de seguridad cifradas</strong> de la base: se rotan y quedan sobrescritas dentro
+      de los <strong>30 días</strong>. Después de ese plazo no queda rastro de tu cuenta.
+    </li>
+    <li>Nada de esto se usa para publicidad ni se vende a terceros.</li>
+  </ul>
+
+  <div class="card warn">
+    <h3>⚠️ Si tenés Mi Plata Pro</h3>
+    <p>
+      Borrar la cuenta <strong>no cancela</strong> la suscripción: la administra Google Play. Cancelala
+      en <a href="https://play.google.com/store/account/subscriptions">Google Play → Suscripciones</a>
+      antes de borrar la cuenta para que no te siga cobrando.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>¿Querés guardar tus números antes?</h3>
+    <p>
+      En la app: <strong>Más → Datos → Exportar movimientos del mes (CSV)</strong>. Una vez borrada la
+      cuenta no podemos recuperarlos.
+    </p>
+  </div>
+
+  <footer>
+    Mi Plata — <a href="/">miplatica.vercel.app</a> · <a href="/privacidad">Política de privacidad</a><br>
+    Contacto: <a href="mailto:alexanderleon001@gmail.com">alexanderleon001@gmail.com</a>
+  </footer>
+</main>
+</body>
+</html>
