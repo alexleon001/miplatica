@@ -57,7 +57,7 @@ export function FirstSteps() {
         </Pressable>
       </View>
       <Text style={styles.subtitle}>
-        {doneCount} de {steps.length} · configurá Mi Plática en un minuto
+        {doneCount} de {steps.length} · configurá Mi Plata en un minuto
       </Text>
 
       <View style={styles.steps}>

@@ -7,8 +7,16 @@
 // Notifica UNA vez al cruzar (triggered false→true) y NO vuelve a avisar mientras
 // la condición se siga cumpliendo. Cuando la cotización vuelve del otro lado del
 // umbral, la alerta se RE-ARMA (triggered→false) y puede volver a disparar.
+//
+// Multi-país: el umbral está en moneda LOCAL (ARS en AR, Bs. en VE), así que los
+// textos formatean con el símbolo y el locale del país del usuario.
 
-export type RateType = "oficial" | "mep" | "blue" | "ccl";
+import { type CountryCode, countryConfig, type RateKey } from "./countries";
+
+// El tipo de tasa es el mismo del currency store: en AR son los dólares
+// argentinos (oficial/mep/blue/ccl/tarjeta) y en VE el BCV y el paralelo. Qué
+// subconjunto se ofrece lo decide `countryConfig(country).usdTypes`.
+export type RateType = RateKey;
 export type RateDirection = "above" | "below";
 
 export type RateAlertConfig = {
@@ -63,22 +71,33 @@ const RATE_LABELS: Record<RateType, string> = {
   mep: "MEP",
   blue: "Blue",
   ccl: "CCL",
+  tarjeta: "Tarjeta",
+  bcv: "BCV",
+  paralelo: "Paralelo",
 };
-
-const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 
 export function rateLabel(rate: RateType): string {
   return RATE_LABELS[rate];
 }
 
+// Formatea un monto en la moneda local del país (ARS con "$", VES con "Bs.").
+function money(amount: number, country: CountryCode): string {
+  const cfg = countryConfig(country);
+  const n = new Intl.NumberFormat(cfg.locale, { maximumFractionDigits: 0 }).format(Math.round(amount));
+  return cfg.currencySymbol === "$" ? `$${n}` : `${cfg.currencySymbol} ${n}`;
+}
+
 // Texto del cuerpo de la notificación / fila in-app.
-export function rateAlertBody(a: FiredRateAlert): string {
+export function rateAlertBody(a: FiredRateAlert, country: CountryCode = "AR"): string {
   const verb = a.direction === "above" ? "superó" : "bajó de";
-  return `El dólar ${RATE_LABELS[a.rate]} ${verb} $${money.format(a.threshold)} — hoy $${money.format(Math.round(a.value))}.`;
+  return `El dólar ${RATE_LABELS[a.rate]} ${verb} ${money(a.threshold, country)} — hoy ${money(a.value, country)}.`;
 }
 
 // Descripción corta de una alerta configurada (para la lista de gestión).
-export function rateAlertSummary(c: Pick<RateAlertConfig, "rate" | "direction" | "threshold">): string {
+export function rateAlertSummary(
+  c: Pick<RateAlertConfig, "rate" | "direction" | "threshold">,
+  country: CountryCode = "AR",
+): string {
   const verb = c.direction === "above" ? "supera" : "baja de";
-  return `${RATE_LABELS[c.rate]} ${verb} $${money.format(c.threshold)}`;
+  return `${RATE_LABELS[c.rate]} ${verb} ${money(c.threshold, country)}`;
 }

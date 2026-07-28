@@ -9,13 +9,12 @@ import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useExchangeRates } from "../lib/hooks/use-exchange-rates";
 import { useRateAlertsStore } from "../lib/store/rate-alerts";
+import { useCurrencyStore } from "../lib/store/currency";
+import { countryConfig } from "../lib/countries";
 import { rateAlertSummary, rateLabel, type RateDirection, type RateType } from "../lib/rate-alerts";
 import { useTheme } from "../lib/theme-context";
 import type { Palette } from "../lib/theme-tokens";
 import { radius, spacing, shadow } from "../lib/theme";
-
-const RATES: RateType[] = ["oficial", "mep", "blue", "ccl"];
-const fmt = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 
 export default function RateAlertsScreen() {
   const c = useTheme();
@@ -26,7 +25,18 @@ export default function RateAlertsScreen() {
   const add = useRateAlertsStore((s) => s.add);
   const remove = useRateAlertsStore((s) => s.remove);
 
-  const [rate, setRate] = useState<RateType>("mep");
+  // Las tasas ofrecidas dependen del país: dólares AR (MEP/blue/…) o BCV y
+  // paralelo en Venezuela. El umbral se carga en moneda local.
+  const country = useCurrencyStore((s) => s.country);
+  const cfg = countryConfig(country);
+  const rateOptions = useMemo(() => cfg.usdTypes.map((t) => t.value), [cfg]);
+  const fmt = useMemo(
+    () => new Intl.NumberFormat(cfg.locale, { maximumFractionDigits: 0 }),
+    [cfg.locale],
+  );
+  const symbol = cfg.currencySymbol === "$" ? "$" : `${cfg.currencySymbol} `;
+
+  const [rate, setRate] = useState<RateType>(cfg.defaultUsdType);
   const [direction, setDirection] = useState<RateDirection>("above");
   const [threshold, setThreshold] = useState("");
 
@@ -59,7 +69,7 @@ export default function RateAlertsScreen() {
         <View style={styles.card}>
           <Text style={styles.fieldLabel}>Dólar</Text>
           <View style={styles.chipRow}>
-            {RATES.map((r) => (
+            {rateOptions.map((r) => (
               <Chip key={r} label={rateLabel(r)} active={rate === r} onPress={() => setRate(r)} />
             ))}
           </View>
@@ -70,9 +80,9 @@ export default function RateAlertsScreen() {
             <Chip label="Baja de" active={direction === "below"} onPress={() => setDirection("below")} />
           </View>
 
-          <Text style={[styles.fieldLabel, { marginTop: spacing.md }]}>Valor (ARS)</Text>
+          <Text style={[styles.fieldLabel, { marginTop: spacing.md }]}>Valor ({cfg.currencyLabel})</Text>
           <TextInput
-            placeholder={rates?.[rate] != null ? `Hoy: $${fmt.format(rates[rate]!)}` : "0"}
+            placeholder={rates?.[rate] != null ? `Hoy: ${symbol}${fmt.format(rates[rate]!)}` : "0"}
             placeholderTextColor={c.textDim}
             keyboardType="decimal-pad"
             value={threshold}
@@ -106,9 +116,9 @@ export default function RateAlertsScreen() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.alertText}>{rateAlertSummary(a)}</Text>
+                  <Text style={styles.alertText}>{rateAlertSummary(a, country)}</Text>
                   <Text style={styles.alertHint}>
-                    {current != null ? `Hoy: $${fmt.format(current)}` : "Sin cotización"}
+                    {current != null ? `Hoy: ${symbol}${fmt.format(current)}` : "Sin cotización"}
                     {a.triggered ? " · ✓ avisada" : ""}
                   </Text>
                 </View>

@@ -105,4 +105,29 @@ describe("textos", () => {
     expect(body).toContain("$1.500");
     expect(body).toContain("$1.523");
   });
+
+  it("en Venezuela usa las tasas locales y bolívares", () => {
+    expect(rateAlertSummary({ rate: "paralelo", direction: "above", threshold: 850 }, "VE")).toBe(
+      "Paralelo supera Bs. 850",
+    );
+    const body = rateAlertBody(
+      { id: "ve1", rate: "bcv", direction: "below", threshold: 740, value: 738 },
+      "VE",
+    );
+    expect(body).toContain("BCV");
+    expect(body).toContain("bajó de");
+    expect(body).toContain("Bs. 740");
+    expect(body).not.toContain("$");
+  });
+
+  it("evalúa alertas de tasas venezolanas", () => {
+    const { fired } = evaluateRateAlerts(
+      [
+        { id: "ve-par", rate: "paralelo", direction: "above", threshold: 830, triggered: false },
+        { id: "ve-bcv", rate: "bcv", direction: "above", threshold: 800, triggered: false },
+      ],
+      { bcv: 742.81, paralelo: 836.09 },
+    );
+    expect(fired.map((f) => f.id)).toEqual(["ve-par"]);
+  });
 });

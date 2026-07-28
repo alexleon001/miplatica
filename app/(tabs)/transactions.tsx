@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Sectio
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { AdBanner } from "../../components/AdBanner";
 import { MoneyAmount } from "../../components/MoneyAmount";
 import { RecurringBanner } from "../../components/RecurringBanner";
 import { RowsSkeleton } from "../../components/Skeleton";
@@ -274,6 +275,9 @@ export default function TransactionsScreen() {
           <View style={styles.listHeader}>
             <RecurringBanner />
             <SpendingBreakdown />
+            {/* Movimientos es la pantalla más usada: un banner acá (uno solo por
+                pantalla, como pide AdMob) es la mayor parte del inventario Free. */}
+            <AdBanner />
           </View>
         }
         renderSectionHeader={({ section }) => (

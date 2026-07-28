@@ -44,7 +44,7 @@ export default function DashboardScreen() {
       >
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.brand, { color: c.textDim }]}>Mi Plática</Text>
+            <Text style={[styles.brand, { color: c.textDim }]}>Mi Plata</Text>
             <Text style={[styles.greeting, { color: c.text }]}>Hola, {name || "👋"}</Text>
           </View>
           <View style={[styles.avatar, { borderColor: c.border }]}>
@@ -55,6 +55,10 @@ export default function DashboardScreen() {
         <CurrencyToggle />
         <NetWorthCard />
         <NetWorthChart />
+        {/* El banner vivía al final del scroll: un usuario Free que no scrolleaba
+            casi no lo veía (hallazgo s17). Acá queda cerca del pliegue, después
+            del héroe, sin tapar nada. Para los Pro no renderiza nada. */}
+        <AdBanner />
         <FirstSteps />
         <UpcomingReminders />
         <BudgetBanner />
@@ -65,8 +69,6 @@ export default function DashboardScreen() {
           <Text style={[styles.ratesLabel, { color: c.textDim }]}>Tipo de cambio hoy</Text>
           <ExchangeRatesBar />
         </View>
-
-        <AdBanner />
       </ScrollView>
     </SafeAreaView>
   );

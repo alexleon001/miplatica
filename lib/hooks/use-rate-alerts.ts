@@ -13,6 +13,7 @@ import * as Notifications from "expo-notifications";
 import { useExchangeRates } from "./use-exchange-rates";
 import { useRateAlertsStore } from "../store/rate-alerts";
 import { useNotifPrefsStore } from "../store/notif-prefs";
+import { useCurrencyStore } from "../store/currency";
 import { evaluateRateAlerts, rateAlertBody, type RatesSnapshot } from "../rate-alerts";
 
 async function ensurePermission(): Promise<boolean> {
@@ -28,6 +29,7 @@ export function useRateAlerts() {
   const alerts = useRateAlertsStore((s) => s.alerts);
   const applyTriggered = useRateAlertsStore((s) => s.applyTriggered);
   const enabled = useNotifPrefsStore((s) => s.rateAlerts);
+  const country = useCurrencyStore((s) => s.country);
   const running = useRef(false);
 
   useEffect(() => {
@@ -37,11 +39,16 @@ export function useRateAlerts() {
 
     (async () => {
       try {
+        // Incluye las tasas de los dos países: cada alerta guarda cuál mira, así
+        // que un usuario VE evalúa contra bcv/paralelo sin tocar nada más.
         const snapshot: RatesSnapshot = {
           oficial: rates.oficial,
           mep: rates.mep,
           blue: rates.blue,
           ccl: rates.ccl,
+          tarjeta: rates.tarjeta,
+          bcv: rates.bcv,
+          paralelo: rates.paralelo,
         };
         const { fired, nextState } = evaluateRateAlerts(alerts, snapshot);
 
@@ -64,7 +71,7 @@ export function useRateAlerts() {
           await Notifications.scheduleNotificationAsync({
             content: {
               title: "💵 Alerta de cotización",
-              body: rateAlertBody(a),
+              body: rateAlertBody(a, country),
               data: { kind: "rate" },
             },
             trigger: Platform.OS === "android" ? ({ channelId: "rates" } as any) : null,
@@ -76,5 +83,5 @@ export function useRateAlerts() {
         running.current = false;
       }
     })();
-  }, [rates, alerts, enabled]);
+  }, [rates, alerts, enabled, country]);
 }
