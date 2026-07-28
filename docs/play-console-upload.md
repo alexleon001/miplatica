@@ -18,12 +18,18 @@ Play Console → **Crear app**:
 | Campo | Valor |
 |---|---|
 | Nombre de la app | `Mi Plata: Finanzas con IA` (25 chars, entra en el límite de 30) |
+| **Nombre del paquete** | **`com.alexleon001.miplatica`** ← exacto, ver abajo |
 | Idioma predeterminado | Español (Latinoamérica) — `es-419` |
 | App o juego | **App** |
 | Gratuita o de pago | **Gratuita** (las subs Pro son compras dentro de la app) |
 
-Aceptá las declaraciones de políticas. El **package name** (`com.alexleon001.miplatica`) no se tipea:
-sale del AAB al subirlo.
+> 🔴 **El package name se pide al crear la app y es PERMANENTE.** Tiene que ser exactamente
+> `com.alexleon001.miplatica` (el mismo de `app.json` y el que está firmado dentro del AAB): si no
+> coincide, Play rechaza el bundle. Va con "miplatica" aunque la app se llame "Mi Plata" — los
+> identificadores internos no cambiaron en el rebrand y el usuario nunca ve esta cadena. Si se
+> escribe mal, la única salida es crear otra app desde cero.
+
+Aceptá las declaraciones de políticas.
 
 ## 2. Closed testing (el reloj de 14 días arranca acá)
 
