@@ -60,7 +60,19 @@
 - **AAB de producción `9a5d07e6` (versionCode 6) en build** con todo lo anterior + el ícono definitivo
   + el rediseño de login. Reemplaza a `1ce60f68` (vc 4); el vc 5 (`703c2509`) se canceló al llegar el
   ícono nuevo para no quemar cuota de EAS.
-- **Web live** (push hecho): `/eliminar-cuenta`, `/app-ads.txt` y `/restablecer` responden 200.
+- **Web live** (push hecho): `/eliminar-cuenta`, `/app-ads.txt` y `/restablecer` responden 200. Toda la
+  web pasó a **esmeralda** con el ícono real como logo + favicon 192/512 + `og-image.png` 1200×630
+  (los links compartidos ahora muestran tarjeta). Verificado en Chrome contra un server local.
+- **Fixes de producto (OTA-safe, van por `eas update` al canal production cuando salga el AAB):**
+  alertas de cotización **multi-país** (VE elegía dólares AR: ahora BCV/paralelo, umbrales en Bs,
+  textos con locale del país, +2 tests → 144 verdes) · dos strings "Mi Plática" que sobrevivieron al
+  rebrand (wordmark del dashboard y FirstSteps) · **AdBanner** movido del fondo del scroll del
+  dashboard a debajo del héroe + uno en Movimientos (hallazgo s17: un Free que no scrolleaba casi no
+  lo veía).
+- **Advisors de Supabase revisados:** sin ERRORs. Los WARN de SECURITY DEFINER son intencionales
+  (las llama el usuario logueado) y `pg_net` no se mueve. Accionable real: **leaked password
+  protection** (un toggle en Auth). Performance: FKs sin índice (INFO) y `auth_rls_initplan`
+  (`auth.uid()` re-evaluado por fila) — no tocados a propósito antes del lanzamiento.
 - **Hallazgo:** las **confirmaciones de email están DESACTIVADAS** en el proyecto (signup por API
   devuelve sesión al instante) → el SMTP integrado no bloquea el closed testing; Resend sigue haciendo
   falta solo para reset de contraseña e invitaciones de grupos.
