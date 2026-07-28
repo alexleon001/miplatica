@@ -41,10 +41,15 @@
   nullable. **Probado end-to-end** con 2 usuarios descartables: 400 sin confirm, 401 sin auth, 200 +
   cascada verificada (grupo ajeno intacto, gasto con autor anónimo, miembro fantasma). Detalle en
   `memory/project_account_deletion.md`.
-- **Assets de marca definitivos:** `scripts/gen-play-assets.py` (idempotente) genera ícono de app +
-  adaptive + splash + **`assets/play/icon-512.png`** + **`assets/play/feature-graphic-1024x500.png`**
-  con Space Grotesk y el gradiente indigo→cyan. Reemplaza el placeholder de `gen-icons.py`. Faltan
-  **screenshots** (requieren device; instructivo en `docs/store-listing.md`).
+- **Ícono definitivo + assets de marca:** el user eligió la ilustración de billetera sobre degradé
+  verde (guardada en `assets/source/icon-source.png`). `scripts/gen-play-assets.py` (idempotente)
+  deriva de ahí ícono full-bleed (esquinas rellenadas con el degradé reconstruido: un borde blanco se
+  vería como halo bajo la máscara del launcher), adaptive foreground por **resta de fondo** (conserva
+  la sombra suave; el flood fill dejaba un parche rectangular) + `adaptive-icon-bg.png`, splash,
+  **`assets/play/icon-512.png`** y **`assets/play/feature-graphic-1024x500.png`**. Paleta **esmeralda**
+  (`#2FB389`/`#0A0D10`, el tema por defecto tras el rediseño Línea) — los assets indigo/cyan previos
+  estaban desalineados. `app.json`: adaptive con backgroundImage, tinte de notificaciones verde,
+  splash oscuro. Faltan **screenshots** (requieren device; instructivo en `docs/store-listing.md`).
 - **Cuenta de revisión para "App access":** usuario AR `miplata.review.ar@gmail.com` con Pro manual y
   datos sembrados (4 cuentas, 13 movimientos de julio, 5 inversiones, 2 deudas, 2 metas, 3
   presupuestos con supermercado al 86%). Login + asesor IA validados por API. **Password en
@@ -52,8 +57,9 @@
 - **Nav bar de Android:** `expo-navigation-bar` (dep nativa, `require()` guardado en
   `lib/system-bars.ts`) → los botones del sistema siguen la luminancia del tema (se veían invisibles
   en tema claro).
-- **AAB de producción `703c2509` (versionCode 5) en build** con todo lo anterior + el rediseño de
-  login. Reemplaza a `1ce60f68` (vc 4).
+- **AAB de producción `9a5d07e6` (versionCode 6) en build** con todo lo anterior + el ícono definitivo
+  + el rediseño de login. Reemplaza a `1ce60f68` (vc 4); el vc 5 (`703c2509`) se canceló al llegar el
+  ícono nuevo para no quemar cuota de EAS.
 - **Web live** (push hecho): `/eliminar-cuenta`, `/app-ads.txt` y `/restablecer` responden 200.
 - **Hallazgo:** las **confirmaciones de email están DESACTIVADAS** en el proyecto (signup por API
   devuelve sesión al instante) → el SMTP integrado no bloquea el closed testing; Resend sigue haciendo

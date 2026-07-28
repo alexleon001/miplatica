@@ -116,8 +116,10 @@ Tu plata, con inteligencia.
 
 ## Assets
 
-Generados por `python scripts/gen-play-assets.py` (idempotente; usa Space Grotesk del
-paquete `@expo-google-fonts` para que la tipografía sea la misma que la app):
+Generados por `python scripts/gen-play-assets.py` (idempotente) a partir del ícono definitivo
+`assets/source/icon-source.png` (billetera sobre degradé esmeralda). El script lo lleva a
+full-bleed, arma el adaptive icon y compone el feature graphic con Space Grotesk y la paleta
+esmeralda (`#2FB389` / `#0A0D10`), que es el tema por defecto de la app:
 
 | Asset | Archivo | Estado |
 |---|---|---|
