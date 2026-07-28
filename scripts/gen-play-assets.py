@@ -205,9 +205,35 @@ def main() -> None:
     fg.alpha_composite(pills)
     fg.convert("RGB").save(PLAY / "feature-graphic-1024x500.png")
 
+    # 5) Assets de la landing (mismo ícono → favicon y preview de redes).
+    web = ROOT / "web"
+    icon.resize((192, 192), Image.LANCZOS).save(web / "icon-192.png")
+    icon.resize((512, 512), Image.LANCZOS).save(web / "icon-512.png")
+
+    # OG image 1200×630: mismo lenguaje que el feature graphic, otra proporción.
+    OW, OH = 1200, 630
+    og = Image.new("RGBA", (OW, OH), (*DARK_BG, 255))
+    halo = Image.new("RGBA", (OW, OH), (0, 0, 0, 0))
+    ImageDraw.Draw(halo).ellipse([640, 40, 1160, 560], fill=(*ACCENT, 95))
+    og.alpha_composite(halo.filter(ImageFilter.GaussianBlur(170)))
+    tile_size = 300
+    tile = icon.resize((tile_size, tile_size), Image.LANCZOS).convert("RGBA")
+    rounded = Image.new("L", (tile_size, tile_size), 0)
+    ImageDraw.Draw(rounded).rounded_rectangle([0, 0, tile_size - 1, tile_size - 1],
+                                              radius=int(tile_size * 0.24), fill=255)
+    tile.putalpha(rounded)
+    og.alpha_composite(tile, (790, 165))
+    d = ImageDraw.Draw(og)
+    d.text((90, 215), "Mi Plata", font=font("bold", 104), fill=(*WHITE, 255))
+    d.text((90, 340), "Tu plata, con inteligencia.", font=font("medium", 42), fill=(*DIM, 255))
+    d.text((90, 404), "Argentina y Venezuela · Gastos, dólares e IA", font=font("medium", 28),
+           fill=(*ACCENT, 255))
+    og.convert("RGB").save(web / "og-image.png")
+
     print("OK ->")
     for p in (ASSETS / "icon.png", ASSETS / "adaptive-icon.png", ASSETS / "adaptive-icon-bg.png",
-              ASSETS / "splash-icon.png", PLAY / "icon-512.png", PLAY / "feature-graphic-1024x500.png"):
+              ASSETS / "splash-icon.png", PLAY / "icon-512.png", PLAY / "feature-graphic-1024x500.png",
+              web / "icon-192.png", web / "icon-512.png", web / "og-image.png"):
         print(f"  {p.relative_to(ROOT)}  {Image.open(p).size}")
 
 
