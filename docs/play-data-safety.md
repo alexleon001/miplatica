@@ -54,6 +54,22 @@ Ubicación, contactos, fotos/videos, audio, archivos, calendario, SMS/llamadas, 
 - **Advertising ID:** declarar el permiso `com.google.android.gms.permission.AD_ID` (lo agrega react-native-google-mobile-ads automáticamente).
 - **Familias / niños:** app 13+, NO dirigida a niños → en "Target audience" elegir 18+ (o 13+ y completar lo extra); NO al programa Families.
 
+## App access (credenciales para el revisor)
+
+La app exige login, así que hay que completar **App content → App access → "All functionality
+requires special access"** o el revisor rechaza por "no pudimos ver la app".
+
+- Usuario AR de revisión: **`miplata.review.ar@gmail.com`** (Pro activado a mano + datos
+  sembrados: cuentas, movimientos de julio, inversiones, deudas, metas y presupuestos).
+  **La contraseña NO va en el repo** (público) — está en la memoria del proyecto
+  (`project_play_reviewer_account`).
+- Instrucciones a pegar en el formulario: *"Iniciar sesión con el usuario de prueba. La cuenta
+  ya tiene datos cargados y la suscripción Pro activa para poder ver las funciones de IA."*
+- Para el listing de Venezuela existe un segundo usuario (ver `project_ve_test_user`).
+
+> Ojo operativo: el proyecto Supabase Free **se auto-pausa** sin tráfico. Si se pausa durante la
+> review, el revisor ve la app rota → rechazo. Pasar a Pro antes de mandar a revisión.
+
 ## Otros formularios de App content (respuestas rápidas)
 
 - **Privacy policy URL:** `https://miplatica.vercel.app/privacidad`
